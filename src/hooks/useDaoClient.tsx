@@ -2,6 +2,7 @@
 import { DaoClient } from "@account.tech/dao";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
+import { Profile } from "@account.tech/core";
 import { CreateDaoParams } from "@/types/dao";
 
 export function useDaoClient() {
@@ -47,6 +48,16 @@ export function useDaoClient() {
     }
   };
 
+  const getUser = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      return client.user
+    } catch (error) {
+      console.error("Error getting user profile:", error);
+      throw error;
+    }
+  };
+
   const getUserDaos = async (userAddr: string) => {
     try {
       const client = await getOrInitClient(userAddr);
@@ -60,6 +71,7 @@ export function useDaoClient() {
   return {
     initDaoClient,
     createDao,
+    getUser,
     getUserDaos,
   };
 }
