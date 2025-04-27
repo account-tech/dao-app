@@ -47,8 +47,19 @@ export function useDaoClient() {
     }
   };
 
+  const getUserDaos = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      return await client.getUserMultisigs();
+    } catch (error) {
+      console.error("Error getting user daos:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     createDao,
+    getUserDaos,
   };
 }
