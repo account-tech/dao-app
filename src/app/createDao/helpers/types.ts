@@ -1,7 +1,21 @@
 export interface DaoFormData {
-    teamName: string;
-    members: string[];
-    threshold: number;
+    daoType: 'coin' | 'nft';
+    coinType?: string;
+    assetType: string;
+    authVotingPower: bigint;
+    unstakingCooldown: bigint;
+    votingRule: number;
+    maxVotingPower: bigint;
+    minimumVotes: bigint;
+    votingQuorum: bigint;
+    name: string;
+    description: string;
+    image: string;
+    twitter: string;
+    telegram: string;
+    discord: string;
+    github: string;
+    website: string;
   }
   
   export interface StepProps {

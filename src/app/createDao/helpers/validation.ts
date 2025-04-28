@@ -1,23 +1,12 @@
-import { MultiSigFormData } from "./types";
+import { DaoFormData } from "./types";
 
-export const validateStep = (step: number, formData: MultiSigFormData): boolean => {
+export const validateStep = (step: number, formData: DaoFormData): boolean => {
   switch (step) {
-    case 0: // MultiSigStep
-      return formData.teamName.length > 0;
-    
-    case 1: // AddMemberStep
-      // Current user's address is always present, so we can proceed
-      // Additional members should be valid if present
-      return formData.members.every(member => member.length > 0);
-    
-    case 2: // ThresholdStep
-      const totalMembers = formData.members.length + 1; // +1 for current user
-      return formData.threshold > 0 && 
-             formData.threshold <= totalMembers;
-    
-    case 3: // ReviewStep
-      return true; // All validation done in previous steps
-    
+    case 0: // SelectTypeOfDaoStep
+      // Ensure name is present, daoType is 'coin', and coinType is defined and not empty
+      return formData.daoType === 'coin' && !!formData.coinType;
+
+
     default:
       return false;
   }

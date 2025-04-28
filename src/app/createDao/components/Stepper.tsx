@@ -33,13 +33,7 @@ const SteppedProgress: React.FC<StepperProps> = ({
       // Show validation error messages based on the step
       switch (currentStep) {
         case 0:
-          toast.error("Please enter a team name to continue.");
-          break;
-        case 1:
-          toast.error("Please add at least one member with a valid address.");
-          break;
-        case 2:
-          toast.error("Threshold must be between 1 and the total number of members.");
+          toast.error("Please select a type of DAO to continue and its respective coin/object type.");
           break;
       }
       return;
