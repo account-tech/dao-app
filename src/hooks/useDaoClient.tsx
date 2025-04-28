@@ -38,7 +38,6 @@ export function useDaoClient() {
         params.discord,
         params.github,
         params.website,
-        params.newUser
       );
       resetClient();
       return result;
@@ -61,7 +60,7 @@ export function useDaoClient() {
   const getUserDaos = async (userAddr: string) => {
     try {
       const client = await getOrInitClient(userAddr);
-      return await client.getUserMultisigs();
+      return await client.getUserDaos();
     } catch (error) {
       console.error("Error getting user daos:", error);
       throw error;
