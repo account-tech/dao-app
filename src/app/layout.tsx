@@ -34,7 +34,7 @@ export default function RootLayout({
           <Navbar />
           {children}
           <DebugButton />
-          <Toaster />
+          <Toaster richColors />
         </Providers>
       </body>
     </html>
