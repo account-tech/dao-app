@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/ui/Navbar";
+import { DebugButton } from "@/components/DebugButton";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -32,7 +33,8 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           {children}
-          <Toaster />
+          <DebugButton />
+          <Toaster richColors />
         </Providers>
       </body>
     </html>
