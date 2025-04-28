@@ -23,9 +23,9 @@ export const validateStep = (step: number, formData: DaoFormData): boolean => {
       return formData.votingRule === 0 || formData.votingRule === 1;
 
     case 5: // VotingQuorumStep
-      // Ensure quorum is between 0 and maxVotingPower
+      // Ensure quorum is between 0 and 100% (0 to 1e9 in SDK terms)
       return formData.votingQuorum >= BigInt(0) && 
-             formData.votingQuorum <= formData.maxVotingPower;
+             formData.votingQuorum <= BigInt(1000000000);
 
     case 6: // VotingLimitsStep
       // Ensure maxVotingPower is greater than 0 and minimumVotes is less than or equal to maxVotingPower
@@ -44,7 +44,9 @@ export const validateStep = (step: number, formData: DaoFormData): boolean => {
         formData.authVotingPower > BigInt(0) &&
         formData.maxVotingPower > BigInt(0) &&
         formData.minimumVotes <= formData.maxVotingPower &&
-        formData.votingQuorum <= formData.maxVotingPower &&
+        // Quorum validation (0-100%)
+        formData.votingQuorum >= BigInt(0) &&
+        formData.votingQuorum <= BigInt(1000000000) &&
         // Voting rule validation
         (formData.votingRule === 0 || formData.votingRule === 1)
       );

@@ -3,21 +3,26 @@ import { Slider } from "@/components/ui/slider";
 import { StepProps } from "../helpers/types";
 
 export const VotingQuorumStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
-  const handleQuorumChange = (value: number[]) => {
-    // Convert percentage to actual voting power (e.g., 50% of maxVotingPower)
-    const quorumValue = BigInt(Math.floor((value[0] / 100) * Number(formData.maxVotingPower)));
-    updateFormData({ votingQuorum: quorumValue });
+  // Convert the SDK number to a percentage (0-100)
+  const getCurrentPercentage = (value: bigint): number => {
+    return Number(value) / 10000000; // Convert from 1e9 scale to percentage
   };
 
-  // Convert current quorum to percentage
-  const currentPercentage = Math.floor(
-    (Number(formData.votingQuorum) / Number(formData.maxVotingPower)) * 100
-  );
+  // Convert percentage back to SDK number
+  const getSDKValue = (percentage: number): bigint => {
+    return BigInt(Math.floor(percentage * 10000000)); // Convert percentage to 1e9 scale
+  };
+
+  const handleQuorumChange = (value: number[]) => {
+    updateFormData({ votingQuorum: getSDKValue(value[0]) });
+  };
+
+  const currentPercentage = getCurrentPercentage(formData.votingQuorum);
 
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <Label>Voting Quorum Percentage</Label>
+        <Label>Required Approval Threshold</Label>
         <div className="space-y-6">
           <Slider
             defaultValue={[currentPercentage]}
@@ -29,9 +34,8 @@ export const VotingQuorumStep: React.FC<StepProps> = ({ formData, updateFormData
           <div className="text-center">
             <span className="text-2xl font-bold">{currentPercentage}%</span>
             <p className="text-sm text-gray-500 mt-2">
-              This is the minimum percentage of total voting power that must participate
-              for a proposal to be valid. Current value: {formData.votingQuorum.toString()} 
-              of {formData.maxVotingPower.toString()} total voting power.
+              At least {currentPercentage}% of the members need to approve a proposal in order for it to be executable.<br/>
+              For example, if your DAO has 10 members, {Math.ceil((currentPercentage / 100) * 10)} members would need to approve.
             </p>
           </div>
         </div>

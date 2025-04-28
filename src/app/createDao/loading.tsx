@@ -3,7 +3,7 @@ import React from "react"
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-white via-white via-60% to-pink-300">
       <div className="container mx-auto py-32 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Stepper skeleton */}
