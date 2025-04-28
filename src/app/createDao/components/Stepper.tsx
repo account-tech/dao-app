@@ -33,7 +33,28 @@ const SteppedProgress: React.FC<StepperProps> = ({
       // Show validation error messages based on the step
       switch (currentStep) {
         case 0:
-          toast.error("Please select a type of DAO to continue and its respective coin/object type.");
+          toast.error("Please select a type of DAO and its respective coin type.");
+          break;
+        case 1:
+          toast.error("Please provide both a name and description for your DAO.");
+          break;
+        case 2:
+          toast.error("Please set a minimum voting power greater than 0.");
+          break;
+        case 3:
+          // No validation needed for unstaking cooldown
+          break;
+        case 4:
+          toast.error("Please select a voting rule type.");
+          break;
+        case 5:
+          toast.error("Please ensure the voting quorum is between 0 and the maximum voting power.");
+          break;
+        case 6:
+          toast.error("Please ensure maximum voting power is greater than 0 and minimum votes don't exceed it.");
+          break;
+        case 7:
+          toast.error("Please review and ensure all required fields are properly set.");
           break;
       }
       return;
