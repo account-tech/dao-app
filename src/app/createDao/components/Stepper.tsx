@@ -82,7 +82,7 @@ const SteppedProgress: React.FC<StepperProps> = ({
       <Steps numSteps={steps.length} stepsComplete={completedSteps} />
       
       <div className="mt-8 text-center">
-        <h2 className="text-2xl font-bold">{steps[currentStep].title}</h2>
+        <h2 className="text-2xl font-bold text-pink-600">{steps[currentStep].title}</h2>
         <p className="text-gray-600 mt-2">{steps[currentStep].description}</p>
       </div>
 
@@ -113,7 +113,7 @@ const SteppedProgress: React.FC<StepperProps> = ({
           <Button
             onClick={handleNext}
             disabled={isNextDisabled}
-            className="px-6"
+            className="px-6 bg-pink-500 text-white hover:bg-pink-600"
           >
             {(isLoading || isCompleted) && currentStep === steps.length - 1 ? (
               <div className="flex items-center">
@@ -159,7 +159,7 @@ const Steps = ({
             {stepNum !== stepArray.length && (
               <div className="w-full h-1 rounded-full bg-gray-200 relative">
                 <motion.div
-                  className="absolute top-0 bottom-0 left-0 bg-neutral-950 rounded-full"
+                  className="absolute top-0 bottom-0 left-0 bg-pink-500 rounded-full"
                   animate={{ width: isCompleted ? "100%" : 0 }}
                   transition={{ ease: "easeIn", duration: 0.3 }}
                 />
@@ -185,8 +185,8 @@ const Step = ({ num, isActive, isCompleted }: StepProps) => {
         className={`w-10 h-10 flex items-center justify-center shrink-0 border-2 rounded-full font-semibold text-sm relative z-10 transition-colors duration-300 ${
           isActive
             ? isCompleted
-              ? "border-neutral-950 bg-neutral-950 text-white"
-              : "border-neutral-950 text-neutral-950"
+              ? "border-pink-500 bg-pink-500 text-white"
+              : "border-pink-500 text-pink-500"
             : "border-gray-300 text-gray-300"
         }`}
       >
