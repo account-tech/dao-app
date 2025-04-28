@@ -28,11 +28,12 @@ export const dryRunTransaction = async ({
   
   // Show the dry run toast if toast is provided
   if (toast && digest) {
-    toast({
-      title: "Transaction prepared",
-      description: <ToastNotification digest={digest} isDryRun={true} />,
-      variant: "default",
-    });
+    toast.info(
+      <ToastNotification digest={digest} isDryRun={true} />,
+      {
+        description: "Transaction prepared"
+      }
+    );
   }
 
   return {
@@ -141,37 +142,41 @@ export const signAndDryRun = async ({
 
 export const handleTxResult = (finalTx: any, toast: any, isDryRun = false) => {
   if (isDryRun) {
-    toast({
-      title: "Transaction prepared",
-      description: <ToastNotification digest={finalTx.digest} isDryRun={true} />,
-      variant: "default",
-    });
+    toast.info(
+      <ToastNotification digest={finalTx.digest} isDryRun={true} />,
+      {
+        description: "Transaction prepared"
+      }
+    );
     return finalTx;
   }
 
   const status = finalTx.effects?.status?.status;
   if (status !== "success") {
-    toast({
-      title: "Transaction failed",
-      description: `Transaction didn't succeed : ${finalTx.effects?.status?.error}`,
-      variant: "destructive",
-    });
+    toast.error(
+      <ToastNotification digest={finalTx.digest} />,
+      {
+        description: `Transaction failed: ${finalTx.effects?.status?.error}`
+      }
+    );
   } else {
-    toast({
-      title: "Transaction finalized",
-      description: <ToastNotification digest={finalTx.digest} />,
-      variant: "success",
-    });
+    toast.success(
+      <ToastNotification digest={finalTx.digest} />,
+      {
+        description: "Transaction finalized"
+      }
+    );
   }
   return finalTx;
 };
 
 // Add a utility function to handle dry run results
 export const handleDryRunResult = (dryRunResult: any, toast: any) => {
-  toast({
-    title: "Transaction preview",
-    description: <ToastNotification digest={dryRunResult.digest} isDryRun={true} />,
-    variant: "default",
-  });
+  toast.info(
+    <ToastNotification digest={dryRunResult.digest} isDryRun={true} />,
+    {
+      description: "Transaction preview"
+    }
+  );
   return dryRunResult;
 };

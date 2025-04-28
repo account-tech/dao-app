@@ -20,9 +20,9 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({ digest, isDryRun 
           href={explorerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1"
+          className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-600"
         >
-          <span className="border-b">{shortDigest}</span>
+          <span className="border-b border-blue-500">{shortDigest}</span>
           <ExternalLink size={12} className="ml-1" />
         </Link>
       </div>

@@ -32,7 +32,7 @@ const CreateDaoView = () => {
   const suiClient = useSuiClient();
   const currentAccount = useCurrentAccount();
   const signTransaction = useSignTransaction();
-  const { createDao, getUserDaos } = useDaoClient();
+  const { createDao } = useDaoClient();
   const [isCreating, setIsCreating] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -79,14 +79,6 @@ const CreateDaoView = () => {
     try {
       const tx = new Transaction();
 
-      // Check if user exists by checking if they have any daos
-      const existingDaos = await getUserDaos(currentAccount.address);
-      // If user doesn't exist (no daos), we'll create one along with the dao
-      const newAccountConfig = existingDaos.length === 0 ? {
-        username: currentAccount.address,
-        profilePicture: ""
-      } : undefined;
-
       const daoParams: CreateDaoParams = {
         tx,
         assetType: formData.daoType === 'coin' ? formData.coinType! : '',
@@ -103,11 +95,21 @@ const CreateDaoView = () => {
         telegram: formData.telegram || '',
         discord: formData.discord || '',
         github: formData.github || '',
-        website: formData.website || '',
-        newUser: newAccountConfig
+        website: formData.website || ''
       };
 
       await createDao(currentAccount.address, daoParams);
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
 
       setIsCompleted(true);
 
@@ -168,7 +170,7 @@ const CreateDaoView = () => {
   if (!currentAccount) {
     return (
       <>
-        <div className="min-h-screen bg-gray-50">
+        <div className="h-screen bg-gray-50">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-4">Please Connect Your Wallet</h1>
