@@ -35,7 +35,7 @@ export function MainContent() {
     };
 
     fetchData();
-  }, [currentAccount?.address, getUserDaos, getAllDaos]);
+  }, [currentAccount?.address]);
 
   if (!currentAccount?.address) {
     return (
