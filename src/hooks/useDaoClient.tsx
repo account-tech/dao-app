@@ -15,6 +15,26 @@ export function useDaoClient() {
     return getOrInitClient(userAddr, multisigId);
   };
 
+  const refresh = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      await client.refresh();
+    } catch (error) {
+      console.error("Error refreshing multisig:", error);
+      throw error;
+    }
+  };
+
+  const switchDao = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      await client.switchDao(daoId);
+    } catch (error) {
+      console.error("Error switching dao:", error);
+      throw error;
+    }
+  };
+
   const createDao = async (
     userAddr: string,
     params: CreateDaoParams
@@ -80,11 +100,24 @@ export function useDaoClient() {
     }
   };
 
+  const getDao = async (userAddr: string, daoId?: string) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.dao;
+    } catch (error) {
+      console.error("Error getting dao:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
+    refresh,
+    switchDao,
     createDao,
     getUser,
     getUserDaos,
     getAllDaos,
+    getDao,
   };
 }

@@ -1,5 +1,7 @@
 import { DaoMetadata } from "@account.tech/dao";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useDaoStore } from "@/store/useDaoStore";
 
 interface DaoCardProps {
   dao: DaoMetadata;
@@ -7,14 +9,24 @@ interface DaoCardProps {
 }
 
 export function DaoCard({ dao, isFollowed = false }: DaoCardProps) {
+  const router = useRouter();
+  const { getOrInitClient } = useDaoStore();
+
   // Helper function to validate image URL
   const isValidImageUrl = (url: string | undefined) => {
     if (!url) return false;
     return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/');
   };
 
+  const handleClick = async () => {
+    router.push(`/daos/${dao.id}`);
+  };
+
   return (
-    <div className="relative bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <div 
+      onClick={handleClick}
+      className="relative bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+    >
       <div className="flex items-center justify-between gap-3">
         {/* Avatar and Name */}
         <div className="flex items-center gap-3">
@@ -41,6 +53,9 @@ export function DaoCard({ dao, isFollowed = false }: DaoCardProps) {
 
         {/* Follow Button */}
         <button 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent card click when clicking the button
+          }}
           className={`px-3 py-1 text-xs rounded-full border ${
             isFollowed 
               ? 'border-gray-200 text-gray-600 bg-gray-50' 
