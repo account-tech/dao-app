@@ -47,6 +47,19 @@ export function useDaoClient() {
     }
   };
 
+  const getAllDaos = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      if (!client.registry) {
+        throw new Error("Registry not initialized");
+      }
+      return client.registry.daos;
+    } catch (error) {
+      console.error("Error getting all daos:", error);
+      throw error;
+    }
+  };
+
   const getUser = async (userAddr: string) => {
     try {
       const client = await getOrInitClient(userAddr);
@@ -72,5 +85,6 @@ export function useDaoClient() {
     createDao,
     getUser,
     getUserDaos,
+    getAllDaos,
   };
 }
