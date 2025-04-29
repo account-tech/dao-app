@@ -1,21 +1,25 @@
 import { DaoMetadata } from "@account.tech/dao";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useDaoStore } from "@/store/useDaoStore";
 
 interface DaoCardProps {
   dao: DaoMetadata;
   isFollowed?: boolean;
+  width?: string;
 }
 
-export function DaoCard({ dao, isFollowed = false }: DaoCardProps) {
+export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardProps) {
   const router = useRouter();
-  const { getOrInitClient } = useDaoStore();
 
   // Helper function to validate image URL
   const isValidImageUrl = (url: string | undefined) => {
     if (!url) return false;
     return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/');
+  };
+
+  const truncateText = (text: string | undefined, maxLength: number) => {
+    if (!text) return '';
+    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
   };
 
   const handleClick = async () => {
@@ -25,49 +29,75 @@ export function DaoCard({ dao, isFollowed = false }: DaoCardProps) {
   return (
     <div 
       onClick={handleClick}
-      className="relative bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+      className="group relative bg-white rounded-t-2xl rounded-br-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+      style={{ width }}
     >
-      <div className="flex items-center justify-between gap-3">
-        {/* Avatar and Name */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+      <div className="p-6">
+        {/* Top Section with Image and Follow Button */}
+        <div className="flex justify-between items-start">
+          {/* Large Square Image */}
+          <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center">
             {isValidImageUrl(dao.image) ? (
               <Image
                 src={dao.image}
                 alt={dao.name}
-                width={40}
-                height={40}
+                width={56}
+                height={56}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-xl text-gray-400">
+              <span className="text-2xl text-gray-400">
                 {dao.name?.charAt(0)?.toUpperCase() || 'D'}
               </span>
             )}
           </div>
-          <div>
-            <h3 className="font-medium text-base">{dao.name}</h3>
-            <p className="text-sm text-gray-500">{dao.description}</p>
-          </div>
+
+          {/* Follow Button */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className={`px-4 py-1.5 text-sm font-medium rounded-full border ${
+              isFollowed 
+                ? 'border-gray-200 text-gray-600 bg-gray-50' 
+                : 'border-blue-500 text-blue-500 hover:bg-blue-50'
+            }`}
+          >
+            {isFollowed ? 'Followed' : 'Follow'}
+          </button>
         </div>
 
-        {/* Follow Button */}
-        <button 
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent card click when clicking the button
-          }}
-          className={`px-3 py-1 text-xs rounded-full border ${
-            isFollowed 
-              ? 'border-gray-200 text-gray-600 bg-gray-50' 
-              : 'border-blue-500 text-blue-500 hover:bg-blue-50'
-          }`}
-        >
-          {isFollowed ? 'Followed' : 'Follow'}
-        </button>
+        {/* DAO Info - Fixed Height */}
+        <div className="min-h-[75px] mt-5">
+          <h3 className="font-semibold text-lg" title={dao.name}>
+            {truncateText(dao.name, 30)}
+          </h3>
+          <p className="text-sm text-gray-600 mt-2 line-clamp-2" title={dao.description}>
+            {dao.description || "No description available"}
+          </p>
+        </div>
+      </div>
+
+      {/* Metrics */}
+      <div className="px-6 py-4 border-t border-gray-100">
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-sm font-medium">0</div>
+            <div className="text-sm text-gray-500">followers</div>
+          </div>
+          <div>
+            <div className="text-sm font-medium">0</div>
+            <div className="text-sm text-gray-500">proposals</div>
+          </div>
+          <div>
+            <div className="text-sm font-medium">0</div>
+            <div className="text-sm text-gray-500">votes</div>
+          </div>
+        </div>
       </div>
 
       {/* Pink Gradient Line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-200 to-transparent rounded-b-lg"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-pink-200 to-transparent"></div>
     </div>
   );
 } 

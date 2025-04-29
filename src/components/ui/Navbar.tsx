@@ -33,7 +33,7 @@ const Navbar = () => {
   const isHomePage = pathname === "/";
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/75 backdrop-blur-lg">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white backdrop-blur-lg">
       <div className="px-4">
         <div className="flex h-12 items-center justify-between">
           <div className="flex items-center">

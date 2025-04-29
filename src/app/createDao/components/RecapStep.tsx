@@ -4,6 +4,12 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
   const formatBigInt = (value: bigint) => value.toString();
   const formatDays = (seconds: bigint) => (Number(seconds) / 86400).toString();
 
+  const TruncatedText = ({ text, maxLength = 30 }: { text: string | undefined, maxLength?: number }) => {
+    if (!text) return <span>Not set</span>;
+    if (text.length <= maxLength) return <span>{text}</span>;
+    return <span title={text}>{text.slice(0, maxLength)}...</span>;
+  };
+
   return (
     <div className="space-y-8">
       <h2 className="text-2xl font-bold">DAO Configuration Summary</h2>
@@ -13,11 +19,23 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
           <h3 className="text-lg font-semibold">Basic Information</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-gray-500">Name:</span>
-            <span>{formData.name}</span>
+            <TruncatedText text={formData.name} />
             <span className="text-gray-500">Description:</span>
-            <span>{formData.description}</span>
+            <TruncatedText text={formData.description} maxLength={50} />
             <span className="text-gray-500">Image URL:</span>
-            <span>{formData.image || "Not set"}</span>
+            {formData.image ? (
+              <a 
+                href={formData.image} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 hover:text-blue-800 truncate"
+                title={formData.image}
+              >
+                <TruncatedText text={formData.image} />
+              </a>
+            ) : (
+              <span>Not set</span>
+            )}
           </div>
         </section>
 
@@ -25,15 +43,15 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
           <h3 className="text-lg font-semibold">Social Networks</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-gray-500">Twitter:</span>
-            <span>{formData.twitter || "Not set"}</span>
+            <TruncatedText text={formData.twitter} />
             <span className="text-gray-500">Telegram:</span>
-            <span>{formData.telegram || "Not set"}</span>
+            <TruncatedText text={formData.telegram} />
             <span className="text-gray-500">Discord:</span>
-            <span>{formData.discord || "Not set"}</span>
+            <TruncatedText text={formData.discord} />
             <span className="text-gray-500">GitHub:</span>
-            <span>{formData.github || "Not set"}</span>
+            <TruncatedText text={formData.github} />
             <span className="text-gray-500">Website:</span>
-            <span>{formData.website || "Not set"}</span>
+            <TruncatedText text={formData.website} />
           </div>
         </section>
 
@@ -45,7 +63,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             {formData.daoType === 'coin' && (
               <>
                 <span className="text-gray-500">Coin Type:</span>
-                <span>{formData.coinType}</span>
+                <TruncatedText text={formData.coinType} maxLength={40} />
               </>
             )}
           </div>

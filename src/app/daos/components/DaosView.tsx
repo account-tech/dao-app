@@ -86,7 +86,7 @@ export function DaosView() {
     });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 pt-32">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 py-8 pt-32">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-6">Explore DAOs</h1>
         
@@ -119,7 +119,7 @@ export function DaosView() {
         </p>
 
         {/* DAOs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 justify-items-center">
           {filteredDaos.map((dao) => (
             <DaoCard 
               key={dao.id} 

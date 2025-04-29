@@ -24,8 +24,8 @@ import { CreateDaoParams } from "@/types/dao";
 
 const DEFAULT_VOTING_POWER = BigInt(1000000); // 1M voting power
 const DEFAULT_COOLDOWN = BigInt(86400); // 24 hours in seconds
-const DEFAULT_QUORUM = BigInt(500000); // 50% of max voting power
-const DEFAULT_MIN_VOTES = BigInt(100000); // 10% of max voting power
+const DEFAULT_QUORUM = BigInt(500000000); // 50%
+const DEFAULT_MIN_VOTES = BigInt(100000);
 
 const CreateDaoView = () => {
   const router = useRouter();
