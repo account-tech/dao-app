@@ -2,7 +2,6 @@
 import { DaoClient } from "@account.tech/dao";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
-import { Profile } from "@account.tech/core";
 import { CreateDaoParams } from "@/types/dao";
 
 export function useDaoClient() {
@@ -13,6 +12,26 @@ export function useDaoClient() {
     multisigId?: string
   ): Promise<DaoClient> => {
     return getOrInitClient(userAddr, multisigId);
+  };
+
+  const refresh = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      await client.refresh();
+    } catch (error) {
+      console.error("Error refreshing multisig:", error);
+      throw error;
+    }
+  };
+
+  const switchDao = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      await client.switchDao(daoId);
+    } catch (error) {
+      console.error("Error switching dao:", error);
+      throw error;
+    }
   };
 
   const createDao = async (
@@ -47,6 +66,19 @@ export function useDaoClient() {
     }
   };
 
+  const getAllDaos = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      if (!client.registry) {
+        throw new Error("Registry not initialized");
+      }
+      return client.registry.daos;
+    } catch (error) {
+      console.error("Error getting all daos:", error);
+      throw error;
+    }
+  };
+
   const getUser = async (userAddr: string) => {
     try {
       const client = await getOrInitClient(userAddr);
@@ -67,10 +99,55 @@ export function useDaoClient() {
     }
   };
 
+  const getDao = async (userAddr: string, daoId?: string) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.dao;
+    } catch (error) {
+      console.error("Error getting dao:", error);
+      throw error;
+    }
+  };
+
+  const followDao = async (
+    userAddr: string,
+    daoId: string,
+    username?: string,
+    profilePicture?: string
+  ) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.followDao(tx, daoId, username, profilePicture);
+      return tx;
+    } catch (error) {
+      console.error("Error following dao:", error);
+      throw error;
+    }
+  };
+
+  const unfollowDao = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.unfollowDao(tx, daoId);
+      return tx;
+    } catch (error) {
+      console.error("Error unfollowing dao:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
+    refresh,
+    switchDao,
     createDao,
     getUser,
     getUserDaos,
+    getAllDaos,
+    getDao,
+    followDao,
+    unfollowDao,
   };
 }
