@@ -7,8 +7,68 @@ import { DaoCard } from "@/components/MainPage/DaoCard";
 import { Search } from "lucide-react";
 import { DaosFilter } from "./DaosFilter";
 import { useDaoStore } from "@/store/useDaoStore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type FilterType = 'all' | 'followed' | 'not-followed';
+
+function DaoCardSkeleton() {
+  return (
+    <div className="bg-white rounded-lg p-4 border w-full sm:w-[48%] md:w-[265px] h-62 space-y-4">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+      </div>
+      <div className="flex justify-between items-center">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-8 w-20 rounded-md" />
+      </div>
+      <div className="flex justify-between pt-16">
+        <div className="text-center">
+          <Skeleton className="h-5 w-6 mx-auto mb-1" /> {/* Number */}
+          <Skeleton className="h-3 w-14" /> {/* "followers" text */}
+        </div>
+        <div className="text-center">
+          <Skeleton className="h-5 w-6 mx-auto mb-1" /> {/* Number */}
+          <Skeleton className="h-3 w-14" /> {/* "proposals" text */}
+        </div>
+        <div className="text-center">
+          <Skeleton className="h-5 w-6 mx-auto mb-1" /> {/* Number */}
+          <Skeleton className="h-3 w-14" /> {/* "votes" text */}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-8">
+      {/* Search and Filters Skeleton */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <Skeleton className="h-10 w-full md:flex-1" /> {/* Search bar */}
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-20" />
+          <Skeleton className="h-10 w-20" />
+          <Skeleton className="h-10 w-20" />
+        </div>
+      </div>
+      <div className="flex flex-col md:flex-row gap-1">
+        <div className="flex gap-2">
+          <Skeleton className="h-6 w-20" />
+        </div>
+      </div>
+      {/* Cards Grid Skeleton */}
+      <div className="flex flex-wrap gap-4">
+        {Array(6).fill(0).map((_, i) => (
+          <DaoCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function DaosView() {
   const isMobile = useMediaQuery({ maxWidth: 640 }) // sm breakpoint
@@ -73,8 +133,9 @@ export function DaosView() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen pt-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 pt-32">
+        <h1 className="text-3xl font-bold mb-6">Explore DAOs</h1>
+        <LoadingSkeleton />
       </div>
     );
   }
