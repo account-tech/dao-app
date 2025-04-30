@@ -19,6 +19,7 @@ import Link from "next/link"
 import { DaoCard } from "./DaoCard"
 import { SkeletonLoader } from "./SkeletonLoader"
 import { useDaoStore } from "@/store/useDaoStore"
+import { UnconnectedView } from "./UnconnectedView"
 
 export function AppSidebar() {
   const isMobile = useMediaQuery({ maxWidth: 640 })
@@ -61,15 +62,7 @@ export function AppSidebar() {
   }, [currentAccount?.address, refreshTrigger])
 
   if (!currentAccount?.address) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen pt-12">
-        <h1 className="text-3xl font-bold mb-4">Welcome to DAO Dapp</h1>
-        <p className="text-gray-600 mb-8">Connect your wallet to get started</p>
-        <button className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors">
-          Connect Wallet
-        </button>
-      </div>
-    )
+    return <UnconnectedView />
   }
 
   if (loading) {

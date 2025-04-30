@@ -32,6 +32,11 @@ const Navbar = () => {
 
   const isHomePage = pathname === "/";
 
+  // Hide navbar on home page when disconnected
+  if (isHomePage && !currentAccount?.address) {
+    return null;
+  }
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white backdrop-blur-lg">
       <div className="px-4">
