@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useMediaQuery } from "react-responsive";
 import { DaoMetadata } from "@account.tech/dao";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useCurrentAccount } from "@mysten/dapp-kit";
@@ -9,6 +10,8 @@ import { DaosFilter } from "./DaosFilter";
 type FilterType = 'all' | 'followed' | 'not-followed';
 
 export function DaosView() {
+  const isMobile = useMediaQuery({ maxWidth: 640 }) // sm breakpoint
+  const isTablet = useMediaQuery({ minWidth: 641, maxWidth: 768 }) // between sm and md
   const currentAccount = useCurrentAccount();
   const { getUserDaos, getAllDaos } = useDaoClient();
   const [userDaos, setUserDaos] = useState<DaoMetadata[]>([]);
@@ -16,6 +19,12 @@ export function DaosView() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+
+  const getCardWidth = () => {
+    if (isMobile) return "100%"
+    if (isTablet) return "49%"
+    return "265px"
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -86,31 +95,33 @@ export function DaosView() {
     });
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-4 py-8 pt-32">
+    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 pt-32">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-6">Explore DAOs</h1>
         
         {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
           {/* Search Bar */}
-          <div className="relative flex-1">
+          <div className="relative w-full md:flex-1">
             <input
               type="text"
               placeholder="Search DAOs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg"
+              className="w-full pl-10 pr-4 py-3 md:py-2 border rounded-lg"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
           </div>
 
           {/* Filters */}
-          <DaosFilter
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            followedCount={userDaos.length}
-            totalCount={allDaos.length}
-          />
+          <div className="self-start">
+            <DaosFilter
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              followedCount={userDaos.length}
+              totalCount={allDaos.length}
+            />
+          </div>
         </div>
 
         {/* Results Count */}
@@ -118,13 +129,14 @@ export function DaosView() {
           {filteredDaos.length} {filteredDaos.length === 1 ? 'result' : 'results'}
         </p>
 
-        {/* DAOs Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 justify-items-center">
+        {/* DAOs Flex Container */}
+        <div className="flex flex-wrap gap-2">
           {filteredDaos.map((dao) => (
             <DaoCard 
               key={dao.id} 
               dao={dao} 
               isFollowed={isFollowedDao(dao)}
+              width={getCardWidth()}
             />
           ))}
         </div>

@@ -19,6 +19,7 @@ import { DaoMetadata } from "@account.tech/dao"
 import { Search } from "lucide-react"
 import Link from "next/link"
 import { DaoCard } from "./DaoCard"
+import { SkeletonLoader } from "./SkeletonLoader"
 
 export function AppSidebar() {
   const isMobile = useMediaQuery({ maxWidth: 640 })
@@ -72,11 +73,7 @@ export function AppSidebar() {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen pt-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    )
+    return <SkeletonLoader />
   }
 
   const filteredUserDaos = userDaos.filter(dao => 
