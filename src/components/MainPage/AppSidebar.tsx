@@ -9,10 +9,8 @@ import {
   SidebarHeader,
   SidebarRail,
   SidebarInset,
-  SidebarTrigger,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import { useDaoClient } from "@/hooks/useDaoClient"
 import { DaoMetadata } from "@account.tech/dao"
@@ -20,6 +18,7 @@ import { Search } from "lucide-react"
 import Link from "next/link"
 import { DaoCard } from "./DaoCard"
 import { SkeletonLoader } from "./SkeletonLoader"
+import { useDaoStore } from "@/store/useDaoStore"
 
 export function AppSidebar() {
   const isMobile = useMediaQuery({ maxWidth: 640 })
@@ -30,6 +29,7 @@ export function AppSidebar() {
   const [allDaos, setAllDaos] = React.useState<DaoMetadata[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
 
   const getCardWidth = () => {
     if (isMobile) return "100%"
@@ -58,7 +58,7 @@ export function AppSidebar() {
     }
 
     fetchData()
-  }, [currentAccount?.address])
+  }, [currentAccount?.address, refreshTrigger])
 
   if (!currentAccount?.address) {
     return (

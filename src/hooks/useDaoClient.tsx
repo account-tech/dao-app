@@ -2,7 +2,6 @@
 import { DaoClient } from "@account.tech/dao";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
-import { Profile } from "@account.tech/core";
 import { CreateDaoParams } from "@/types/dao";
 
 export function useDaoClient() {
@@ -110,6 +109,35 @@ export function useDaoClient() {
     }
   };
 
+  const followDao = async (
+    userAddr: string,
+    daoId: string,
+    username?: string,
+    profilePicture?: string
+  ) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.followDao(tx, daoId, username, profilePicture);
+      return tx;
+    } catch (error) {
+      console.error("Error following dao:", error);
+      throw error;
+    }
+  };
+
+  const unfollowDao = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.unfollowDao(tx, daoId);
+      return tx;
+    } catch (error) {
+      console.error("Error unfollowing dao:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     refresh,
@@ -119,5 +147,7 @@ export function useDaoClient() {
     getUserDaos,
     getAllDaos,
     getDao,
+    followDao,
+    unfollowDao,
   };
 }

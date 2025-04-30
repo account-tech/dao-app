@@ -1,6 +1,12 @@
 import { DaoMetadata } from "@account.tech/dao";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
+import { useDaoClient } from "@/hooks/useDaoClient";
+import { useState } from "react";
+import { toast } from "sonner";
+import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
+import { useDaoStore } from "@/store/useDaoStore";
 
 interface DaoCardProps {
   dao: DaoMetadata;
@@ -10,6 +16,14 @@ interface DaoCardProps {
 
 export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardProps) {
   const router = useRouter();
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const signTransaction = useSignTransaction();
+  const { followDao, unfollowDao } = useDaoClient();
+  const [isHovering, setIsHovering] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const triggerRefresh = useDaoStore(state => state.triggerRefresh);
+  const resetClient = useDaoStore(state => state.resetClient);
 
   // Helper function to validate image URL
   const isValidImageUrl = (url: string | undefined) => {
@@ -24,6 +38,70 @@ export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardPro
 
   const handleClick = async () => {
     router.push(`/daos/${dao.id}`);
+  };
+
+  const handleFollowClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentAccount?.address || isLoading) return;
+
+    try {
+      setIsLoading(true);
+      let tx;
+      
+      if (isFollowed) {
+        tx = await unfollowDao(currentAccount.address, dao.id);
+      } else {
+        tx = await followDao(currentAccount.address, dao.id);
+      }
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+
+      resetClient();
+      triggerRefresh();
+    } catch (error) {
+      console.error("Error following/unfollowing DAO:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to follow/unfollow DAO");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getButtonStyles = () => {
+    const baseStyles = 'px-4 py-1.5 text-sm font-medium rounded-full border transition-all duration-300 ease-in-out';
+    
+    if (isLoading) {
+      return `${baseStyles} border-gray-200 bg-gray-50 cursor-wait min-w-[120px]`;
+    }
+    if (isFollowed) {
+      return isHovering
+        ? `${baseStyles} border-red-200 text-red-500 bg-red-50 hover:bg-red-100`
+        : `${baseStyles} border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100`;
+    }
+    return `${baseStyles} border-blue-500 text-blue-500 hover:bg-blue-50`;
+  };
+
+  const getButtonText = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+          <span className="text-gray-500">
+            {isFollowed ? 'Unfollowing...' : 'Following...'}
+          </span>
+        </div>
+      );
+    }
+    if (isFollowed) return isHovering ? 'Unfollow' : 'Followed';
+    return 'Follow';
   };
 
   return (
@@ -54,16 +132,15 @@ export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardPro
 
           {/* Follow Button */}
           <button 
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className={`px-4 py-1.5 text-sm font-medium rounded-full border ${
-              isFollowed 
-                ? 'border-gray-200 text-gray-600 bg-gray-50' 
-                : 'border-blue-500 text-blue-500 hover:bg-blue-50'
-            }`}
+            onClick={handleFollowClick}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            disabled={isLoading}
+            className={getButtonStyles()}
           >
-            {isFollowed ? 'Followed' : 'Follow'}
+            <div className="flex items-center justify-center min-w-[60px]">
+              {getButtonText()}
+            </div>
           </button>
         </div>
 
