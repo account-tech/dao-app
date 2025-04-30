@@ -6,6 +6,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { DaoCard } from "@/components/MainPage/DaoCard";
 import { Search } from "lucide-react";
 import { DaosFilter } from "./DaosFilter";
+import { useDaoStore } from "@/store/useDaoStore";
 
 type FilterType = 'all' | 'followed' | 'not-followed';
 
@@ -19,6 +20,7 @@ export function DaosView() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
 
   const getCardWidth = () => {
     if (isMobile) return "100%"
@@ -58,7 +60,7 @@ export function DaosView() {
     return () => {
       mounted = false;
     };
-  }, [currentAccount?.address]);
+  }, [currentAccount?.address, refreshTrigger]);
 
   if (!currentAccount?.address) {
     return (

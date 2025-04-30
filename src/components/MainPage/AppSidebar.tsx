@@ -92,7 +92,7 @@ export function AppSidebar() {
             <h2 className="text-2xl font-bold px-2 text-center">Explore</h2>
           </SidebarHeader>
           <div className="space-y-4 px-2 flex flex-col items-center">
-            {exploreDaos.slice(0, 5).map((dao) => (
+            {exploreDaos.slice(0, 3).map((dao) => (
               <DaoCard key={dao.id} dao={dao} />
             ))}
           </div>
