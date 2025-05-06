@@ -20,6 +20,7 @@ import { DaoCard } from "./DaoCard"
 import { SkeletonLoader } from "./SkeletonLoader"
 import { useDaoStore } from "@/store/useDaoStore"
 import { UnconnectedView } from "./UnconnectedView"
+import { cn } from "@/lib/utils"
 
 export function AppSidebar() {
   const isMobile = useMediaQuery({ maxWidth: 640 })
@@ -80,19 +81,25 @@ export function AppSidebar() {
   return (
     <SidebarProvider>
       <Sidebar side="left">
-        <SidebarContent className="flex flex-col items-center">
-          <SidebarHeader className="pt-24">
-            <h2 className="text-2xl font-bold px-2 text-center">Explore</h2>
+        <SidebarContent className="flex flex-col items-center h-full">
+          <SidebarHeader className="pt-24 w-full">
+            <h2 className="text-2xl font-bold px-2 text-center">Discover</h2>
           </SidebarHeader>
-          <div className="space-y-4 px-2 flex flex-col items-center">
-            {exploreDaos.slice(0, 3).map((dao) => (
-              <DaoCard key={dao.id} dao={dao} />
-            ))}
+          <div className={cn(
+            "flex-1 w-full overflow-y-auto min-h-0",
+            "[&::-webkit-scrollbar]:w-2",
+            "[&::-webkit-scrollbar]:hidden"
+          )}>
+            <div className="space-y-4 px-2 flex flex-col items-center py-4">
+              {exploreDaos.slice(0, 6).map((dao) => (
+                <DaoCard key={dao.id} dao={dao} />
+              ))}
+            </div>
           </div>
-          <SidebarFooter>
+          <SidebarFooter className="w-full mt-auto pt-4">
             <Link 
               href="/daos"
-              className="mx-2 mt-4 text-pink-500 hover:text-pink-600 flex items-center gap-2 justify-center py-2 border border-pink-500 rounded-lg w-[265px]"
+              className="mx-2 text-pink-500 hover:text-pink-600 flex items-center gap-2 justify-center py-2 border border-pink-500 rounded-lg w-[265px]"
             >
               Explore all DAOs
               <span>→</span>
@@ -105,7 +112,7 @@ export function AppSidebar() {
         <div className="px-4 md:px-8 lg:px-12 py-8">
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold">Discover</h1>
+              <h1 className="text-2xl font-bold">Manage</h1>
               <Link 
                 href="/createDao" 
                 className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors"

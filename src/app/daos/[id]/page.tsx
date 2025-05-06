@@ -5,6 +5,29 @@ import { useParams } from "next/navigation";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { DaoMetadata } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
+import Image from "next/image";
+
+// Custom hook for height-based media queries
+const useScreenHeight = () => {
+  const [isSmallHeight, setIsSmallHeight] = useState(false);
+
+  useEffect(() => {
+    const checkHeight = () => {
+      setIsSmallHeight(window.innerHeight < 768);
+    };
+
+    // Initial check
+    checkHeight();
+
+    // Add event listener
+    window.addEventListener('resize', checkHeight);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkHeight);
+  }, []);
+
+  return isSmallHeight;
+};
 
 export default function DaoPage() {
   const params = useParams();
@@ -13,6 +36,7 @@ export default function DaoPage() {
   const getOrInitClient = useDaoStore(state => state.getOrInitClient);
   const [dao, setDao] = useState<DaoMetadata | null>(null);
   const [loading, setLoading] = useState(true);
+  const isSmallHeight = useScreenHeight();
 
   useEffect(() => {
     const initDao = async () => {
@@ -20,7 +44,6 @@ export default function DaoPage() {
 
       try {
         setLoading(true);
-        // Get or init client with the daoId - this will handle switching internally
         const client = await getOrInitClient(currentAccount.address, daoId);
         const metadata = client.getDaoMetadata();
         setDao(metadata);
@@ -61,14 +84,65 @@ export default function DaoPage() {
     );
   }
 
+  // Check if image URL is valid for Next.js (starts with "/" or "http")
+  const isValidImageUrl = dao.image?.startsWith('/') || dao.image?.startsWith('http');
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-white via-60% to-pink-300">
-      <div className="container mx-auto py-32 px-4">
-        <div className="flex flex-col items-center justify-center">
-          <h1 className="text-4xl font-bold mb-4">{dao.name}</h1>
-          {dao.description && (
-            <p className="text-gray-600 text-center max-w-2xl">{dao.description}</p>
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100">
+      {/* Top Section */}
+      <div 
+        className={`bg-gradient-to-b from-white to-transparent ${
+          isSmallHeight ? 'h-[25vh]' : 'h-[15vh]'
+        }`}
+      />
+
+      {/* DAO Image - Left-aligned on md screens, centered on smaller screens */}
+      <div 
+        className="relative z-20 flex md:container md:mx-auto md:px-6" 
+        style={{ 
+          marginTop: isSmallHeight ? '-4rem' : '-3.25rem',
+        }}
+      >
+        <div className={`
+          relative overflow-hidden border-4 border-white shadow-lg bg-white
+          mx-auto md:mx-0
+          ${isSmallHeight ? 'w-16 h-16 rounded-xl' : 'w-20 h-20 rounded-2xl'}
+        `}>
+          {dao.image && isValidImageUrl ? (
+            <Image
+              src={dao.image}
+              alt={dao.name}
+              fill
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <span className={isSmallHeight ? 'text-xl' : 'text-2xl'}>🏛️</span>
+            </div>
           )}
+        </div>
+      </div>
+
+      {/* Main Content Card */}
+      <div 
+        className="relative" 
+        style={{ 
+          marginTop: isSmallHeight ? '-1rem' : '-1.2rem'
+        }}
+      >
+        <div className="absolute inset-x-0 -top-6 h-6 bg-white rounded-t-[32px]" />
+        <div className="bg-white px-6 pb-20 min-h-[90vh] pt-12">
+          {/* DAO Info */}
+          <div className="mb-8 md:container md:mx-auto">
+            <div className="md:max-w-2xl text-center md:text-left">
+              <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
+                {dao.name}
+              </h1>
+              {dao.description && (
+                <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

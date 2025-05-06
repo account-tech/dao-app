@@ -38,7 +38,7 @@ export function SkeletonLoader() {
     <div className="flex w-full overflow-x-hidden">
       {/* Sidebar Skeleton */}
       <div className="hidden md:flex flex-col items-center w-[265px] pt-24 px-2">
-        <h2 className="text-2xl font-bold px-2 text-center mb-6">Explore</h2>
+        <h2 className="text-2xl font-bold px-2 text-center mb-6">Discover</h2>
         <div className="space-y-4 w-full flex flex-col items-center ml-8">
           {[...Array(3)].map((_, i) => (
             <DaoCardSkeleton key={i} className="w-[265px]" />
@@ -55,7 +55,7 @@ export function SkeletonLoader() {
         <div className="mb-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold px-2 text-center">Discover</h2>
+            <h2 className="text-2xl font-bold px-2 text-center">Manage</h2>
             <Skeleton className="h-10 w-28" /> {/* New DAO button */}
           </div>
 

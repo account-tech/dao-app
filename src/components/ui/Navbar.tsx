@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useDisconnectWallet, useCurrentAccount, ConnectModal } from '@mysten/dapp-kit';
 import { useNavigationStore } from "@/store/navigationStore";
 import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 const Navbar = () => {
   const currentAccount = useCurrentAccount();
@@ -14,6 +15,8 @@ const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { setPreviousRoute } = useNavigationStore();
+
+  const isDaoPage = pathname.startsWith('/daos/');
 
   // Store the current path when it changes
   useEffect(() => {
@@ -38,57 +41,75 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white backdrop-blur-lg">
-      <div className="px-4">
-        <div className="flex h-12 items-center justify-between">
-          <div className="flex items-center">
-            {isHomePage ? (
+    <nav className={cn(
+      "fixed top-0 left-0 right-0",
+      isDaoPage 
+        ? "z-10 bg-transparent" 
+        : "z-50 border-b bg-white"
+    )}>
+      <div className="px-6">
+        <div className={cn(
+          "flex items-center justify-between",
+          isDaoPage ? "h-22" : "h-12"
+        )}>
+          <div className={cn(
+            "flex gap-2",
+            isDaoPage ? "flex-col items-start pt-4" : "flex-row items-center"
+          )}>
+            <Button
+              size="icon"
+              variant="ghost"
+              asChild
+              className={cn(
+                isDaoPage ? "h-10 w-10" : "h-8 w-8"
+              )}
+            >
+              <Link href="/">
+                <Home className={cn(
+                  isDaoPage ? "h-5 w-5" : "h-4 w-4"
+                )} />
+              </Link>
+            </Button>
+            {!isHomePage && (
               <Button
                 size="icon"
                 variant="ghost"
-                asChild
-                className="h-8 w-8"
-              >
-                <Link href="/">
-                  <Home className="h-4 w-4" />
-                </Link>
-              </Button>
-            ) : (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
+                className={cn(
+                  isDaoPage ? "h-10 w-10" : "h-8 w-8"
+                )}
                 onClick={handleBack}
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className={cn(
+                  isDaoPage ? "h-5 w-5" : "h-4 w-4"
+                )} />
               </Button>
             )}
           </div>
-
+          
           <div className="flex items-center">
-            {currentAccount?.address ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8"
-                onClick={handleDisconnect}
-              >
-                Disconnect
-              </Button>
-            ) : (
-              <ConnectModal
-                trigger={
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8"
-                  >
-                    Connect Wallet
-                  </Button>
-                }
-              />
-            )}
-          </div>
+              {currentAccount?.address ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8"
+                  onClick={handleDisconnect}
+                >
+                  Disconnect
+                </Button>
+              ) : (
+                <ConnectModal
+                  trigger={
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8"
+                    >
+                      Connect Wallet
+                    </Button>
+                  }
+                />
+              )}
+            </div>
         </div>
       </div>
     </nav>

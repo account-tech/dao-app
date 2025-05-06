@@ -10,7 +10,7 @@ export function DebugButton() {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const { client, currentAddress } = useDaoStore();
-  const { getUserDaos, getUser, getAllDaos } = useDaoClient();
+  const { getDao } = useDaoClient();
   const [walletObjects, setWalletObjects] = useState<any[]>([]);
 
   // Add useEffect for initial fetch
@@ -43,20 +43,14 @@ export function DebugButton() {
       hasClient: !!client,
     });
     console.log('Full Client:', client);
-    console.log('Wallet Objects:', walletObjects);
 
+    // Add DAO information
     if (currentAccount?.address) {
       try {
-        const allDaos = await getAllDaos(currentAccount.address);
-        console.log('All DAOs:', allDaos);
-
-        const userDaos = await getUserDaos(currentAccount.address);
-        console.log('User DAOs:', userDaos);
-
-        const user = await getUser(currentAccount.address);
-        console.log('Full user:', user);
+        const daoInfo = await getDao(currentAccount.address);
+        console.log('Current DAO Information:', daoInfo);
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error fetching DAO information:', error);
       }
     }
 
