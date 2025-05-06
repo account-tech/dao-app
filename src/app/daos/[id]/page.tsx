@@ -84,6 +84,9 @@ export default function DaoPage() {
     );
   }
 
+  // Check if image URL is valid for Next.js (starts with "/" or "http")
+  const isValidImageUrl = dao.image?.startsWith('/') || dao.image?.startsWith('http');
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100">
       {/* Top Section */}
@@ -93,18 +96,19 @@ export default function DaoPage() {
         }`}
       />
 
-      {/* DAO Image - Perfectly centered between navbar and drawer */}
+      {/* DAO Image - Left-aligned on md screens, centered on smaller screens */}
       <div 
-        className="relative z-20 flex justify-center" 
+        className="relative z-20 flex md:container md:mx-auto md:px-6" 
         style={{ 
           marginTop: isSmallHeight ? '-4rem' : '-3.25rem',
         }}
       >
         <div className={`
           relative overflow-hidden border-4 border-white shadow-lg bg-white
+          mx-auto md:mx-0
           ${isSmallHeight ? 'w-16 h-16 rounded-xl' : 'w-20 h-20 rounded-2xl'}
         `}>
-          {dao.image ? (
+          {dao.image && isValidImageUrl ? (
             <Image
               src={dao.image}
               alt={dao.name}
@@ -127,18 +131,17 @@ export default function DaoPage() {
         }}
       >
         <div className="absolute inset-x-0 -top-6 h-6 bg-white rounded-t-[32px]" />
-        <div className={`
-          bg-white px-6 pb-20
-          ${isSmallHeight ? 'min-h-[75vh] pt-12' : 'min-h-[85vh] pt-16'}
-        `}>
+        <div className="bg-white px-6 pb-20 min-h-[90vh] pt-12">
           {/* DAO Info */}
-          <div className="mb-8 text-center">
-            <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
-              {dao.name}
-            </h1>
-            {dao.description && (
-              <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
-            )}
+          <div className="mb-8 md:container md:mx-auto">
+            <div className="md:max-w-2xl text-center md:text-left">
+              <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
+                {dao.name}
+              </h1>
+              {dao.description && (
+                <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
