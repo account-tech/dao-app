@@ -51,7 +51,7 @@ export function UnconnectedView() {
           className="relative"
         >
           <span className="relative z-10 mb-4 inline-block rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs text-pink-600">
-            Welcome to DAO Dapp 🎉
+            Welcome to DAO Dapp
             <span className="absolute bottom-0 left-3 right-3 h-[1px] bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0" />
           </span>
         </motion.div>
