@@ -109,6 +109,16 @@ export function useDaoClient() {
     }
   };
 
+  const getParticipant = async (userAddr: string, daoId?: string) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.participant;
+    } catch (error) {
+      console.error("Error getting participant:", error);
+      throw error;
+    }
+  };
+
   const followDao = async (
     userAddr: string,
     daoId: string,
@@ -147,6 +157,7 @@ export function useDaoClient() {
     getUserDaos,
     getAllDaos,
     getDao,
+    getParticipant,
     followDao,
     unfollowDao,
   };
