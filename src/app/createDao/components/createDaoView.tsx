@@ -22,10 +22,10 @@ import { useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { CreateDaoParams } from "@/types/dao";
 
-const DEFAULT_VOTING_POWER = BigInt(1000000); // 1M voting power
+const DEFAULT_VOTING_POWER = BigInt(50); // a person needs to have atleast 50 voting power to partake in the DAO this depends on linear or quadratic rule
 const DEFAULT_COOLDOWN = BigInt(86400); // 24 hours in seconds
-const DEFAULT_QUORUM = BigInt(500000000); // 50%
-const DEFAULT_MIN_VOTES = BigInt(100000);
+const DEFAULT_QUORUM = BigInt(500000000); // 50% according to the sdk
+const DEFAULT_MIN_VOTES = BigInt(10); // 50 votes alteast for the proposal to pass
 
 const CreateDaoView = () => {
   const router = useRouter();
