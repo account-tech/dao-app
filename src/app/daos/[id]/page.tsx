@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { DaoMetadata } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
+import UserData from "./components/UserData";
 import Image from "next/image";
 
 // Custom hook for height-based media queries
@@ -141,6 +142,11 @@ export default function DaoPage() {
               {dao.description && (
                 <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
               )}
+              
+              {/* User Data Section */}
+              <div className="mt-6">
+                <UserData daoId={daoId} />
+              </div>
             </div>
           </div>
         </div>
