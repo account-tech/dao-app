@@ -261,3 +261,35 @@ export function calculateTotalValue(
   }, 0);
 }
 
+/**
+ * Gets full coin metadata with efficient caching
+ * @param coinType The coin type address
+ * @param client Optional RPC client
+ * @returns CoinMeta object or null if not found
+ */
+export async function getCoinMeta(
+  coinType: string,
+  client?: any
+): Promise<CoinMeta | null> {
+  const normalizedType = normalizeSuiAddress(coinType);
+  
+  // Fast cache lookup
+  const cached = coinMetaCache.get(normalizedType);
+  if (cached) return cached;
+
+  // Fetch metadata if client available
+  if (client) {
+    try {
+      const meta = await new CoinMetaFetcher({ client }).getCoinMeta(normalizedType);
+      if (meta) {
+        coinMetaCache.set(normalizedType, meta);
+        return meta;
+      }
+    } catch (error) {
+      console.warn(`[getCoinMeta] Failed to fetch metadata for ${normalizedType}`);
+    }
+  }
+
+  return null;
+}
+

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
-import { getCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
+import { getCoinDecimals, formatCoinAmount, getCoinMeta } from "@/utils/GlobalHelpers";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import {
@@ -67,6 +67,7 @@ export default function UserData({ daoId }: { daoId: string }) {
   const [authVotingPower, setAuthVotingPower] = useState<string>("0");
   const [maxVotingPower, setMaxVotingPower] = useState<string>("0");
   const [hasAuthPower, setHasAuthPower] = useState(false);
+  const [coinSymbol, setCoinSymbol] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,8 +84,12 @@ export default function UserData({ daoId }: { daoId: string }) {
           throw new Error("Failed to fetch participant or dao data");
         }
 
+        // Get coin metadata for symbol
+        const coinMeta = await getCoinMeta(participant.assetType, suiClient);
+        setCoinSymbol(coinMeta?.symbol || "");
+
         // Get coin decimals for the asset type
-        const fetchedDecimals = await getCoinDecimals(participant.assetType);
+        const fetchedDecimals = await getCoinDecimals(participant.assetType, suiClient);
         setDecimals(fetchedDecimals);
         
         // Format available balance
@@ -166,6 +171,7 @@ export default function UserData({ daoId }: { daoId: string }) {
         setAuthVotingPower("0");
         setMaxVotingPower("0");
         setHasAuthPower(false);
+        setCoinSymbol("");
       } finally {
         setLoading(false);
       }
@@ -304,6 +310,11 @@ export default function UserData({ daoId }: { daoId: string }) {
     }
   };
 
+  // Helper function to format amount with symbol
+  const formatWithSymbol = (amount: string) => {
+    return `${amount} ${coinSymbol}`;
+  };
+
   if (loading) {
     return (
       <div className="p-4 rounded-lg bg-white shadow">
@@ -398,7 +409,7 @@ export default function UserData({ daoId }: { daoId: string }) {
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500">Total Staked</span>
-                <span className="text-lg font-semibold">{totalStaked}</span>
+                <span className="text-lg font-semibold">{formatWithSymbol(totalStaked)}</span>
               </div>
             </div>
             
@@ -406,7 +417,7 @@ export default function UserData({ daoId }: { daoId: string }) {
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500">Available to Claim</span>
                 <span className={`text-lg font-semibold ${Number(totalClaimable) > 0 ? 'text-green-600' : ''}`}>
-                  {totalClaimable}
+                  {formatWithSymbol(totalClaimable)}
                 </span>
               </div>
             </div>
@@ -423,7 +434,7 @@ export default function UserData({ daoId }: { daoId: string }) {
                 {unstakingPositions.map((position) => (
                   <div key={position.id} className="bg-white rounded p-2 text-sm">
                     <div className="flex justify-between items-center">
-                      <span>{formatCoinAmount(position.value, decimals)}</span>
+                      <span>{formatWithSymbol(formatCoinAmount(position.value, decimals))}</span>
                       {position.unstaked ? (
                         isReadyToClaim(position.unstaked) ? (
                           <span className="text-green-600 font-medium">Ready to claim</span>
@@ -460,25 +471,36 @@ export default function UserData({ daoId }: { daoId: string }) {
                 <div className="grid gap-4 py-4">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm text-gray-500">
-                      <span>Available: {availableBalance}</span>
-                      <span>Staked: {totalStaked}</span>
+                      <span>Available: {formatWithSymbol(availableBalance)}</span>
+                      <span>Staked: {formatWithSymbol(totalStaked)}</span>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="stake-amount">Amount to stake</Label>
-                      <Input
-                        id="stake-amount"
-                        type="number"
-                        step="any"
-                        value={stakeAmount}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "" || Number(value) <= Number(availableBalance)) {
-                            setStakeAmount(value);
-                          }
-                        }}
-                        placeholder="Enter amount"
-                        max={availableBalance}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="stake-amount"
+                          type="number"
+                          step="any"
+                          value={stakeAmount}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "" || Number(value) <= Number(availableBalance)) {
+                              setStakeAmount(value);
+                            }
+                          }}
+                          placeholder="Enter amount"
+                          max={availableBalance}
+                          className="pr-16"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-pink-600 hover:text-pink-700"
+                          onClick={() => setStakeAmount(availableBalance)}
+                        >
+                          MAX
+                        </Button>
+                      </div>
                     </div>
                   </div>
                   <Button 
@@ -515,24 +537,35 @@ export default function UserData({ daoId }: { daoId: string }) {
                 <div className="grid gap-4 py-4">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center text-sm text-gray-500">
-                      <span>Available to unstake: {totalStaked}</span>
+                      <span>Available to unstake: {formatWithSymbol(totalStaked)}</span>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="unstake-amount">Amount to unstake</Label>
-                      <Input
-                        id="unstake-amount"
-                        type="number"
-                        step="any"
-                        value={unstakeAmount}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "" || Number(value) <= Number(totalStaked)) {
-                            setUnstakeAmount(value);
-                          }
-                        }}
-                        placeholder="Enter amount"
-                        max={totalStaked}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="unstake-amount"
+                          type="number"
+                          step="any"
+                          value={unstakeAmount}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "" || Number(value) <= Number(totalStaked)) {
+                              setUnstakeAmount(value);
+                            }
+                          }}
+                          placeholder="Enter amount"
+                          max={totalStaked}
+                          className="pr-16"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-pink-600 hover:text-pink-700"
+                          onClick={() => setUnstakeAmount(totalStaked)}
+                        >
+                          MAX
+                        </Button>
+                      </div>
                     </div>
                   </div>
                   <Button 
