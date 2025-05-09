@@ -148,6 +148,32 @@ export function useDaoClient() {
     }
   };
 
+  const stake = async (userAddr: string, assets: bigint | string[]) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      tx.setSender(userAddr);
+      await client.stake(tx, assets);
+      return tx;
+    } catch (error) {
+      console.error("Error staking assets:", error);
+      throw error;
+    }
+  };
+
+  const unstake = async (userAddr: string, assets: bigint | string[]) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      tx.setSender(userAddr);
+      await client.unstake(tx, assets);
+      return tx;
+    } catch (error) {
+      console.error("Error unstaking assets:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     refresh,
@@ -160,5 +186,7 @@ export function useDaoClient() {
     getParticipant,
     followDao,
     unfollowDao,
+    stake,
+    unstake,
   };
 }
