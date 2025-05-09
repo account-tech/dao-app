@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
-import { getCoinDecimals, formatCoinAmount } from "@/utils/tx/GlobalHelpers";
+import { getCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
 import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -55,9 +63,13 @@ export default function UserData({ daoId }: { daoId: string }) {
   const triggerRefresh = useDaoStore(state => state.triggerRefresh);
   const [isClaiming, setIsClaiming] = useState(false);
   const refreshTrigger = useDaoStore(state => state.refreshTrigger)
+  const [isQuadratic, setIsQuadratic] = useState(false);
+  const [authVotingPower, setAuthVotingPower] = useState<string>("0");
+  const [maxVotingPower, setMaxVotingPower] = useState<string>("0");
+  const [hasAuthPower, setHasAuthPower] = useState(false);
 
   useEffect(() => {
-    const fetchVotingPower = async () => {
+    const fetchData = async () => {
       if (!currentAccount?.address) return;
 
       try {
@@ -90,6 +102,33 @@ export default function UserData({ daoId }: { daoId: string }) {
         }
         setTotalStaked(formatCoinAmount(totalStakedValue, fetchedDecimals));
 
+        // Store DAO parameters - direct voting power values
+        setAuthVotingPower(dao.authVotingPower.toString());
+        setMaxVotingPower(dao.maxVotingPower.toString());
+
+        // Determine voting rule first
+        const isQuadraticVoting = dao.votingRule === 1;
+        setIsQuadratic(isQuadraticVoting);
+
+        // Calculate voting power based on the determined rule
+        let power: string | number;
+        const stakedAmount = Number(formatCoinAmount(totalStakedValue, fetchedDecimals));
+        
+        if (isQuadraticVoting) {
+          // For quadratic voting: sqrt(stakedAmount)
+          power = Math.sqrt(stakedAmount);
+        } else {
+          // For linear voting: just the staked amount
+          power = stakedAmount;
+        }
+        
+        // Format to 2 decimal places
+        const formattedPower = Number(power).toFixed(2);
+        setVotingPower(formattedPower);
+        
+        // Check if user has enough voting power for auth actions
+        setHasAuthPower(Number(formattedPower) >= Number(dao.authVotingPower));
+
         // Calculate total unstaking amount and store positions
         let totalUnstakingValue = BigInt(0);
         const currentPositions: UnstakingPosition[] = [];
@@ -116,28 +155,23 @@ export default function UserData({ daoId }: { daoId: string }) {
           });
         }
         setTotalClaimable(formatCoinAmount(totalClaimableValue, fetchedDecimals));
-        
-        // Calculate voting power based on voting rule
-        const isQuadratic = dao.votingRule === 1;
-        const power = isQuadratic 
-          ? Math.sqrt(Number(formatCoinAmount(totalStakedValue, fetchedDecimals)))
-          : formatCoinAmount(totalStakedValue, fetchedDecimals);
-        
-        setVotingPower(typeof power === 'number' ? power.toFixed(2) : power);
       } catch (error) {
-        console.error("Error calculating voting power:", error);
+        console.error("Error fetching data:", error);
         setVotingPower("0.00");
         setAvailableBalance("0.00");
         setTotalStaked("0.00");
         setTotalUnstaking("0.00");
         setTotalClaimable("0.00");
         setUnstakingPositions([]);
+        setAuthVotingPower("0");
+        setMaxVotingPower("0");
+        setHasAuthPower(false);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVotingPower();
+    fetchData();
   }, [currentAccount?.address, refreshTrigger]);
 
   // Format date to mm/dd/yyyy hour:minutes
@@ -283,174 +317,260 @@ export default function UserData({ daoId }: { daoId: string }) {
   return (
     <div className="p-4 rounded-lg bg-white shadow">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Voting Power</span>
-          <span className="font-semibold">{votingPower}</span>
+        <div className="relative">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Voting Power</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-900 text-white p-3 max-w-xs">
+                    <p className="mb-3 text-sm">
+                      {isQuadratic 
+                        ? "Your voting power is calculated as the square root of your staked tokens, promoting fair voting distribution."
+                        : "Your voting power is equal to your staked tokens."}
+                    </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                        <p className="text-yellow-200">Minimum required: {authVotingPower}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400" />
+                        <p className="text-purple-200">Maximum allowed: {maxVotingPower}</p>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-bold text-xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                {votingPower}
+              </span>
+              <span className="text-xs text-gray-400">/ {maxVotingPower}</span>
+            </div>
+          </div>
+
+          <div className="relative h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className="absolute h-full w-0.5 bg-yellow-400 z-10"
+              style={{ 
+                left: `${(Number(authVotingPower) / Number(maxVotingPower)) * 100}%`,
+                display: Number(votingPower) < Number(authVotingPower) ? 'block' : 'none'
+              }}
+            />
+            <div 
+              className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500 ease-out"
+              style={{ 
+                width: `${Math.min(100, (Number(votingPower) / Number(maxVotingPower)) * 100)}%` 
+              }}
+            />
+          </div>
+
+          {Number(votingPower) === 0 && (
+            <Alert className="mt-4 bg-pink-50 text-pink-800 border-pink-200">
+              <AlertDescription className="text-sm">
+                Stake tokens to increase your voting power and participate in DAO decisions.
+                {Number(availableBalance) > 0 && " You have tokens available to stake!"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {Number(votingPower) > 0 && !hasAuthPower && (
+            <Alert className="mt-4 bg-yellow-50 text-yellow-800 border-yellow-200">
+              <AlertDescription className="text-sm">
+                You need at least {authVotingPower} voting power to create proposals and participate in key DAO activities. 
+                {Number(availableBalance) > 0 
+                  ? " Consider staking more tokens to reach this threshold!"
+                  : " Acquire and stake more tokens to reach this threshold."}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
         
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Total Staked</span>
-          <span className="font-semibold">{totalStaked}</span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Total Unstaking</span>
-          <span className="font-semibold">{totalUnstaking}</span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Total Claimable</span>
-          <span className="font-semibold text-green-600">{totalClaimable}</span>
-        </div>
-
-        {Number(totalClaimable) > 0 && (
-          <Button
-            onClick={handleClaim}
-            disabled={isClaiming}
-            className="w-full bg-green-500 hover:bg-green-600 text-white"
-          >
-            {isClaiming ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Claiming...</span>
+        {/* Staking Information */}
+        <div className="mt-6 space-y-4">
+          {/* Main Staking Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Total Staked</span>
+                <span className="text-lg font-semibold">{totalStaked}</span>
               </div>
-            ) : (
-              "Claim Tokens"
-            )}
-          </Button>
-        )}
+            </div>
+            
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Available to Claim</span>
+                <span className={`text-lg font-semibold ${Number(totalClaimable) > 0 ? 'text-green-600' : ''}`}>
+                  {totalClaimable}
+                </span>
+              </div>
+            </div>
+          </div>
 
-        {unstakingPositions.length > 0 && (
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="unstaking-details">
-              <AccordionTrigger>Unstaking Details</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  {unstakingPositions.map((position) => (
-                    <div key={position.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">
-                          Amount: {formatCoinAmount(position.value, decimals)}
-                        </span>
-                        <span className={`text-sm ${position.unstaked && isReadyToClaim(position.unstaked) ? 'text-green-600' : 'text-orange-600'}`}>
-                          {position.unstaked && isReadyToClaim(position.unstaked) ? 'Ready to claim' : 'Unlocks at'}
-                        </span>
-                      </div>
-                      {position.unstaked && !isReadyToClaim(position.unstaked) && (
-                        <span className="text-sm text-gray-500">
-                          {formatUnstakeDate(position.unstaked)}
-                        </span>
+          {/* Unstaking Positions Section - Only show if there are positions */}
+          {unstakingPositions.length > 0 && (
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-500">Unstaking Process</span>
+                <span className="text-xs text-gray-400">{unstakingPositions.length} active</span>
+              </div>
+              <div className="space-y-2">
+                {unstakingPositions.map((position) => (
+                  <div key={position.id} className="bg-white rounded p-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span>{formatCoinAmount(position.value, decimals)}</span>
+                      {position.unstaked ? (
+                        isReadyToClaim(position.unstaked) ? (
+                          <span className="text-green-600 font-medium">Ready to claim</span>
+                        ) : (
+                          <span className="text-gray-600">
+                            Ready {formatUnstakeDate(position.unstaked)}
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-gray-400">Processing...</span>
                       )}
                     </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
-      </div>
-      
-      <div className="flex gap-2 mt-4">
-        <Dialog open={stakeDialogOpen} onOpenChange={setStakeDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="flex-1">
-              Stake
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Stake Tokens</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>Available: {availableBalance}</span>
-                  <span>Staked: {totalStaked}</span>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="stake-amount">Amount to stake</Label>
-                  <Input
-                    id="stake-amount"
-                    type="number"
-                    step="any"
-                    value={stakeAmount}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || Number(value) <= Number(availableBalance)) {
-                        setStakeAmount(value);
-                      }
-                    }}
-                    placeholder="Enter amount"
-                    max={availableBalance}
-                  />
-                </div>
-              </div>
-              <Button 
-                onClick={handleStake} 
-                disabled={!stakeAmount || isStaking || isNaN(Number(stakeAmount)) || Number(stakeAmount) > Number(availableBalance)}
-              >
-                {isStaking ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Staking...</span>
                   </div>
-                ) : (
-                  "Stake"
-                )}
-              </Button>
+                ))}
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
 
-        <Dialog open={unstakeDialogOpen} onOpenChange={setUnstakeDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="flex-1">
-              Unstake
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Unstake Tokens</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>Available to unstake: {totalStaked}</span>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="unstake-amount">Amount to unstake</Label>
-                  <Input
-                    id="unstake-amount"
-                    type="number"
-                    step="any"
-                    value={unstakeAmount}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "" || Number(value) <= Number(totalStaked)) {
-                        setUnstakeAmount(value);
-                      }
-                    }}
-                    placeholder="Enter amount"
-                    max={totalStaked}
-                  />
-                </div>
-              </div>
-              <Button 
-                onClick={handleUnstake} 
-                disabled={!unstakeAmount || isUnstaking || isNaN(Number(unstakeAmount)) || Number(unstakeAmount) > Number(totalStaked)}
-              >
-                {isUnstaking ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Unstaking...</span>
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <Dialog open={stakeDialogOpen} onOpenChange={setStakeDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex-1 bg-white hover:bg-gray-50"
+                >
+                  Stake
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Stake Tokens</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <span>Available: {availableBalance}</span>
+                      <span>Staked: {totalStaked}</span>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="stake-amount">Amount to stake</Label>
+                      <Input
+                        id="stake-amount"
+                        type="number"
+                        step="any"
+                        value={stakeAmount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "" || Number(value) <= Number(availableBalance)) {
+                            setStakeAmount(value);
+                          }
+                        }}
+                        placeholder="Enter amount"
+                        max={availableBalance}
+                      />
+                    </div>
                   </div>
-                ) : (
-                  "Unstake"
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+                  <Button 
+                    onClick={handleStake} 
+                    disabled={!stakeAmount || isStaking || isNaN(Number(stakeAmount)) || Number(stakeAmount) > Number(availableBalance)}
+                  >
+                    {isStaking ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Staking...</span>
+                      </div>
+                    ) : (
+                      "Stake"
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={unstakeDialogOpen} onOpenChange={setUnstakeDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="flex-1 bg-white hover:bg-gray-50"
+                  disabled={Number(totalStaked) === 0}
+                >
+                  Unstake
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Unstake Tokens</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <span>Available to unstake: {totalStaked}</span>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="unstake-amount">Amount to unstake</Label>
+                      <Input
+                        id="unstake-amount"
+                        type="number"
+                        step="any"
+                        value={unstakeAmount}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === "" || Number(value) <= Number(totalStaked)) {
+                            setUnstakeAmount(value);
+                          }
+                        }}
+                        placeholder="Enter amount"
+                        max={totalStaked}
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleUnstake} 
+                    disabled={!unstakeAmount || isUnstaking || isNaN(Number(unstakeAmount)) || Number(unstakeAmount) > Number(totalStaked)}
+                  >
+                    {isUnstaking ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Unstaking...</span>
+                      </div>
+                    ) : (
+                      "Unstake"
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Claim Button - Only show if there's something to claim */}
+          {Number(totalClaimable) > 0 && (
+            <Button
+              onClick={handleClaim}
+              disabled={isClaiming}
+              className="w-full bg-green-500 hover:bg-green-600 text-white"
+            >
+              {isClaiming ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Claiming...</span>
+                </div>
+              ) : (
+                "Claim Available Tokens"
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

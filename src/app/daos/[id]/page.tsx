@@ -135,16 +135,18 @@ export default function DaoPage() {
         <div className="bg-white px-6 pb-20 min-h-[90vh] pt-12">
           {/* DAO Info */}
           <div className="mb-8 md:container md:mx-auto">
-            <div className="md:max-w-2xl text-center md:text-left">
-              <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
-                {dao.name}
-              </h1>
-              {dao.description && (
-                <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
-              )}
+            <div className="flex flex-col md:flex-row md:justify-between md:gap-8">
+              <div className="md:flex-1">
+                <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
+                  {dao.name}
+                </h1>
+                {dao.description && (
+                  <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
+                )}
+              </div>
               
               {/* User Data Section */}
-              <div className="mt-6">
+              <div className="mt-6 md:mt-0 md:w-[400px]">
                 <UserData daoId={daoId} />
               </div>
             </div>
