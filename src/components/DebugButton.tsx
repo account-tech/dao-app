@@ -37,6 +37,7 @@ export function DebugButton() {
 
   const handleDebugClick = async () => {
     console.log('=== Debug Information ===');
+    console.log('Wallet Objects:', walletObjects);
     console.log('Current Account:', currentAccount?.address);
     console.log('Store State:', {
       currentAddress,
