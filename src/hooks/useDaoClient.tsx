@@ -165,7 +165,6 @@ export function useDaoClient() {
     try {
       const client = await getOrInitClient(userAddr);
       const tx = new Transaction();
-      tx.setSender(userAddr);
       await client.unstake(tx, assets);
       return tx;
     } catch (error) {
