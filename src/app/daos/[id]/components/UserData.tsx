@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { useDaoStore } from "@/store/useDaoStore";
+import UserDataSkeleton from "./UserDataSkeleton";
 
 interface UnstakingPosition {
   assetType: string;
@@ -310,13 +311,7 @@ export default function UserData({ daoId }: { daoId: string }) {
   };
 
   if (loading) {
-    return (
-      <div className="p-4 rounded-lg bg-white shadow">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-        </div>
-      </div>
-    );
+    return <UserDataSkeleton />;
   }
 
   return (
