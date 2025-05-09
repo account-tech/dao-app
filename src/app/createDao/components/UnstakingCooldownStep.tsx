@@ -4,6 +4,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { StepProps } from "../helpers/types";
 import { useState } from "react";
 
+// Constants for time conversion
+const MILLISECONDS_PER_DAY = BigInt(24 * 60 * 60 * 1000); // 86,400,000 milliseconds in a day
+
 export const UnstakingCooldownStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   const [hasCooldown, setHasCooldown] = useState(formData.unstakingCooldown > BigInt(0));
 
@@ -17,12 +20,13 @@ export const UnstakingCooldownStep: React.FC<StepProps> = ({ formData, updateFor
 
   const handleDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const days = parseInt(e.target.value) || 0;
-    // Convert days to seconds (86400 seconds in a day)
-    const cooldownInSeconds = BigInt(Math.max(0, days) * 86400);
-    updateFormData({ unstakingCooldown: cooldownInSeconds });
+    // Convert days to milliseconds
+    const cooldownInMilliseconds = BigInt(Math.max(0, days)) * MILLISECONDS_PER_DAY;
+    updateFormData({ unstakingCooldown: cooldownInMilliseconds });
   };
 
-  const currentDays = Number(formData.unstakingCooldown) / 86400;
+  // Convert milliseconds back to days for display
+  const currentDays = Number(formData.unstakingCooldown) / Number(MILLISECONDS_PER_DAY);
 
   return (
     <div className="space-y-6">
