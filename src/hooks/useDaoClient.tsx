@@ -173,6 +173,18 @@ export function useDaoClient() {
     }
   };
 
+  const claim = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.claim(tx);
+      return tx;
+    } catch (error) {
+      console.error("Error claiming assets:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     refresh,
@@ -187,5 +199,6 @@ export function useDaoClient() {
     unfollowDao,
     stake,
     unstake,
+    claim,
   };
 }

@@ -36,7 +36,7 @@ export default function UserData({ daoId }: { daoId: string }) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { getParticipant, getDao, stake, unstake } = useDaoClient();
+  const { getParticipant, getDao, stake, unstake, claim } = useDaoClient();
   const [votingPower, setVotingPower] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [stakeAmount, setStakeAmount] = useState("");
@@ -50,8 +50,11 @@ export default function UserData({ daoId }: { daoId: string }) {
   const [totalStaked, setTotalStaked] = useState<string>("0");
   const [totalUnstaking, setTotalUnstaking] = useState<string>("0");
   const [unstakingPositions, setUnstakingPositions] = useState<UnstakingPosition[]>([]);
+  const [totalClaimable, setTotalClaimable] = useState<string>("0");
   const resetClient = useDaoStore(state => state.resetClient);
   const triggerRefresh = useDaoStore(state => state.triggerRefresh);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
 
   useEffect(() => {
     const fetchVotingPower = async () => {
@@ -103,6 +106,17 @@ export default function UserData({ daoId }: { daoId: string }) {
         setTotalUnstaking(formatCoinAmount(totalUnstakingValue, fetchedDecimals));
         setUnstakingPositions(currentPositions);
         
+        // Calculate total claimable amount
+        let totalClaimableValue = BigInt(0);
+        if (participant.claimable && Array.isArray(participant.claimable)) {
+          participant.claimable.forEach(claim => {
+            if (claim.daoAddr === daoId) {
+              totalClaimableValue += BigInt(claim.value);
+            }
+          });
+        }
+        setTotalClaimable(formatCoinAmount(totalClaimableValue, fetchedDecimals));
+        
         // Calculate voting power based on voting rule
         const isQuadratic = dao.votingRule === 1;
         const power = isQuadratic 
@@ -116,6 +130,7 @@ export default function UserData({ daoId }: { daoId: string }) {
         setAvailableBalance("0.00");
         setTotalStaked("0.00");
         setTotalUnstaking("0.00");
+        setTotalClaimable("0.00");
         setUnstakingPositions([]);
       } finally {
         setLoading(false);
@@ -123,7 +138,7 @@ export default function UserData({ daoId }: { daoId: string }) {
     };
 
     fetchVotingPower();
-  }, [currentAccount?.address]);
+  }, [currentAccount?.address, refreshTrigger]);
 
   // Format date to mm/dd/yyyy hour:minutes
   const formatUnstakeDate = (timestamp: bigint | null) => {
@@ -223,6 +238,38 @@ export default function UserData({ daoId }: { daoId: string }) {
     }
   };
 
+  const handleClaim = async () => {
+    if (!currentAccount?.address) return;
+
+    try {
+      setIsClaiming(true);
+      
+      // Get transaction from claim function
+      const tx = await claim(currentAccount.address);
+
+      // Sign and execute transaction
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+
+      // Reset client and trigger refresh
+      resetClient();
+      triggerRefresh();
+    } catch (error) {
+      console.error("Error claiming tokens:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to claim tokens");
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 rounded-lg bg-white shadow">
@@ -251,13 +298,35 @@ export default function UserData({ daoId }: { daoId: string }) {
           <span className="font-semibold">{totalUnstaking}</span>
         </div>
 
+        <div className="flex items-center justify-between">
+          <span className="text-gray-600">Total Claimable</span>
+          <span className="font-semibold text-green-600">{totalClaimable}</span>
+        </div>
+
+        {Number(totalClaimable) > 0 && (
+          <Button
+            onClick={handleClaim}
+            disabled={isClaiming}
+            className="w-full bg-green-500 hover:bg-green-600 text-white"
+          >
+            {isClaiming ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Claiming...</span>
+              </div>
+            ) : (
+              "Claim Tokens"
+            )}
+          </Button>
+        )}
+
         {unstakingPositions.length > 0 && (
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="unstaking-details">
               <AccordionTrigger>Unstaking Details</AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
-                  {unstakingPositions.map((position, index) => (
+                  {unstakingPositions.map((position) => (
                     <div key={position.id} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-medium">
