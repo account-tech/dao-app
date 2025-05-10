@@ -109,6 +109,16 @@ export function useDaoClient() {
     }
   };
 
+  const getDaoMetadata = async (userAddr: string, daoId?: string) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.getDaoMetadata();
+    } catch (error) {
+      console.error("Error getting dao metadata:", error);
+      throw error;
+    }
+  };
+
   const getParticipant = async (userAddr: string, daoId?: string) => {
     try {
       const client = await getOrInitClient(userAddr, daoId);
@@ -194,6 +204,7 @@ export function useDaoClient() {
     getUserDaos,
     getAllDaos,
     getDao,
+    getDaoMetadata,
     getParticipant,
     followDao,
     unfollowDao,

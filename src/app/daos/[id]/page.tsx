@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { DaoMetadata } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
+import { useDaoClient } from "@/hooks/useDaoClient";
 import UserData from "./components/UserData";
 import Image from "next/image";
 
@@ -35,6 +36,7 @@ export default function DaoPage() {
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const getOrInitClient = useDaoStore(state => state.getOrInitClient);
+  const { getDaoMetadata } = useDaoClient();
   const [dao, setDao] = useState<DaoMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const isSmallHeight = useScreenHeight();
@@ -45,9 +47,8 @@ export default function DaoPage() {
 
       try {
         setLoading(true);
-        const client = await getOrInitClient(currentAccount.address, daoId);
-        const metadata = client.getDaoMetadata();
-        setDao(metadata);
+        const fetchingDaoMetadata = await getDaoMetadata(currentAccount.address, daoId);
+        setDao(fetchingDaoMetadata);
       } catch (error) {
         console.error("Error initializing dao:", error);
         setDao(null);
