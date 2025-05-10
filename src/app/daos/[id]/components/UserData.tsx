@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
-import { getCoinDecimals, formatCoinAmount, getCoinMeta } from "@/utils/GlobalHelpers";
+import { getCoinDecimals, formatCoinAmount, getCoinMeta, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import {
@@ -79,12 +79,15 @@ export default function UserData({ daoId }: { daoId: string }) {
           throw new Error("Failed to fetch participant or dao data");
         }
 
+        // Get simplified asset type and use it for metadata
+        const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
+        
         // Get coin metadata for symbol
-        const coinMeta = await getCoinMeta(participant.assetType, suiClient);
-        setCoinSymbol(coinMeta?.symbol || "");
+        const coinMeta = await getCoinMeta(simplifiedAssetType, suiClient);
+        setCoinSymbol(coinMeta?.symbol || (simplifiedAssetType.split("::").pop() ?? 'UNKNOWN'));
 
         // Get coin decimals for the asset type
-        const fetchedDecimals = await getCoinDecimals(participant.assetType, suiClient);
+        const fetchedDecimals = await getCoinDecimals(simplifiedAssetType, suiClient);
         setDecimals(fetchedDecimals);
         
         // Format available balance

@@ -293,3 +293,24 @@ export async function getCoinMeta(
   return null;
 }
 
+/**
+ * Extracts the simplified asset type from a full coin type
+ * @param fullCoinType The full coin type (e.g. "0x2::coin::Coin<0x1a18::sity::SITY>")
+ * @returns The simplified asset type (e.g. "0x1a18::sity::SITY")
+ */
+export function getSimplifiedAssetType(fullCoinType: string): string {
+  // Handle SUI token specially
+  if (fullCoinType.includes(SUI_IDENTIFIER)) {
+    return FULL_SUI_TYPE;
+  }
+
+  // Extract the type inside the Coin<> wrapper
+  const match = fullCoinType.match(/Coin<(.+?)>/);
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  // If no match found, return the original string
+  return fullCoinType;
+}
+
