@@ -98,7 +98,7 @@ export default function DaoPage() {
         }`}
       />
 
-      {/* DAO Image - Left-aligned on md screens, centered on smaller screens */}
+      {/* DAO Image */}
       <div 
         className="relative z-20 flex md:container md:mx-auto md:px-6" 
         style={{ 
@@ -136,19 +136,60 @@ export default function DaoPage() {
         <div className="bg-white px-6 pb-20 min-h-[90vh] pt-12">
           {/* DAO Info */}
           <div className="mb-8 md:container md:mx-auto">
-            <div className="flex flex-col md:flex-row md:justify-between md:gap-8">
-              <div className="md:flex-1">
-                <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
-                  {dao.name}
-                </h1>
-                {dao.description && (
-                  <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
-                )}
-              </div>
-              
-              {/* User Data Section */}
-              <div className="mt-6 md:mt-0 md:w-[400px]">
+            {/* DAO Title - Always at top */}
+            <div className="mb-6">
+              <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
+                {dao.name}
+              </h1>
+              {dao.description && (
+                <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
+              )}
+            </div>
+
+            {/* Main Content Layout */}
+            <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
+              {/* Right Column (UserData + Assets) - Appears first on mobile */}
+              <div className="w-full md:w-[350px] lg:w-[450px] order-1 md:order-2">
+                {/* User Data Section */}
                 <UserData daoId={daoId} />
+
+                {/* Assets Section */}
+                <div className="mt-6">
+                  <h2 className="text-xl font-semibold mb-4">Assets</h2>
+                  <div className="space-y-4">
+                    {/* Wallet Square */}
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                      <h3 className="font-medium mb-2">Wallet</h3>
+                      <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                        Coming soon
+                      </div>
+                    </div>
+
+                    {/* Vaults Square */}
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                      <h3 className="font-medium mb-2">Vaults</h3>
+                      <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                        Coming soon
+                      </div>
+                    </div>
+
+                    {/* Kiosks Square */}
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                      <h3 className="font-medium mb-2">Kiosks</h3>
+                      <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                        Coming soon
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Left Column (Proposals) - Appears second on mobile */}
+              <div className="flex-1 mt-6 md:mt-0 order-2 md:order-1">
+                <h2 className="text-xl font-semibold mb-4">Proposals</h2>
+                <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                  Proposals coming soon
+                </div>
               </div>
             </div>
           </div>

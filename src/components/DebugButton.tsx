@@ -37,24 +37,7 @@ export function DebugButton() {
 
   const handleDebugClick = async () => {
     console.log('=== Debug Information ===');
-    console.log('Wallet Objects:', walletObjects);
-    console.log('Current Account:', currentAccount?.address);
-    console.log('Store State:', {
-      currentAddress,
-      hasClient: !!client,
-    });
     console.log('Full Client:', client);
-
-    // Add DAO information
-    if (currentAccount?.address) {
-      try {
-        const daoInfo = await getDao(currentAccount.address);
-        console.log('Current DAO Information:', daoInfo);
-      } catch (error) {
-        console.error('Error fetching DAO information:', error);
-      }
-    }
-
     console.log('=====================');
   };
 

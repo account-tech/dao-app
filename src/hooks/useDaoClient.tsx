@@ -1,5 +1,6 @@
 'use client';
 import { DaoClient } from "@account.tech/dao";
+import { OwnedData } from "@account.tech/core";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams } from "@/types/dao";
@@ -66,6 +67,8 @@ export function useDaoClient() {
     }
   };
 
+  //====================GETTERS====================
+
   const getAllDaos = async (userAddr: string) => {
     try {
       const client = await getOrInitClient(userAddr);
@@ -128,6 +131,18 @@ export function useDaoClient() {
       throw error;
     }
   };
+
+  const getOwnedObjects = async (userAddr: string): Promise<OwnedData> => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      return client.getOwnedObjects();
+    } catch (error) {
+      console.error("Error getting owned objects:", error);
+      throw error;
+    }
+  };
+
+  //====================ACTIONS====================
 
   const followDao = async (
     userAddr: string,
@@ -206,6 +221,7 @@ export function useDaoClient() {
     getDao,
     getDaoMetadata,
     getParticipant,
+    getOwnedObjects,
     followDao,
     unfollowDao,
     stake,
