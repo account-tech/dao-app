@@ -11,6 +11,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { useDaoStore } from "@/store/useDaoStore";
+import { Bolt } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
 
 interface DaoHeaderProps {
   dao: DaoMetadata;
@@ -19,6 +21,9 @@ interface DaoHeaderProps {
 }
 
 export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: DaoHeaderProps) {
+  const router = useRouter();
+  const params = useParams();
+  const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
@@ -91,6 +96,10 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
     return 'Follow';
   };
 
+  const handleSettingsClick = () => {
+    router.push(`/daos/${daoId}/settings`);
+  };
+
   return (
     <div className="mb-6 md:text-left text-center">
       <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
@@ -117,7 +126,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
       </div>
 
       {/* Social Links and Follow Button */}
-      <div className="flex justify-center md:justify-start items-center gap-3 mt-4">
+      <div className="flex flex-col sm:flex-col md:flex-col lg:flex-row justify-center md:justify-start items-center md:items-start gap-3 mt-4">
         <div className="flex gap-2">
           <TooltipProvider>
             {/* Twitter */}
@@ -202,16 +211,27 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
           </TooltipProvider>
         </div>
 
-        {/* Follow Button */}
-        <button
-          onClick={handleFollowClick}
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-          disabled={isLoading || !currentAccount?.address}
-          className={getButtonStyles()}
-        >
-          {getButtonText()}
-        </button>
+        <div className="flex items-center gap-3 mt-3 lg:mt-0">
+          {/* Settings Button */}
+          <button
+            onClick={handleSettingsClick}
+            className="flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300 ease-in-out"
+          >
+            <Bolt className="w-4 h-4" />
+            Settings
+          </button>
+
+          {/* Follow Button */}
+          <button
+            onClick={handleFollowClick}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            disabled={isLoading || !currentAccount?.address}
+            className={getButtonStyles()}
+          >
+            {getButtonText()}
+          </button>
+        </div>
       </div>
     </div>
   );

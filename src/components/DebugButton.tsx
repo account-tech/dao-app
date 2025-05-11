@@ -19,12 +19,8 @@ export function DebugButton() {
       if (!currentAccount) return;
 
       try {
-        const objects = await suiClient.getOwnedObjects({
+        const objects = await suiClient.getAllCoins({
           owner: currentAccount.address,
-          options: {
-            showContent: true,
-            showType: true,
-          }
         });
         setWalletObjects(objects.data);
       } catch (error) {
@@ -37,6 +33,7 @@ export function DebugButton() {
 
   const handleDebugClick = async () => {
     console.log('=== Debug Information ===');
+    console.log(walletObjects);
     console.log('Full Client:', client);
     console.log('=====================');
   };

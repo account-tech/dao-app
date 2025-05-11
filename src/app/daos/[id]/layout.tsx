@@ -47,15 +47,26 @@ export default function DaoLayout({
 
   // Enhanced scroll behavior
   useEffect(() => {
-    // Immediate scroll without smooth behavior
-    window.scrollTo(0, 0);
+    // First scroll with a small delay
+    const firstScrollId = setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }, 100);
 
-    // Backup scroll after a short delay to ensure content is loaded
-    const timeoutId = setTimeout(() => {
-      window.scrollTo(0, 0);
-    }, 0);
+    // Backup scroll after a longer delay to ensure content is loaded
+    const secondScrollId = setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }, 100);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(firstScrollId);
+      clearTimeout(secondScrollId);
+    };
   }, [pathname]);
 
   return (
