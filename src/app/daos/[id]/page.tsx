@@ -172,52 +172,52 @@ export default function DaoPage() {
       >
         <div className="px-4 md:px-20 pb-20 min-h-[90vh] pt-12 bg-white rounded-t-[32px]">
           {/* DAO Info */}
-          <div className="mb-8 md:container md:mx-auto">
+          <div className="mb-8">
             <DaoHeader dao={dao} isSmallHeight={isSmallHeight} isFollowed={isFollowed} />
+          </div>
 
-            {/* Main Content Layout */}
-            <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
-              {/* Right Column (UserData + Assets) - Appears first on mobile */}
-              <div className="w-full md:w-[350px] lg:w-[450px] order-1 md:order-2">
-                {/* User Data Section */}
-                <UserData daoId={daoId} />
+          {/* Main Content Layout */}
+          <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
+            {/* Left Column (Proposals) */}
+            <div className="flex-1 order-2 md:order-1">
+              <h2 className="text-xl font-semibold mb-4">Proposals</h2>
+              <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+                Proposals coming soon
+              </div>
+            </div>
 
-                {/* Assets Section */}
-                <div className="mt-6">
-                  <h2 className="text-xl font-semibold mb-4">Assets</h2>
-                  <div className="space-y-4">
-                    {/* Wallet Square */}
-                    <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
-                      <h3 className="font-medium mb-2">Wallet</h3>
-                      <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
-                        Coming soon
-                      </div>
-                    </div>
+            {/* Right Column (UserData + Assets) */}
+            <div className="w-full md:w-[350px] lg:w-[450px] order-1 md:order-2 md:-mt-44">
+              {/* User Data Section */}
+              <UserData daoId={daoId} />
 
-                    {/* Vaults Square */}
-                    <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
-                      <h3 className="font-medium mb-2">Vaults</h3>
-                      <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
-                        Coming soon
-                      </div>
-                    </div>
-
-                    {/* Kiosks Square */}
-                    <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
-                      <h3 className="font-medium mb-2">Kiosks</h3>
-                      <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
-                        Coming soon
-                      </div>
+              {/* Assets Section */}
+              <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-4">Assets</h2>
+                <div className="space-y-4">
+                  {/* Wallet Square */}
+                  <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                    <h3 className="font-medium mb-2">Wallet</h3>
+                    <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                      Coming soon
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Left Column (Proposals) - Appears second on mobile */}
-              <div className="flex-1 mt-6 md:mt-0 order-2 md:order-1">
-                <h2 className="text-xl font-semibold mb-4">Proposals</h2>
-                <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-                  Proposals coming soon
+                  {/* Vaults Square */}
+                  <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                    <h3 className="font-medium mb-2">Vaults</h3>
+                    <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                      Coming soon
+                    </div>
+                  </div>
+
+                  {/* Kiosks Square */}
+                  <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                    <h3 className="font-medium mb-2">Kiosks</h3>
+                    <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                      Coming soon
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
