@@ -197,7 +197,7 @@ export default function DaoPage() {
                 <h2 className="text-xl font-semibold mb-4">Assets</h2>
                 <div className="space-y-4">
                   {/* Wallet Preview */}
-                  <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                  <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
                     <h3 className="font-medium mb-2">Wallet</h3>
                     <WalletPreview />
                   </div>
