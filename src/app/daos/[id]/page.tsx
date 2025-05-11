@@ -7,28 +7,50 @@ import { DaoMetadata } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import UserData from "./components/UserData";
+import DaoHeader from "./components/DaoHeader";
 import Image from "next/image";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Custom hook for height-based media queries
 const useScreenHeight = () => {
-  const [isSmallHeight, setIsSmallHeight] = useState(false);
+  const [screenState, setScreenState] = useState({
+    isSmallHeight: false,
+    isLargeHeight: false,
+    isMobile: false
+  });
 
   useEffect(() => {
-    const checkHeight = () => {
-      setIsSmallHeight(window.innerHeight < 768);
+    const checkDimensions = () => {
+      const height = window.innerHeight;
+      const width = window.innerWidth;
+      
+      setScreenState({
+        isSmallHeight: height < 768,
+        // Consider a screen "large height" only if it's both:
+        // - taller than 899px AND
+        // - wider than 640px (sm breakpoint)
+        isLargeHeight: height > 899 && width > 640,
+        // Track if we're on mobile
+        isMobile: width <= 640
+      });
     };
 
     // Initial check
-    checkHeight();
+    checkDimensions();
 
     // Add event listener
-    window.addEventListener('resize', checkHeight);
+    window.addEventListener('resize', checkDimensions);
 
     // Cleanup
-    return () => window.removeEventListener('resize', checkHeight);
+    return () => window.removeEventListener('resize', checkDimensions);
   }, []);
 
-  return isSmallHeight;
+  return screenState;
 };
 
 export default function DaoPage() {
@@ -36,10 +58,12 @@ export default function DaoPage() {
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const getOrInitClient = useDaoStore(state => state.getOrInitClient);
-  const { getDaoMetadata } = useDaoClient();
+  const { getDaoMetadata, getUserDaos } = useDaoClient();
   const [dao, setDao] = useState<DaoMetadata | null>(null);
+  const [isFollowed, setIsFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const isSmallHeight = useScreenHeight();
+  const { isSmallHeight, isLargeHeight, isMobile } = useScreenHeight();
+  const refreshTrigger = useDaoStore(state => state.refreshTrigger);
 
   useEffect(() => {
     const initDao = async () => {
@@ -47,8 +71,13 @@ export default function DaoPage() {
 
       try {
         setLoading(true);
-        const fetchingDaoMetadata = await getDaoMetadata(currentAccount.address, daoId);
+        const [fetchingDaoMetadata, userDaos] = await Promise.all([
+          getDaoMetadata(currentAccount.address, daoId),
+          getUserDaos(currentAccount.address)
+        ]);
+        
         setDao(fetchingDaoMetadata);
+        setIsFollowed(userDaos.some(userDao => userDao.id === daoId));
       } catch (error) {
         console.error("Error initializing dao:", error);
         setDao(null);
@@ -58,7 +87,7 @@ export default function DaoPage() {
     };
 
     initDao();
-  }, [currentAccount?.address, daoId, getOrInitClient]);
+  }, [currentAccount?.address, daoId, getOrInitClient, refreshTrigger]);
 
   if (!currentAccount?.address) {
     return (
@@ -94,15 +123,21 @@ export default function DaoPage() {
       {/* Top Section */}
       <div 
         className={`bg-gradient-to-b from-white to-transparent ${
-          isSmallHeight ? 'h-[25vh]' : 'h-[15vh]'
+          isSmallHeight ? 'h-[28vh]' : 
+          isLargeHeight ? 'h-[15vh]' : 
+          isMobile ? 'h-[20vh]' : 
+          'h-[18vh]'
         }`}
       />
 
       {/* DAO Image */}
       <div 
-        className="relative z-20 flex md:container md:mx-auto md:px-6" 
+        className="relative z-20 flex md:max-w-none md:px-20" 
         style={{ 
-          marginTop: isSmallHeight ? '-4rem' : '-3.25rem',
+          marginTop: isSmallHeight ? '-4rem' : 
+                    isLargeHeight ? '-2.5rem' : 
+                    isMobile ? '-3.5rem' : 
+                    '-3.25rem',
         }}
       >
         <div className={`
@@ -129,22 +164,16 @@ export default function DaoPage() {
       <div 
         className="relative" 
         style={{ 
-          marginTop: isSmallHeight ? '-1rem' : '-1.2rem'
+          marginTop: isSmallHeight ? '-2rem' : 
+                    isLargeHeight ? '-2rem' : 
+                    isMobile ? '-2.25rem' : 
+                    '-2.5rem'
         }}
       >
-        <div className="absolute inset-x-0 -top-6 h-6 bg-white rounded-t-[32px]" />
-        <div className="bg-white px-6 pb-20 min-h-[90vh] pt-12">
+        <div className="px-4 md:px-20 pb-20 min-h-[90vh] pt-12 bg-white rounded-t-[32px]">
           {/* DAO Info */}
           <div className="mb-8 md:container md:mx-auto">
-            {/* DAO Title - Always at top */}
-            <div className="mb-6">
-              <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
-                {dao.name}
-              </h1>
-              {dao.description && (
-                <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
-              )}
-            </div>
+            <DaoHeader dao={dao} isSmallHeight={isSmallHeight} isFollowed={isFollowed} />
 
             {/* Main Content Layout */}
             <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
