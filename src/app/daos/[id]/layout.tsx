@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 // Custom hook for height-based media queries
 const useScreenHeight = () => {
@@ -41,6 +42,21 @@ export default function DaoLayout({
   children: React.ReactNode;
 }) {
   const { isSmallHeight, isLargeHeight, isMobile } = useScreenHeight();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Enhanced scroll behavior
+  useEffect(() => {
+    // Immediate scroll without smooth behavior
+    window.scrollTo(0, 0);
+
+    // Backup scroll after a short delay to ensure content is loaded
+    const timeoutId = setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100">
