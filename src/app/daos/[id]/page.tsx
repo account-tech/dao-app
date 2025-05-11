@@ -9,6 +9,7 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import UserData from "./components/UserData";
 import DaoHeader from "./components/DaoHeader";
 import Image from "next/image";
+import WalletPreview from "@/app/daos/[id]/components/WalletPreview";
 import {
   Tooltip,
   TooltipContent,
@@ -195,12 +196,10 @@ export default function DaoPage() {
               <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-4">Assets</h2>
                 <div className="space-y-4">
-                  {/* Wallet Square */}
+                  {/* Wallet Preview */}
                   <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
                     <h3 className="font-medium mb-2">Wallet</h3>
-                    <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
-                      Coming soon
-                    </div>
+                    <WalletPreview />
                   </div>
 
                   {/* Vaults Square */}
