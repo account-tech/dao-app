@@ -124,7 +124,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className={`p-2 rounded-full transition-colors ${dao.twitter ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                  className={`p-2 rounded-full transition-colors ${dao.twitter ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
                   onClick={() => dao.twitter && window.open(dao.twitter, '_blank')}
                   disabled={!dao.twitter}
                 >
@@ -140,7 +140,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className={`p-2 rounded-full transition-colors ${dao.discord ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                  className={`p-2 rounded-full transition-colors ${dao.discord ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
                   onClick={() => dao.discord && window.open(dao.discord, '_blank')}
                   disabled={!dao.discord}
                 >
@@ -156,7 +156,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className={`p-2 rounded-full transition-colors ${dao.telegram ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                  className={`p-2 rounded-full transition-colors ${dao.telegram ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
                   onClick={() => dao.telegram && window.open(dao.telegram, '_blank')}
                   disabled={!dao.telegram}
                 >
@@ -172,7 +172,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className={`p-2 rounded-full transition-colors ${dao.github ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                  className={`p-2 rounded-full transition-colors ${dao.github ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
                   onClick={() => dao.github && window.open(dao.github, '_blank')}
                   disabled={!dao.github}
                 >
@@ -185,10 +185,10 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
             </Tooltip>
 
             {/* Website */}
-            <Tooltip>
+            <Tooltip>   
               <TooltipTrigger asChild>
                 <button 
-                  className={`p-2 rounded-full transition-colors ${dao.website ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                  className={`p-2 rounded-full transition-colors ${dao.website ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
                   onClick={() => dao.website && window.open(dao.website, '_blank')}
                   disabled={!dao.website}
                 >
