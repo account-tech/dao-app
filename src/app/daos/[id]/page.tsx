@@ -5,28 +5,43 @@ import { useParams } from "next/navigation";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { DaoMetadata } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
+import { useDaoClient } from "@/hooks/useDaoClient";
+import UserData from "./components/UserData";
+import DaoHeader from "./components/DaoHeader";
 import Image from "next/image";
+import WalletPreview from "@/app/daos/[id]/components/WalletPreview";
 
 // Custom hook for height-based media queries
 const useScreenHeight = () => {
-  const [isSmallHeight, setIsSmallHeight] = useState(false);
+  const [screenState, setScreenState] = useState({
+    isSmallHeight: false,
+    isLargeHeight: false,
+    isMobile: false
+  });
 
   useEffect(() => {
-    const checkHeight = () => {
-      setIsSmallHeight(window.innerHeight < 768);
+    const checkDimensions = () => {
+      const height = window.innerHeight;
+      const width = window.innerWidth;
+      
+      setScreenState({
+        isSmallHeight: height < 768,
+        isLargeHeight: height > 899 && width > 640,
+        isMobile: width <= 640
+      });
     };
 
     // Initial check
-    checkHeight();
+    checkDimensions();
 
     // Add event listener
-    window.addEventListener('resize', checkHeight);
+    window.addEventListener('resize', checkDimensions);
 
     // Cleanup
-    return () => window.removeEventListener('resize', checkHeight);
+    return () => window.removeEventListener('resize', checkDimensions);
   }, []);
 
-  return isSmallHeight;
+  return screenState;
 };
 
 export default function DaoPage() {
@@ -34,9 +49,12 @@ export default function DaoPage() {
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const getOrInitClient = useDaoStore(state => state.getOrInitClient);
+  const { getDaoMetadata, getUserDaos } = useDaoClient();
   const [dao, setDao] = useState<DaoMetadata | null>(null);
+  const [isFollowed, setIsFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const isSmallHeight = useScreenHeight();
+  const { isSmallHeight, isLargeHeight, isMobile } = useScreenHeight();
+  const refreshTrigger = useDaoStore(state => state.refreshTrigger);
 
   useEffect(() => {
     const initDao = async () => {
@@ -44,9 +62,13 @@ export default function DaoPage() {
 
       try {
         setLoading(true);
-        const client = await getOrInitClient(currentAccount.address, daoId);
-        const metadata = client.getDaoMetadata();
-        setDao(metadata);
+        const [fetchingDaoMetadata, userDaos] = await Promise.all([
+          getDaoMetadata(currentAccount.address, daoId),
+          getUserDaos(currentAccount.address)
+        ]);
+        
+        setDao(fetchingDaoMetadata);
+        setIsFollowed(userDaos.some(userDao => userDao.id === daoId));
       } catch (error) {
         console.error("Error initializing dao:", error);
         setDao(null);
@@ -56,11 +78,11 @@ export default function DaoPage() {
     };
 
     initDao();
-  }, [currentAccount?.address, daoId, getOrInitClient]);
+  }, [currentAccount?.address, daoId, getOrInitClient, refreshTrigger]);
 
   if (!currentAccount?.address) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen pt-12">
+      <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-3xl font-bold mb-4">Welcome to DAO Dapp</h1>
         <p className="text-gray-600 mb-8">Connect your wallet to view this DAO</p>
       </div>
@@ -69,7 +91,7 @@ export default function DaoPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen pt-12">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -77,7 +99,7 @@ export default function DaoPage() {
 
   if (!dao) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen pt-12">
+      <div className="flex flex-col items-center justify-center min-h-screen">
         <h1 className="text-3xl font-bold mb-4">DAO Not Found</h1>
         <p className="text-gray-600">The DAO you're looking for doesn't exist or you don't have access to it.</p>
       </div>
@@ -88,19 +110,15 @@ export default function DaoPage() {
   const isValidImageUrl = dao.image?.startsWith('/') || dao.image?.startsWith('http');
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100">
-      {/* Top Section */}
+    <>
+      {/* DAO Image */}
       <div 
-        className={`bg-gradient-to-b from-white to-transparent ${
-          isSmallHeight ? 'h-[25vh]' : 'h-[15vh]'
-        }`}
-      />
-
-      {/* DAO Image - Left-aligned on md screens, centered on smaller screens */}
-      <div 
-        className="relative z-20 flex md:container md:mx-auto md:px-6" 
+        className="relative z-20 flex md:max-w-none mb-8" 
         style={{ 
-          marginTop: isSmallHeight ? '-4rem' : '-3.25rem',
+          marginTop: isSmallHeight ? '-5rem' : 
+                    isLargeHeight ? '-5.5rem' : 
+                    isMobile ? '-5.5rem' : 
+                    '-5.25rem',
         }}
       >
         <div className={`
@@ -123,28 +141,55 @@ export default function DaoPage() {
         </div>
       </div>
 
-      {/* Main Content Card */}
-      <div 
-        className="relative" 
-        style={{ 
-          marginTop: isSmallHeight ? '-1rem' : '-1.2rem'
-        }}
-      >
-        <div className="absolute inset-x-0 -top-6 h-6 bg-white rounded-t-[32px]" />
-        <div className="bg-white px-6 pb-20 min-h-[90vh] pt-12">
-          {/* DAO Info */}
-          <div className="mb-8 md:container md:mx-auto">
-            <div className="md:max-w-2xl text-center md:text-left">
-              <h1 className={`font-bold mb-2 ${isSmallHeight ? 'text-xl' : 'text-2xl'}`}>
-                {dao.name}
-              </h1>
-              {dao.description && (
-                <p className="text-gray-600 mt-2 text-sm">{dao.description}</p>
-              )}
+      {/* DAO Info */}
+      <div className="mb-8">
+        <DaoHeader dao={dao} isSmallHeight={isSmallHeight} isFollowed={isFollowed} />
+      </div>
+
+      {/* Main Content Layout */}
+      <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
+        {/* Left Column (Proposals) */}
+        <div className="flex-1 order-2 mt-8 md:mt-0 md:order-1">
+          <h2 className="text-xl font-semibold mb-4">Proposals</h2>
+          <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
+            Proposals coming soon
+          </div>
+        </div>
+
+        {/* Right Column (UserData + Assets) */}
+        <div className="w-full md:w-[350px] lg:w-[450px] order-1 md:order-2 md:-mt-52">
+          {/* User Data Section */}
+          <UserData daoId={daoId} />
+
+          {/* Assets Section */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Assets</h2>
+            <div className="space-y-4">
+              {/* Wallet Preview */}
+              <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
+                <h3 className="font-medium mb-2">Wallet</h3>
+                <WalletPreview />
+              </div>
+
+              {/* Vaults Square */}
+              <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                <h3 className="font-medium mb-2">Vaults</h3>
+                <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                  Coming soon
+                </div>
+              </div>
+
+              {/* Kiosks Square */}
+              <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+                <h3 className="font-medium mb-2">Kiosks</h3>
+                <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
+                  Coming soon
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

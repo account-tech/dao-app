@@ -22,10 +22,10 @@ import { useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { CreateDaoParams } from "@/types/dao";
 
-const DEFAULT_VOTING_POWER = BigInt(1000000); // 1M voting power
-const DEFAULT_COOLDOWN = BigInt(86400); // 24 hours in seconds
-const DEFAULT_QUORUM = BigInt(500000000); // 50%
-const DEFAULT_MIN_VOTES = BigInt(100000);
+const DEFAULT_VOTING_POWER = BigInt(50); // a person needs to have atleast 50 voting power to partake in the DAO this depends on linear or quadratic rule
+const DEFAULT_COOLDOWN = BigInt(86400000); // 24 hours in milliseconds
+const DEFAULT_QUORUM = BigInt(500000000); // 50% according to the sdk
+const DEFAULT_MIN_VOTES = BigInt(10); // 50 votes alteast for the proposal to pass
 
 const CreateDaoView = () => {
   const router = useRouter();
@@ -170,7 +170,7 @@ const CreateDaoView = () => {
   if (!currentAccount) {
     return (
       <>
-        <div className="h-screen bg-gradient-to-b from-white via-white via-60% to-pink-300">
+        <div className="h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-4">Please Connect Your Wallet</h1>
@@ -184,7 +184,7 @@ const CreateDaoView = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-b from-white via-white via-60% to-pink-300">
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
         <div className="container mx-auto py-32 px-4">
           <SteppedProgress
             steps={steps}

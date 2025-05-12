@@ -99,7 +99,7 @@ export function AppSidebar() {
           <SidebarFooter className="w-full mt-auto pt-4">
             <Link 
               href="/daos"
-              className="mx-2 text-pink-500 hover:text-pink-600 flex items-center gap-2 justify-center py-2 border border-pink-500 rounded-lg w-[265px]"
+              className="mx-2 text-teal-500 hover:text-teal-600 flex items-center gap-2 justify-center py-2 border border-teal-500 rounded-lg w-[265px]"
             >
               Explore all DAOs
               <span>→</span>
@@ -115,7 +115,7 @@ export function AppSidebar() {
               <h1 className="text-2xl font-bold">Manage</h1>
               <Link 
                 href="/createDao" 
-                className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors"
+                className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition-colors"
               >
                 + New DAO
               </Link>

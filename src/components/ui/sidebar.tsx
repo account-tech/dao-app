@@ -292,8 +292,8 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       title="Toggle Sidebar"
       className={cn(
         "absolute inset-y-0 z-20 flex w-1 transition-all ease-linear",
-        "hover:w-2 hover:bg-pink-400",
-        "bg-pink-200",
+        "hover:w-2 hover:bg-teal-600",
+        "bg-gradient-to-b from-teal-200 to-teal-500",
         "group-data-[side=left]:-right-1 group-data-[side=right]:left-2",
         "group-data-[side=right]:w-10",
         className

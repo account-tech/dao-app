@@ -1,8 +1,10 @@
 'use client';
 import { DaoClient } from "@account.tech/dao";
+import { OwnedData } from "@account.tech/core";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams } from "@/types/dao";
+import { VoteIntentArgs } from "@account.tech/dao";
 
 export function useDaoClient() {
   const { getOrInitClient, resetClient } = useDaoStore();
@@ -66,6 +68,8 @@ export function useDaoClient() {
     }
   };
 
+  //====================GETTERS====================
+
   const getAllDaos = async (userAddr: string) => {
     try {
       const client = await getOrInitClient(userAddr);
@@ -109,6 +113,38 @@ export function useDaoClient() {
     }
   };
 
+  const getDaoMetadata = async (userAddr: string, daoId?: string) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.getDaoMetadata();
+    } catch (error) {
+      console.error("Error getting dao metadata:", error);
+      throw error;
+    }
+  };
+
+  const getParticipant = async (userAddr: string, daoId?: string) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.participant;
+    } catch (error) {
+      console.error("Error getting participant:", error);
+      throw error;
+    }
+  };
+
+  const getOwnedObjects = async (userAddr: string): Promise<OwnedData> => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      return client.getOwnedObjects();
+    } catch (error) {
+      console.error("Error getting owned objects:", error);
+      throw error;
+    }
+  };
+
+  //====================ACTIONS====================
+
   const followDao = async (
     userAddr: string,
     daoId: string,
@@ -138,6 +174,77 @@ export function useDaoClient() {
     }
   };
 
+  const stake = async (userAddr: string, assets: bigint | string[]) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      tx.setSender(userAddr);
+      await client.stake(tx, assets);
+      return tx;
+    } catch (error) {
+      console.error("Error staking assets:", error);
+      throw error;
+    }
+  };
+
+  const unstake = async (userAddr: string, assets: bigint | string[]) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.unstake(tx, assets);
+      return tx;
+    } catch (error) {
+      console.error("Error unstaking assets:", error);
+      throw error;
+    }
+  };
+
+  const claim = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.claim(tx);
+      return tx;
+    } catch (error) {
+      console.error("Error claiming assets:", error);
+      throw error;
+    }
+  };
+
+  //====================DAO INTENTS====================
+
+  const requestConfigDao = async (
+    userAddr: string,
+    intentArgs: VoteIntentArgs,
+    assetType: string,
+    authVotingPower: bigint,
+    unstakingCooldown: bigint,
+    votingRule: number,
+    maxVotingPower: bigint,
+    minimumVotes: bigint,
+    votingQuorum: bigint
+  ) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.requestConfigDao(
+        tx,
+        intentArgs,
+        assetType,
+        authVotingPower,
+        unstakingCooldown,
+        votingRule,
+        maxVotingPower,
+        minimumVotes,
+        votingQuorum
+      );
+      return tx;
+    } catch (error) {
+      console.error("Error requesting DAO configuration:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     refresh,
@@ -147,7 +254,14 @@ export function useDaoClient() {
     getUserDaos,
     getAllDaos,
     getDao,
+    getDaoMetadata,
+    getParticipant,
+    getOwnedObjects,
     followDao,
     unfollowDao,
+    stake,
+    unstake,
+    claim,
+    requestConfigDao,
   };
 }

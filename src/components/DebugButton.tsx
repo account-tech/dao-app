@@ -19,12 +19,8 @@ export function DebugButton() {
       if (!currentAccount) return;
 
       try {
-        const objects = await suiClient.getOwnedObjects({
+        const objects = await suiClient.getAllCoins({
           owner: currentAccount.address,
-          options: {
-            showContent: true,
-            showType: true,
-          }
         });
         setWalletObjects(objects.data);
       } catch (error) {
@@ -37,23 +33,8 @@ export function DebugButton() {
 
   const handleDebugClick = async () => {
     console.log('=== Debug Information ===');
-    console.log('Current Account:', currentAccount?.address);
-    console.log('Store State:', {
-      currentAddress,
-      hasClient: !!client,
-    });
+    console.log(walletObjects);
     console.log('Full Client:', client);
-
-    // Add DAO information
-    if (currentAccount?.address) {
-      try {
-        const daoInfo = await getDao(currentAccount.address);
-        console.log('Current DAO Information:', daoInfo);
-      } catch (error) {
-        console.error('Error fetching DAO information:', error);
-      }
-    }
-
     console.log('=====================');
   };
 

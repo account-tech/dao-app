@@ -1,6 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 export const VotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   const handleVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,9 +24,17 @@ export const VotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData 
           value={formData.authVotingPower.toString()}
           onChange={handleVotingPowerChange}
         />
-        <p className="text-sm text-gray-500">
-          This is the minimum amount of voting power required to participate in the DAO.
-        </p>
+        <Alert>
+          <InfoIcon />
+          <AlertTitle>Voting Power Rules</AlertTitle>
+          <AlertDescription className="mt-2 space-y-2">
+            <p>The minimum voting power determines who can participate in the DAO. This value depends on the voting rule you choose:</p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li><strong>Linear Rule:</strong> If you have 25 tokens, you have 25 voting power (1:1 ratio)</li>
+              <li><strong>Quadratic Rule:</strong> If you have 25 tokens, you have 5 voting power (square root)</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
       </div>
     </div>
   );
