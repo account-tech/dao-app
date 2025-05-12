@@ -4,6 +4,7 @@ import { OwnedData } from "@account.tech/core";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams } from "@/types/dao";
+import { VoteIntentArgs } from "@account.tech/dao";
 
 export function useDaoClient() {
   const { getOrInitClient, resetClient } = useDaoStore();
@@ -210,6 +211,40 @@ export function useDaoClient() {
     }
   };
 
+  //====================DAO INTENTS====================
+
+  const requestConfigDao = async (
+    userAddr: string,
+    intentArgs: VoteIntentArgs,
+    assetType: string,
+    authVotingPower: bigint,
+    unstakingCooldown: bigint,
+    votingRule: number,
+    maxVotingPower: bigint,
+    minimumVotes: bigint,
+    votingQuorum: bigint
+  ) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.requestConfigDao(
+        tx,
+        intentArgs,
+        assetType,
+        authVotingPower,
+        unstakingCooldown,
+        votingRule,
+        maxVotingPower,
+        minimumVotes,
+        votingQuorum
+      );
+      return tx;
+    } catch (error) {
+      console.error("Error requesting DAO configuration:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     refresh,
@@ -227,5 +262,6 @@ export function useDaoClient() {
     stake,
     unstake,
     claim,
+    requestConfigDao,
   };
 }
