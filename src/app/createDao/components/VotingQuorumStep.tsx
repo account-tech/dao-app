@@ -34,8 +34,8 @@ export const VotingQuorumStep: React.FC<StepProps> = ({ formData, updateFormData
           <div className="text-center">
             <span className="text-2xl font-bold">{currentPercentage}%</span>
             <p className="text-sm text-gray-500 mt-2">
-              At least {currentPercentage}% of the members need to approve a proposal in order for it to be executable.<br/>
-              For example, if your DAO has 10 members, {Math.ceil((currentPercentage / 100) * 10)} members would need to approve.
+              For a proposal to pass, at least {currentPercentage}% of all votes must be "Yes" votes.<br/>
+              For example, if a proposal receives 100 votes total, at least {currentPercentage} of them must be "Yes" votes for the proposal to pass.
             </p>
           </div>
         </div>
