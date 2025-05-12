@@ -50,9 +50,9 @@ export function UnconnectedView() {
           transition={{ duration: 1.25, ease: "easeInOut" }}
           className="relative"
         >
-          <span className="relative z-10 mb-4 inline-block rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs text-pink-600">
+          <span className="relative z-10 mb-4 inline-block rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs text-teal-600">
             Welcome to DAO Dapp
-            <span className="absolute bottom-0 left-3 right-3 h-[1px] bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0" />
+            <span className="absolute bottom-0 left-3 right-3 h-[1px] bg-gradient-to-r from-teal-500/0 via-teal-500/50 to-teal-500/0" />
           </span>
         </motion.div>
 
@@ -85,7 +85,7 @@ export function UnconnectedView() {
             trigger={
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-md px-6 py-3 flex items-center gap-2 ring-2 ring-pink-500/50 ring-offset-2 transition-all hover:scale-[1.02] hover:ring-transparent active:scale-[0.98]"
+                className="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-md px-6 py-3 flex items-center gap-2 ring-2 ring-teal-500/50 ring-offset-2 transition-all hover:scale-[1.02] hover:ring-transparent active:scale-[0.98]"
               >
                 Connect Wallet
                 <ArrowRight className="h-5 w-5" />
@@ -143,7 +143,7 @@ export function UnconnectedView() {
             top: beam.top,
             left: beam.left - BEAM_OFFSET,
           }}
-          className="absolute z-10 h-[64px] w-[2px] bg-gradient-to-b from-pink-500/0 via-pink-300 to-pink-300"
+          className="absolute z-10 h-[64px] w-[2px] bg-gradient-to-b from-teal-500/0 via-teal-300 to-teal-300"
         />
       ))}
 
@@ -156,7 +156,7 @@ export function UnconnectedView() {
       >
         <div
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke-width='1' stroke='rgb(244 114 182 / 0.15)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e")`,
+            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke-width='1' stroke='rgb(45 212 191 / 0.15)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e")`,
           }}
           className="absolute inset-0 z-0"
         />

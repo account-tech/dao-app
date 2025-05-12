@@ -341,8 +341,8 @@ export default function UserData({ daoId }: { daoId: string }) {
                         <p className="text-yellow-200">Minimum required: {authVotingPower}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400" />
-                        <p className="text-purple-200">Maximum allowed: {maxVotingPower}</p>
+                        <div className="w-2 h-2 rounded-full bg-teal-400" />
+                        <p className="text-teal-200">Maximum allowed: {maxVotingPower}</p>
                       </div>
                     </div>
                   </TooltipContent>
@@ -350,7 +350,7 @@ export default function UserData({ daoId }: { daoId: string }) {
               </TooltipProvider>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="font-bold text-xl bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="font-bold text-xl bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
                 {votingPower}
               </span>
               <span className="text-xs text-gray-400">/ {maxVotingPower}</span>
@@ -366,7 +366,7 @@ export default function UserData({ daoId }: { daoId: string }) {
               }}
             />
             <div 
-              className="h-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-teal-400 to-emerald-600 transition-all duration-500 ease-out"
               style={{ 
                 width: `${Math.min(100, (Number(votingPower) / Number(maxVotingPower)) * 100)}%` 
               }}
@@ -374,7 +374,7 @@ export default function UserData({ daoId }: { daoId: string }) {
           </div>
 
           {Number(votingPower) === 0 && (
-            <Alert className="mt-4 bg-pink-50 text-pink-800 border-pink-200">
+            <Alert className="mt-4 bg-teal-50 text-teal-800 border-teal-200">
               <AlertDescription className="text-sm">
                 Stake tokens to increase your voting power and participate in DAO decisions.
                 {Number(availableBalance) > 0 && " You have tokens available to stake!"}
@@ -487,7 +487,7 @@ export default function UserData({ daoId }: { daoId: string }) {
                         <Button
                           type="button"
                           variant="ghost"
-                          className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-pink-600 hover:text-pink-700"
+                          className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-teal-600 hover:text-teal-700"
                           onClick={() => setStakeAmount(availableBalance)}
                         >
                           MAX
@@ -552,7 +552,7 @@ export default function UserData({ daoId }: { daoId: string }) {
                         <Button
                           type="button"
                           variant="ghost"
-                          className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-pink-600 hover:text-pink-700"
+                          className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-teal-600 hover:text-teal-700"
                           onClick={() => setUnstakeAmount(totalStaked)}
                         >
                           MAX
@@ -583,7 +583,7 @@ export default function UserData({ daoId }: { daoId: string }) {
             <Button
               onClick={handleClaim}
               disabled={isClaiming}
-              className="w-full bg-green-500 hover:bg-green-600 text-white"
+              className="w-full bg-teal-500 hover:bg-teal-600 text-white"
             >
               {isClaiming ? (
                 <div className="flex items-center justify-center gap-2">

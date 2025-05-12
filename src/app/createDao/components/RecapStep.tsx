@@ -44,7 +44,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-1 text-pink-600 hover:text-pink-800 group"
+      className="flex items-center gap-1 text-teal-600 hover:text-teal-800 group"
     >
       <TruncatedText text={text} />
       <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -52,14 +52,14 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
   );
 
   const InfoRow = ({ label, value, important = false }: { label: string, value: React.ReactNode, important?: boolean }) => (
-    <div className="grid grid-cols-2 gap-4 py-2 border-b last:border-b-0 border-pink-50">
+    <div className="grid grid-cols-2 gap-4 py-2 border-b last:border-b-0 border-teal-50">
       <span className="text-gray-600 font-medium">{label}</span>
-      <div className={important ? "font-semibold text-pink-700" : ""}>{value}</div>
+      <div className={important ? "font-semibold text-teal-700" : ""}>{value}</div>
     </div>
   );
 
   const Section = ({ title, children, icon }: { title: string, children: React.ReactNode, icon?: React.ReactNode }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-pink-100 p-4">
+    <div className="bg-white rounded-lg shadow-sm border border-teal-100 p-4">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
         {title}
         {icon}
@@ -73,7 +73,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-pink-500 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">
           DAO Configuration Summary
         </h2>
         <div className="px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded-full border border-gray-200">
@@ -187,7 +187,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
         </Section>
       </div>
 
-      <div className="mt-8 p-4 bg-gradient-to-r from-yellow-50 to-red-50 rounded-lg border border-yellow-100">
+      <div className="mt-8 p-4 bg-gradient-to-r from-yellow-50 to-teal-50 rounded-lg border border-yellow-100">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
@@ -196,7 +196,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             </p>
             <p className="text-sm text-yellow-700">
               Please review all settings carefully. Once the DAO is created, these configurations 
-              cannot be modified. Make sure all parameters align with your governance goals.
+              can only be modified through a DAO config proposal.
             </p>
           </div>
         </div>

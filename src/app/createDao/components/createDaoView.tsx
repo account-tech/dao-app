@@ -170,7 +170,7 @@ const CreateDaoView = () => {
   if (!currentAccount) {
     return (
       <>
-        <div className="h-screen bg-gradient-to-b from-white via-white via-60% to-pink-300">
+        <div className="h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-4">Please Connect Your Wallet</h1>
@@ -184,7 +184,7 @@ const CreateDaoView = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-b from-white via-white via-60% to-pink-300">
+      <div className="min-h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
         <div className="container mx-auto py-32 px-4">
           <SteppedProgress
             steps={steps}

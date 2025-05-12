@@ -173,8 +173,8 @@ export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardPro
         </div>
       </div>
 
-      {/* Pink Gradient Line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-pink-200 to-transparent"></div>
+      {/* Teal Gradient Line */}
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-500 to-transparent"></div>
     </div>
   );
 } 

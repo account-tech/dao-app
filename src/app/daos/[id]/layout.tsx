@@ -70,7 +70,7 @@ export default function DaoLayout({
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-pink-100">
+    <div className="min-h-screen bg-[linear-gradient(to_bottom,_#2dd4bf_0%,_#128077_10%)]">
       {/* Top Section */}
       <div 
         className={`bg-gradient-to-b from-white to-transparent ${

@@ -3,5 +3,9 @@
 import { DaosView } from "./components/DaosView";
 
 export default function DaosPage() {
-  return <DaosView />;
+  return (
+    <div className="bg-gray-50">
+      <DaosView />
+    </div>
+  );
 }
