@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { DaoMetadata, Dao } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
 import { useDaoClient } from "@/hooks/useDaoClient";
-import { getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { getSimplifiedAssetType, getCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
 import { Copy, Info, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
@@ -37,13 +37,16 @@ const formatUrl = (url: string) => {
 };
 
 export default function DaoSettingsPage() {
+  const router = useRouter();
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const { getDaoMetadata, getDao } = useDaoClient();
+  const { getDaoMetadata, getDao, getParticipant } = useDaoClient();
   const [dao, setDao] = useState<DaoMetadata | null>(null);
   const [daoParams, setDaoParams] = useState<Dao | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasAuthPower, setHasAuthPower] = useState(false);
+  const [votingPower, setVotingPower] = useState<string>("0");
   const refreshTrigger = useDaoStore(state => state.refreshTrigger);
 
   useEffect(() => {
@@ -52,17 +55,57 @@ export default function DaoSettingsPage() {
 
       try {
         setLoading(true);
-        const [metadata, params] = await Promise.all([
+        const [metadata, params, participant] = await Promise.all([
           getDaoMetadata(currentAccount.address, daoId),
-          getDao(currentAccount.address, daoId)
+          getDao(currentAccount.address, daoId),
+          getParticipant(currentAccount.address, daoId)
         ]);
         
         setDao(metadata);
         setDaoParams(params);
+
+        if (!participant || !params) {
+          throw new Error("Failed to fetch participant or dao data");
+        }
+
+        // Calculate total staked amount
+        let totalStakedValue = BigInt(0);
+        if (participant.staked && Array.isArray(participant.staked)) {
+          totalStakedValue = participant.staked.reduce((acc, stake) => {
+            if (stake.daoAddr === daoId) {
+              return acc + BigInt(stake.value);
+            }
+            return acc;
+          }, BigInt(0));
+        }
+
+        // Get decimals for the asset type
+        const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
+        const fetchedDecimals = await getCoinDecimals(simplifiedAssetType);
+        
+        // Calculate voting power based on the rule
+        const isQuadraticVoting = params.votingRule === 1;
+        const stakedAmount = Number(formatCoinAmount(totalStakedValue, fetchedDecimals));
+        
+        let power: string | number;
+        if (isQuadraticVoting) {
+          power = Math.sqrt(stakedAmount);
+        } else {
+          power = stakedAmount;
+        }
+        
+        const formattedPower = Number(power).toFixed(2);
+        setVotingPower(formattedPower);
+        
+        // Check if user has enough voting power for auth actions
+        setHasAuthPower(Number(formattedPower) >= Number(params.authVotingPower));
+
       } catch (error) {
         console.error("Error initializing dao:", error);
         setDao(null);
         setDaoParams(null);
+        setHasAuthPower(false);
+        setVotingPower("0");
       } finally {
         setLoading(false);
       }
@@ -335,7 +378,7 @@ export default function DaoSettingsPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <label className="block text-sm font-medium text-gray-700">
-                    Minimum Voting Power
+                    Auth Voting Power
                   </label>
                   <TooltipProvider>
                     <Tooltip>
@@ -343,7 +386,7 @@ export default function DaoSettingsPage() {
                         <Info className="h-4 w-4 text-gray-400" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="max-w-xs">Minimum voting power required to create proposals and participate in key DAO activities.</p>
+                        <p className="max-w-xs">Auth voting power required to create proposals and participate in key DAO activities.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -506,11 +549,32 @@ export default function DaoSettingsPage() {
             </div>
           </div>
 
-          <div className="absolute bottom-6 left-6 right-6">
-            <Alert className="bg-yellow-50/50 border border-yellow-100 shadow-none">
-              <Info className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800 text-sm">
-                Parameters can only be modified through a DAO config proposal
+          <div className="absolute bottom-6 left-6 right-6 space-y-4">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => router.push(`/daos/${daoId}/settings/requestConfigDao`)}
+                    disabled={!hasAuthPower}
+                    className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Request DAO Configuration
+                  </button>
+                </TooltipTrigger>
+                {!hasAuthPower && (
+                  <TooltipContent>
+                    <p>You need to stake more DAO tokens to reach the required voting power of {daoParams.authVotingPower}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+
+            <Alert className={`border shadow-none ${!hasAuthPower ? 'bg-yellow-50/50 border-yellow-100' : 'bg-teal-50/50 border-teal-100'}`}>
+              <Info className={!hasAuthPower ? 'h-4 w-4 text-yellow-600' : 'h-4 w-4 text-teal-600'} />
+              <AlertDescription className={!hasAuthPower ? 'text-yellow-800 text-sm' : 'text-teal-800 text-sm'}>
+                {!hasAuthPower 
+                  ? `You need at least ${daoParams.authVotingPower} voting power to request configuration changes. Current: ${votingPower}. Stake more tokens to request configuration changes.`
+                  : "You have enough voting power to request configuration changes"}
               </AlertDescription>
             </Alert>
           </div>

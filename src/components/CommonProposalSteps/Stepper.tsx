@@ -62,60 +62,57 @@ const SteppedProgress = <T extends BaseFormData>({
   const isNextDisabled = isLoading || !isStepValid();
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="w-full max-w-4xl space-y-8">
-        <Steps numSteps={steps.length} stepsComplete={completedSteps} />
-        
-        <div className="text-center">
-          <h2 className="text-2xl font-bold">{steps[currentStep].title}</h2>
-          <p className="text-gray-600 mt-2">{steps[currentStep].description}</p>
-        </div>
+    <div className="w-full max-w-4xl mx-auto space-y-8">
+      <Steps numSteps={steps.length} stepsComplete={completedSteps} />
+      
+      <div className="text-center">
+        <h2 className="text-2xl font-bold">{steps[currentStep].title}</h2>
+        <p className="text-gray-600 mt-2">{steps[currentStep].description}</p>
+      </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-          <div className="min-h-[400px] sm:min-h-[500px] flex flex-col">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1"
-              >
-                {steps[currentStep].component}
-              </motion.div>
-            </AnimatePresence>
+      <div className="bg-white rounded-lg shadow-lg">
+        <div className="p-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {steps[currentStep].component}
+            </motion.div>
+          </AnimatePresence>
 
-            <div className="flex justify-end gap-4 mt-6">
-              {currentStep > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={isLoading}
-                  className="px-6"
-                >
-                  Back
-                </Button>
-              )}
+          <div className="flex justify-end gap-4 mt-6">
+            {currentStep > 0 && (
               <Button
-                onClick={handleNext}
-                disabled={isNextDisabled}
-                className="px-6 bg-teal-500 text-white hover:bg-teal-600"
+                variant="outline"
+                onClick={handleBack}
+                disabled={isLoading}
+                className="px-6"
               >
-                {(isLoading || isCompleted) && currentStep === steps.length - 1 ? (
-                  <div className="flex items-center">
-                    <motion.div
-                      className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"
-                    />
-                    Processing...
-                  </div>
-                ) : currentStep === steps.length - 1 ? (
-                  "Confirm Configuration"
-                ) : (
-                  "Next"
-                )}
+                Back
               </Button>
-            </div>
+            )}
+            <Button
+              onClick={handleNext}
+              disabled={isNextDisabled}
+              className="px-6 bg-teal-500 text-white hover:bg-teal-600"
+            >
+              {(isLoading || isCompleted) && currentStep === steps.length - 1 ? (
+                <div className="flex items-center">
+                  <motion.div
+                    className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"
+                  />
+                  Processing...
+                </div>
+              ) : currentStep === steps.length - 1 ? (
+                "Confirm Configuration"
+              ) : (
+                "Next"
+              )}
+            </Button>
           </div>
         </div>
       </div>
