@@ -14,6 +14,7 @@ import { VotingRuleStep } from './VotingRuleStep';
 import { VotingLimitsStep } from './VotingLimitsStep';
 import { VotingQuorumStep } from './VotingQuorumStep';
 import { DaoConfigProvider } from '../context/DaoConfigContext';
+import { RecapStep } from './RecapStep';
 import Loading from '../loading';
 
 const ConfigDaoView = () => {
@@ -89,16 +90,6 @@ const ConfigDaoView = () => {
 
   const steps = [
     {
-      title: "Config Proposal",
-      description: "Configure your proposal details",
-      component: (
-        <ConfigProposalStep<DaoConfigFormData> 
-          formData={formData} 
-          updateFormData={updateFormData} 
-        />
-      )
-    },
-    {
       title: "Asset Type",
       description: "Modify the DAO's asset type",
       component: (
@@ -119,20 +110,20 @@ const ConfigDaoView = () => {
       )
     },
     {
-      title: "Voting Rule",
-      description: "Change how voting power is calculated from token holdings",
+      title: "Unstaking Cooldown",
+      description: "Modify the waiting period for unstaking tokens",
       component: (
-        <VotingRuleStep
+        <UnstakingCooldownStep
           formData={formData}
           updateFormData={updateFormData}
         />
       )
     },
     {
-      title: "Voting Limits",
-      description: "Set maximum voting power and minimum votes thresholds",
+      title: "Voting Rule",
+      description: "Change how voting power is calculated from token holdings",
       component: (
-        <VotingLimitsStep
+        <VotingRuleStep
           formData={formData}
           updateFormData={updateFormData}
         />
@@ -149,15 +140,35 @@ const ConfigDaoView = () => {
       )
     },
     {
-      title: "Unstaking Cooldown",
-      description: "Modify the waiting period for unstaking tokens",
+      title: "Voting Limits",
+      description: "Set maximum voting power and minimum votes thresholds",
       component: (
-        <UnstakingCooldownStep
+        <VotingLimitsStep
           formData={formData}
           updateFormData={updateFormData}
         />
       )
     },
+    {
+      title: "Config Proposal",
+      description: "Configure your proposal details",
+      component: (
+        <ConfigProposalStep<DaoConfigFormData> 
+          formData={formData} 
+          updateFormData={updateFormData} 
+        />
+      )
+    },
+    {
+      title: "Review Changes",
+      description: "Review all configuration changes before submitting",
+      component: (
+        <RecapStep
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      )
+    }
   ];
 
   if (!currentAccount) {
