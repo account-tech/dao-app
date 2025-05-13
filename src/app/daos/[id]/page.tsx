@@ -172,7 +172,7 @@ export default function DaoPage() {
               </div>
 
               {/* Vaults Square */}
-              <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+              <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
                 <h3 className="font-medium mb-2">Vaults</h3>
                 <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
                   Coming soon
@@ -180,7 +180,7 @@ export default function DaoPage() {
               </div>
 
               {/* Kiosks Square */}
-              <div className="bg-white rounded-lg shadow p-4 border border-gray-100 hover:border-pink-200 transition-colors">
+              <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
                 <h3 className="font-medium mb-2">Kiosks</h3>
                 <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
                   Coming soon

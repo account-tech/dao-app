@@ -33,6 +33,14 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
   const triggerRefresh = useDaoStore(state => state.triggerRefresh);
   const resetClient = useDaoStore(state => state.resetClient);
 
+  const formatUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
   const handleFollowClick = async () => {
     if (!currentAccount?.address || isLoading) return;
 
@@ -78,7 +86,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
         ? `${baseStyles} bg-red-50 text-red-500 hover:bg-red-100`
         : `${baseStyles} bg-gray-100 text-gray-700 hover:bg-gray-200`;
     }
-    return `${baseStyles} bg-pink-600 text-white hover:bg-pink-700`;
+    return `${baseStyles} bg-teal-500 text-white hover:bg-teal-600`;
   };
 
   const getButtonText = () => {
@@ -134,7 +142,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
               <TooltipTrigger asChild>
                 <button 
                   className={`p-2 rounded-full transition-colors ${dao.twitter ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
-                  onClick={() => dao.twitter && window.open(dao.twitter, '_blank')}
+                  onClick={() => dao.twitter && window.open(formatUrl(dao.twitter), '_blank')}
                   disabled={!dao.twitter}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
@@ -150,7 +158,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
               <TooltipTrigger asChild>
                 <button 
                   className={`p-2 rounded-full transition-colors ${dao.discord ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
-                  onClick={() => dao.discord && window.open(dao.discord, '_blank')}
+                  onClick={() => dao.discord && window.open(formatUrl(dao.discord), '_blank')}
                   disabled={!dao.discord}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
@@ -168,7 +176,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
               <TooltipTrigger asChild>
                 <button 
                   className={`p-2 rounded-full transition-colors ${dao.telegram ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
-                  onClick={() => dao.telegram && window.open(dao.telegram, '_blank')}
+                  onClick={() => dao.telegram && window.open(formatUrl(dao.telegram), '_blank')}
                   disabled={!dao.telegram}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2z"/></svg>
@@ -184,7 +192,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
               <TooltipTrigger asChild>
                 <button 
                   className={`p-2 rounded-full transition-colors ${dao.github ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
-                  onClick={() => dao.github && window.open(dao.github, '_blank')}
+                  onClick={() => dao.github && window.open(formatUrl(dao.github), '_blank')}
                   disabled={!dao.github}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
@@ -200,7 +208,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
               <TooltipTrigger asChild>
                 <button 
                   className={`p-2 rounded-full transition-colors ${dao.website ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
-                  onClick={() => dao.website && window.open(dao.website, '_blank')}
+                  onClick={() => dao.website && window.open(formatUrl(dao.website), '_blank')}
                   disabled={!dao.website}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>

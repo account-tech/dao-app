@@ -7,13 +7,22 @@ export const BasicInfoStep: React.FC<StepProps> = ({ formData, updateFormData })
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">DAO Name</Label>
+        <Label htmlFor="name" className="flex items-center gap-1">
+          DAO Name
+          <span className="text-red-500">*</span>
+          <span className="text-xs text-gray-500 ml-1">(required)</span>
+        </Label>
         <Input
           id="name"
           placeholder="Enter DAO name..."
           value={formData.name}
           onChange={(e) => updateFormData({ name: e.target.value })}
+          required
+          className={!formData.name ? "border-red-200 focus:border-red-500" : ""}
         />
+        {!formData.name && (
+          <p className="text-sm text-red-500 mt-1">DAO name is required</p>
+        )}
       </div>
 
       <div className="space-y-2">

@@ -154,7 +154,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             important
           />
           <InfoRow 
-            label="Minimum Voting Power" 
+            label="Authentication Voting Power" 
             value={formData.authVotingPower.toString()}
             important
           />

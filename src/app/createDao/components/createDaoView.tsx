@@ -136,7 +136,7 @@ const CreateDaoView = () => {
       component: <BasicInfoStep formData={formData} updateFormData={updateFormData} />
     },
     {
-      title: "Minimum Voting Power",
+      title: "Authentication Voting Power",
       description: "Set the minimum voting power to get admin permissions (e.g. create proposal, open vault, deposit asset, etc)",
       component: <VotingPowerStep formData={formData} updateFormData={updateFormData} />
     },

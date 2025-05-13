@@ -7,8 +7,8 @@ export const validateStep = (step: number, formData: DaoFormData): boolean => {
       return formData.daoType === 'coin' && !!formData.coinType;
 
     case 1: // BasicInfoStep
-      // Ensure name and description are present
-      return !!formData.name.trim() && !!formData.description.trim();
+      // Ensure name is present
+      return !!formData.name.trim()
 
     case 2: // VotingPowerStep
       // Ensure authVotingPower is greater than 0

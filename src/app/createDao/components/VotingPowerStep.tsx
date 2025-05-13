@@ -15,7 +15,7 @@ export const VotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="authVotingPower">Minimum Voting Power</Label>
+        <Label htmlFor="authVotingPower">Authentication Voting Power</Label>
         <Input
           id="authVotingPower"
           type="number"
@@ -28,7 +28,7 @@ export const VotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData 
           <InfoIcon />
           <AlertTitle>Voting Power Rules</AlertTitle>
           <AlertDescription className="mt-2 space-y-2">
-            <p>The minimum voting power determines who can participate in the DAO. This value depends on the voting rule you choose:</p>
+            <p>The authentication voting power determines who can participate in the key DAO actions. This value depends on the voting rule you choose:</p>
             <ul className="list-disc pl-4 space-y-1">
               <li><strong>Linear Rule:</strong> If you have 25 tokens, you have 25 voting power (1:1 ratio)</li>
               <li><strong>Quadratic Rule:</strong> If you have 25 tokens, you have 5 voting power (square root)</li>
