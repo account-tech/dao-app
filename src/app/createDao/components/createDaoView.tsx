@@ -8,7 +8,7 @@ import {
 } from "@mysten/dapp-kit";
 import { toast } from "sonner"
 import { DaoFormData } from "../helpers/types";
-import SteppedProgress from "./Stepper";
+import SteppedProgress from "@/components/CommonProposalSteps/Stepper";
 import { SelectTypeOfDaoStep } from "./SelectTypeOfDaoStep";
 import { BasicInfoStep } from "./BasicInfoStep";
 import { VotingPowerStep } from "./VotingPowerStep";
@@ -21,6 +21,7 @@ import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { CreateDaoParams } from "@/types/dao";
+import { validateStep } from "../helpers/validation";
 
 const DEFAULT_VOTING_POWER = BigInt(50); // a person needs to have atleast 50 voting power to partake in the DAO this depends on linear or quadratic rule
 const DEFAULT_COOLDOWN = BigInt(86400000); // 24 hours in milliseconds
@@ -192,6 +193,7 @@ const CreateDaoView = () => {
             isLoading={isCreating}
             isCompleted={isCompleted}
             formData={formData}
+            validateStep={validateStep}
           />
         </div>
       </div>

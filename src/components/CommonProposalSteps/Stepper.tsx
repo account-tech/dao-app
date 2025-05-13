@@ -9,10 +9,11 @@ interface Step {
 }
 
 interface BaseFormData {
-  proposalName: string;
-  proposalDescription: string;
+  proposalName?: string;
+  proposalDescription?: string;
   executionDate?: Date | null;
   expirationDate?: Date | null;
+  [key: string]: any; // Allow for additional properties
 }
 
 interface StepperProps<T extends BaseFormData> {
@@ -99,7 +100,7 @@ const SteppedProgress = <T extends BaseFormData>({
               <Button
                 onClick={handleNext}
                 disabled={isNextDisabled}
-                className="px-6"
+                className="px-6 bg-teal-500 text-white hover:bg-teal-600"
               >
                 {(isLoading || isCompleted) && currentStep === steps.length - 1 ? (
                   <div className="flex items-center">
@@ -147,7 +148,7 @@ const Steps = ({
             {stepNum !== stepArray.length && (
               <div className="w-full h-1 rounded-full bg-gray-200 relative">
                 <motion.div
-                  className="absolute top-0 bottom-0 left-0 bg-neutral-950 rounded-full"
+                  className="absolute top-0 bottom-0 left-0 bg-teal-500 rounded-full"
                   animate={{ width: isCompleted ? "100%" : 0 }}
                   transition={{ ease: "easeIn", duration: 0.3 }}
                 />
@@ -173,8 +174,8 @@ const Step = ({ num, isActive, isCompleted }: StepProps) => {
         className={`w-10 h-10 flex items-center justify-center shrink-0 border-2 rounded-full font-semibold text-sm relative z-10 transition-colors duration-300 ${
           isActive
             ? isCompleted
-              ? "border-neutral-950 bg-neutral-950 text-white"
-              : "border-neutral-950 text-neutral-950"
+              ? "border-teal-500 bg-teal-500 text-white"
+              : "border-teal-500 text-teal-500"
             : "border-gray-300 text-gray-300"
         }`}
       >
