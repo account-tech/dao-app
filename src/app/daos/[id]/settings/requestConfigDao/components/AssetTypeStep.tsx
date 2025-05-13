@@ -199,7 +199,7 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
                           <div className="flex items-center gap-2">
                             <span>{trimAddress(coin.type)}</span>
                             {isCurrent && (
-                              <span className="text-xs text-teal-600 font-medium">(Current)</span>
+                              <span className="text-xs text-teal-600 font-medium">(Selected)</span>
                             )}
                           </div>
                         </div>

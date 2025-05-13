@@ -10,6 +10,9 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import { AssetTypeStep } from './AssetTypeStep';
 import { AuthVotingPowerStep } from './AuthVotingPowerStep';
 import { UnstakingCooldownStep } from './UnstakingCooldownStep';
+import { VotingRuleStep } from './VotingRuleStep';
+import { VotingLimitsStep } from './VotingLimitsStep';
+import { VotingQuorumStep } from './VotingQuorumStep';
 import { DaoConfigProvider } from '../context/DaoConfigContext';
 import Loading from '../loading';
 
@@ -110,6 +113,36 @@ const ConfigDaoView = () => {
       description: "Modify the minimum voting power required for key actions",
       component: (
         <AuthVotingPowerStep
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      )
+    },
+    {
+      title: "Voting Rule",
+      description: "Change how voting power is calculated from token holdings",
+      component: (
+        <VotingRuleStep
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      )
+    },
+    {
+      title: "Voting Limits",
+      description: "Set maximum voting power and minimum votes thresholds",
+      component: (
+        <VotingLimitsStep
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      )
+    },
+    {
+      title: "Approval Threshold",
+      description: "Set the percentage of 'Yes' votes required for proposals to pass",
+      component: (
+        <VotingQuorumStep
           formData={formData}
           updateFormData={updateFormData}
         />
