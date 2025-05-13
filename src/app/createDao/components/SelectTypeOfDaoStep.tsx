@@ -100,9 +100,23 @@ export const SelectTypeOfDaoStep: React.FC<StepProps> = ({ formData, updateFormD
   const selectedCoin = coins.find(coin => coin.type === formData.coinType);
 
   const handleSelect = (value: string) => {
-    updateFormData({ coinType: value });
-    setInputValue(value);
+    const wrappedCoinType = `0x2::coin::Coin<${value}>`;
+    updateFormData({ coinType: wrappedCoinType });
+    setInputValue(wrappedCoinType);
     setOpen(false);
+  };
+
+  const handleInputChange = (value: string) => {
+    // If the input already contains the wrapper, use it as is
+    if (value.startsWith('0x2::coin::Coin<') && value.endsWith('>')) {
+      setInputValue(value);
+      updateFormData({ coinType: value });
+    } else {
+      // Otherwise, wrap it
+      const wrappedValue = `0x2::coin::Coin<${value}>`;
+      setInputValue(wrappedValue);
+      updateFormData({ coinType: wrappedValue });
+    }
   };
 
   return (
@@ -151,10 +165,7 @@ export const SelectTypeOfDaoStep: React.FC<StepProps> = ({ formData, updateFormD
                 <CommandInput 
                   placeholder="Search or enter coin type..." 
                   value={inputValue}
-                  onValueChange={(value) => {
-                    setInputValue(value);
-                    updateFormData({ coinType: value });
-                  }}
+                  onValueChange={handleInputChange}
                 />
                 <CommandList>
                   <CommandEmpty>
@@ -179,7 +190,7 @@ export const SelectTypeOfDaoStep: React.FC<StepProps> = ({ formData, updateFormD
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              formData.coinType === coin.type ? "opacity-100" : "opacity-0"
+                              formData.coinType === `0x2::coin::Coin<${coin.type}>` ? "opacity-100" : "opacity-0"
                             )}
                           />
                           <span>{trimAddress(getSimplifiedAssetType(coin.type))}</span>
