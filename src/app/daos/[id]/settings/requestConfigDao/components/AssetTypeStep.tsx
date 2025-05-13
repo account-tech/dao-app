@@ -23,6 +23,7 @@ import { getMultipleCoinDecimals, formatCoinAmount, getSimplifiedAssetType } fro
 import { StepProps } from "../helpers/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useOriginalDaoConfig } from "../context/DaoConfigContext";
 
 interface CoinOption {
   type: string;
@@ -42,8 +43,8 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
   const [open, setOpen] = useState(false);
   const [coins, setCoins] = useState<CoinOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentAssetType, setCurrentAssetType] = useState(formData.assetType);
-  const [inputValue, setInputValue] = useState(currentAssetType || "");
+  const [inputValue, setInputValue] = useState(formData.assetType || "");
+  const originalConfig = useOriginalDaoConfig();
 
   useEffect(() => {
     const fetchCoins = async () => {
@@ -94,9 +95,9 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
   }, [currentAccount, suiClient]);
 
   useEffect(() => {
-    // Update input value when currentAssetType changes
-    setInputValue(currentAssetType || "");
-  }, [currentAssetType]);
+    // Update input value when formData.assetType changes
+    setInputValue(formData.assetType || "");
+  }, [formData.assetType]);
 
   const handleSelect = (value: string) => {
     const wrappedCoinType = `0x2::coin::Coin<${value}>`;
@@ -120,7 +121,7 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
 
   // Helper function to check if a coin type matches the current asset type
   const isCurrentAssetType = (coinType: string) => {
-    const simplifiedCurrent = getSimplifiedAssetType(currentAssetType);
+    const simplifiedCurrent = getSimplifiedAssetType(formData.assetType);
     return coinType === simplifiedCurrent;
   };
 
@@ -131,7 +132,7 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
         <Label>Current Asset Type</Label>
         <div className="p-4 bg-gray-50 rounded-lg border">
           <code className="text-sm break-all">
-            {trimAddress(currentAssetType, 20)}
+            {trimAddress(originalConfig.assetType, 20)}
           </code>
         </div>
       </div>
@@ -149,10 +150,10 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
             >
               {loading ? (
                 <span className="text-gray-500">Loading coins...</span>
-              ) : formData.assetType !== currentAssetType ? (
+              ) : formData.assetType !== originalConfig.assetType ? (
                 <span>{trimAddress(getSimplifiedAssetType(formData.assetType))}</span>
               ) : (
-                <span>{trimAddress(getSimplifiedAssetType(currentAssetType))}</span>
+                <span>{trimAddress(getSimplifiedAssetType(originalConfig.assetType))}</span>
               )}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -214,7 +215,7 @@ export const AssetTypeStep: React.FC<StepProps> = ({ formData, updateFormData })
       </div>
 
       {/* Warning when asset type is changed */}
-      {formData.assetType !== currentAssetType && (
+      {formData.assetType !== originalConfig.assetType && (
         <Alert variant="default" className="bg-yellow-50 text-yellow-900 border-yellow-200">
           <AlertCircle className="h-4 w-4 text-yellow-600" />
           <AlertDescription>

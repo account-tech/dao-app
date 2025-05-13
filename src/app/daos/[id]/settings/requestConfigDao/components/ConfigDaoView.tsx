@@ -9,6 +9,9 @@ import { ConfigProposalStep } from "@/components/CommonProposalSteps/ConfigPropo
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { AssetTypeStep } from './AssetTypeStep';
 import { AuthVotingPowerStep } from './AuthVotingPowerStep';
+import { UnstakingCooldownStep } from './UnstakingCooldownStep';
+import { DaoConfigProvider } from '../context/DaoConfigContext';
+import Loading from '../loading';
 
 const ConfigDaoView = () => {
   const params = useParams();
@@ -17,6 +20,7 @@ const ConfigDaoView = () => {
   const { getDao } = useDaoClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [originalConfig, setOriginalConfig] = useState<DaoConfigFormData | null>(null);
   const [formData, setFormData] = useState<DaoConfigFormData>({
     // Initialize with empty values
     proposalName: '',
@@ -57,6 +61,7 @@ const ConfigDaoView = () => {
         };
 
         setFormData(updatedFormData);
+        setOriginalConfig(updatedFormData);
 
       } catch (error) {
         console.error("Error initializing dao data:", error);
@@ -110,6 +115,16 @@ const ConfigDaoView = () => {
         />
       )
     },
+    {
+      title: "Unstaking Cooldown",
+      description: "Modify the waiting period for unstaking tokens",
+      component: (
+        <UnstakingCooldownStep
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      )
+    },
   ];
 
   if (!currentAccount) {
@@ -125,25 +140,25 @@ const ConfigDaoView = () => {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || !originalConfig) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-400"></div>
-      </div>
+      <Loading />
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
       <div className="container mx-auto py-32 px-4">
-        <SteppedProgress<DaoConfigFormData>
-          steps={steps}
-          onComplete={handleComplete}
-          isLoading={isLoading}
-          isCompleted={isCompleted}
-          formData={formData}
-          validateStep={() => true} // We'll implement proper validation later
-        />
+        <DaoConfigProvider originalConfig={originalConfig}>
+          <SteppedProgress<DaoConfigFormData>
+            steps={steps}
+            onComplete={handleComplete}
+            isLoading={isLoading}
+            isCompleted={isCompleted}
+            formData={formData}
+            validateStep={() => true} // We'll implement proper validation later
+          />
+        </DaoConfigProvider>
       </div>
     </div>
   );

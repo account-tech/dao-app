@@ -2,15 +2,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, AlertCircle } from "lucide-react";
+import { useOriginalDaoConfig } from "../context/DaoConfigContext";
+import { formatBigInt } from "@/utils/GlobalHelpers";
+import { cn } from "@/lib/utils";
 
 export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const originalConfig = useOriginalDaoConfig();
+
   const handleVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Convert to BigInt and ensure it's not negative
     const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
     updateFormData({ authVotingPower: bigIntValue });
   };
+
+  // Calculate the difference percentage for warning messages
+  const calculatePercentageChange = () => {
+    const original = Number(originalConfig.authVotingPower);
+    const new_value = Number(formData.authVotingPower);
+    if (original === 0) return new_value > 0 ? 100 : 0;
+    return ((new_value - original) / original) * 100;
+  };
+
+  const percentageChange = calculatePercentageChange();
+  const isIncreased = formData.authVotingPower > originalConfig.authVotingPower;
+  const isChanged = formData.authVotingPower !== originalConfig.authVotingPower;
 
   return (
     <div className="space-y-6">
@@ -19,7 +36,7 @@ export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormD
         <Label>Current Authentication Voting Power</Label>
         <div className="p-4 bg-gray-50 rounded-lg border">
           <code className="text-sm">
-            {formData.authVotingPower.toString()}
+            {formatBigInt(originalConfig.authVotingPower)}
           </code>
         </div>
       </div>
@@ -54,19 +71,38 @@ export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormD
             <li><strong>Linear Rule:</strong> If you have 25 tokens, you have 25 voting power (1:1 ratio)</li>
             <li><strong>Quadratic Rule:</strong> If you have 25 tokens, you have 5 voting power (square root)</li>
           </ul>
-          <p className="mt-2 text-yellow-600">
-            Note: Setting this too high might restrict participation, while setting it too low might compromise security.
-          </p>
         </AlertDescription>
       </Alert>
 
-      {/* Warning if value is changed */}
-      {formData.authVotingPower.toString() !== formData.authVotingPower.toString() && (
-        <Alert variant="default" className="bg-yellow-50 text-yellow-900 border-yellow-200">
-          <InfoIcon className="h-4 w-4 text-yellow-600" />
+      {/* Contextual Warning based on change */}
+      {isChanged && (
+        <Alert 
+          variant="default" 
+          className={cn(
+            "border",
+            isIncreased 
+              ? "bg-yellow-50 text-yellow-900 border-yellow-200" 
+              : "bg-red-50 text-red-900 border-red-200"
+          )}
+        >
+          <AlertCircle className={cn(
+            "h-4 w-4",
+            isIncreased ? "text-yellow-600" : "text-red-600"
+          )} />
           <AlertDescription>
-            Changing the authentication voting power will affect who can participate in key DAO actions.
-            Make sure the new value aligns with your DAO's governance goals.
+            {isIncreased ? (
+              <>
+                <p className="font-semibold">Increasing voting power by {Math.abs(percentageChange).toFixed(1)}%</p>
+                <p className="mt-1">This will make it harder for members to participate in governance. 
+                Ensure this aligns with your DAO's inclusivity goals.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold">Decreasing voting power by {Math.abs(percentageChange).toFixed(1)}%</p>
+                <p className="mt-1">This will make it easier for members to participate in governance. 
+                Consider security implications of lowering the threshold.</p>
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}
