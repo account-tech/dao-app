@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from "next/navigation";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useParams, useRouter } from "next/navigation";
+import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { toast } from "sonner";
 import { DaoConfigFormData } from '../helpers/types';
+import { RequestConfigDaoParams } from "@/types/dao";
 import SteppedProgress from '@/components/CommonProposalSteps/Stepper';
 import { ConfigProposalStep } from "@/components/CommonProposalSteps/ConfigProposalStep";
 import { useDaoClient } from "@/hooks/useDaoClient";
+import { useDaoStore } from "@/store/useDaoStore";
 import { AssetTypeStep } from './AssetTypeStep';
 import { AuthVotingPowerStep } from './AuthVotingPowerStep';
 import { UnstakingCooldownStep } from './UnstakingCooldownStep';
@@ -16,12 +20,17 @@ import { VotingQuorumStep } from './VotingQuorumStep';
 import { DaoConfigProvider } from '../context/DaoConfigContext';
 import { RecapStep } from './RecapStep';
 import Loading from '../loading';
+import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 
 const ConfigDaoView = () => {
+  const router = useRouter();
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const { getDao } = useDaoClient();
+  const suiClient = useSuiClient();
+  const signTransaction = useSignTransaction();
+  const { getDao, requestConfigDao } = useDaoClient();
+  const { resetClient, triggerRefresh } = useDaoStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [originalConfig, setOriginalConfig] = useState<DaoConfigFormData | null>(null);
@@ -84,8 +93,72 @@ const ConfigDaoView = () => {
     }));
   };
 
-  const handleComplete = () => {
-    setIsCompleted(true);
+  const handleConfigDao = async () => {
+    if (!currentAccount) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (!formData.proposalName || !formData.proposalDescription) {
+      toast.error("Please fill in the proposal name and description");
+      return;
+    }
+
+    try {
+      const tx = new Transaction();
+
+      const intentArgs = {
+        key: formData.proposalName,
+        description: formData.proposalDescription,
+        startTime: BigInt(formData.executionDate?.getTime() || Date.now()),
+        endTime: BigInt(formData.expirationDate?.getTime() || Date.now() + (7 * 24 * 60 * 60 * 1000))
+      };
+
+      const paramsConfigDao: RequestConfigDaoParams = {  
+        tx,
+        userAddr: currentAccount.address,
+        intentArgs,
+        assetType: formData.assetType,
+        authVotingPower: formData.authVotingPower,
+        unstakingCooldown: formData.unstakingCooldown,
+        votingRule: formData.votingRule,
+        maxVotingPower: formData.maxVotingPower,
+        minimumVotes: formData.minimumVotes,
+        votingQuorum: formData.votingQuorum
+      }
+
+      console.log(paramsConfigDao);
+      
+      await requestConfigDao(
+        currentAccount.address,
+        paramsConfigDao
+      );
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+
+      resetClient();
+      triggerRefresh();
+
+      setIsCompleted(true);
+
+      setTimeout(() => {
+        router.push(`/daos/${daoId}`);
+      }, 500);
+    } catch (error) {
+      setIsCompleted(false);
+      toast.error(error instanceof Error ? error.message : "Unknown error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const steps = [
@@ -196,7 +269,7 @@ const ConfigDaoView = () => {
         <DaoConfigProvider originalConfig={originalConfig}>
           <SteppedProgress<DaoConfigFormData>
             steps={steps}
-            onComplete={handleComplete}
+            onComplete={handleConfigDao}
             isLoading={isLoading}
             isCompleted={isCompleted}
             formData={formData}
