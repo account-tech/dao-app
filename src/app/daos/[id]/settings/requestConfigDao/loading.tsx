@@ -1,72 +1,64 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton"
+import React from "react"
 
 export default function Loading() {
   return (
-    <div className="max-w-4xl mx-auto w-full py-16">
-      {/* Steps Progress */}
-      <div className="relative mb-8">
-        <div className="flex justify-between">
-          {[1, 2, 3].map((step) => (
-            <div key={step} className="flex flex-col items-center relative z-10">
-              <Skeleton className="w-10 h-10 rounded-full bg-gray-200" />
-              <Skeleton className="w-24 h-4 mt-2 bg-gray-200" />
-            </div>
-          ))}
-        </div>
-        <div className="absolute top-5 left-[5%] right-[5%] h-[2px] bg-gray-200 -z-0" />
-      </div>
-
-      {/* Title and Description */}
-      <div className="mt-8 text-center space-y-2 mb-8">
-        <Skeleton className="h-8 w-64 mx-auto bg-gray-200" />
-        <Skeleton className="h-4 w-96 mx-auto bg-gray-200" />
-      </div>
-
-      {/* Main Content Card */}
-      <Card className="min-h-[400px]">
-        <CardHeader>
-          <Skeleton className="h-6 w-48 bg-gray-200" />
-          <Skeleton className="h-4 w-72 mt-2 bg-gray-200" />
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Dependencies Section */}
-          <div className="space-y-4">
-            <Skeleton className="h-6 w-32 bg-gray-200" />
-            {[1, 2, 3].map((dep) => (
-              <div key={dep} className="flex justify-between items-center p-3 rounded-lg border border-gray-100">
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-36 bg-gray-200" />
-                  <Skeleton className="h-4 w-64 bg-gray-200" />
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
+      <div className="container mx-auto py-32 px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Stepper skeleton */}
+          <div className="flex items-center justify-between gap-3">
+            {[...Array(8)].map((_, i) => (
+              <React.Fragment key={`step-${i}`}>
+                <div className="relative">
+                  <Skeleton className="w-10 h-10 rounded-full bg-teal-500/20" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-6 w-16 bg-gray-200" />
-                  <Skeleton className="h-6 w-6 bg-gray-200 rounded" />
-                </div>
-              </div>
+                {i < 7 && (
+                  <Skeleton className="w-full h-1 rounded-full bg-teal-200/50" />
+                )}
+              </React.Fragment>
             ))}
           </div>
 
-          {/* Search Section */}
-          <div className="mt-6">
-            <Skeleton className="h-10 w-full bg-gray-200 rounded-lg" />
-            <div className="mt-4 space-y-3">
-              {[1, 2].map((result) => (
-                <div key={result} className="flex items-center justify-between p-3 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-8 w-8 rounded bg-gray-200" />
-                    <div className="space-y-1">
-                      <Skeleton className="h-4 w-32 bg-gray-200" />
-                      <Skeleton className="h-3 w-48 bg-gray-200" />
-                    </div>
+          {/* Title and description skeleton */}
+          <div className="mt-8 text-center">
+            <Skeleton className="h-8 w-64 mx-auto mb-2" />
+            <Skeleton className="h-4 w-96 mx-auto" />
+          </div>
+
+          {/* Content skeleton */}
+          <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
+            {/* Radio group skeleton */}
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-48" />
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Skeleton className="w-4 h-4 rounded-full" />
+                    <Skeleton className="h-4 w-24" />
                   </div>
-                  <Skeleton className="h-8 w-20 bg-gray-200" />
+                  <div className="flex items-center space-x-2">
+                    <Skeleton className="w-4 h-4 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Input field skeleton */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+
+            {/* Buttons skeleton */}
+            <div className="flex justify-end gap-4 mt-6">
+              <Skeleton className="h-10 w-24 bg-teal-500/20" />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

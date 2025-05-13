@@ -69,6 +69,17 @@ export default function DaoLayout({
     };
   }, [pathname]);
 
+  // Check if we're in the requestConfigDao route
+  const isConfigPage = pathname.includes('/settings/requestConfigDao');
+
+  if (isConfigPage) {
+    return (
+      <div className="min-h-screen">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[linear-gradient(to_bottom,_#2dd4bf_0%,_#128077_10%)]">
       {/* Top Section */}
