@@ -145,6 +145,18 @@ export function useDaoClient() {
 
   //====================ACTIONS====================
 
+  const authenticate = async (userAddr: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.authenticate(tx);
+      return tx;
+    } catch (error) {
+      console.error("Error authenticating:", error);
+      throw error;
+    }
+  };
+
   const followDao = async (
     userAddr: string,
     daoId: string,
@@ -211,6 +223,18 @@ export function useDaoClient() {
     }
   };
 
+  const modifyName = async (userAddr: string, newName: string) => {
+    try {
+      const client = await getOrInitClient(userAddr);
+      const tx = new Transaction();
+      await client.modifyName(tx, newName);
+      return tx;
+    } catch (error) {
+      console.error("Error modifying name:", error);
+      throw error;
+    }
+  };
+
   //====================DAO INTENTS====================
 
   const requestConfigDao = async (
@@ -257,11 +281,13 @@ export function useDaoClient() {
     getDaoMetadata,
     getParticipant,
     getOwnedObjects,
+    authenticate,
     followDao,
     unfollowDao,
     stake,
     unstake,
     claim,
+    modifyName,
     requestConfigDao,
   };
 }
