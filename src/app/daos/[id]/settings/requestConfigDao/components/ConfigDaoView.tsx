@@ -132,7 +132,8 @@ const ConfigDaoView = () => {
       
       await requestConfigDao(
         currentAccount.address,
-        paramsConfigDao
+        paramsConfigDao,
+        daoId
       );
 
       const result = await signAndExecute({

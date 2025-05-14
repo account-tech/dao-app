@@ -21,6 +21,8 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import { DependenciesSection } from "./components/DependenciesSection";
+import { SettingsSkeletonLoader } from "./components/SettingsSkeletonLoader";
 
 // Helper function from VotingQuorumStep
 const getCurrentPercentage = (value: bigint): number => {
@@ -124,11 +126,7 @@ export default function DaoSettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-400"></div>
-      </div>
-    );
+    return <SettingsSkeletonLoader />;
   }
 
   if (!dao || !daoParams) {
@@ -579,6 +577,16 @@ export default function DaoSettingsPage() {
             </Alert>
           </div>
         </div>
+      </div>
+
+      {/* Dependencies Section */}
+      <div className="mt-8">
+        <DependenciesSection 
+          daoId={daoId} 
+          hasAuthPower={hasAuthPower}
+          authVotingPower={daoParams.authVotingPower}
+          votingPower={votingPower}
+        />
       </div>
     </div>
   );
