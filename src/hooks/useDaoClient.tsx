@@ -1,10 +1,9 @@
 'use client';
-import { DaoClient } from "@account.tech/dao";
-import { OwnedData } from "@account.tech/core";
+import { DaoClient, DepStatus, VoteIntentArgs } from "@account.tech/dao";
+import { OwnedData, Dep } from "@account.tech/core";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
-import { VoteIntentArgs } from "@account.tech/dao";
 
 export function useDaoClient() {
   const { getOrInitClient, resetClient } = useDaoStore();
@@ -103,7 +102,7 @@ export function useDaoClient() {
     }
   };
 
-  const getDao = async (userAddr: string, daoId?: string) => {
+  const getDao = async (userAddr: string, daoId: string) => {
     try {
       const client = await getOrInitClient(userAddr, daoId);
       return client.dao;
@@ -113,7 +112,7 @@ export function useDaoClient() {
     }
   };
 
-  const getDaoMetadata = async (userAddr: string, daoId?: string) => {
+  const getDaoMetadata = async (userAddr: string, daoId: string) => {
     try {
       const client = await getOrInitClient(userAddr, daoId);
       return client.getDaoMetadata();
@@ -123,7 +122,7 @@ export function useDaoClient() {
     }
   };
 
-  const getParticipant = async (userAddr: string, daoId?: string) => {
+  const getParticipant = async (userAddr: string, daoId: string) => {
     try {
       const client = await getOrInitClient(userAddr, daoId);
       return client.participant;
@@ -133,9 +132,9 @@ export function useDaoClient() {
     }
   };
 
-  const getOwnedObjects = async (userAddr: string): Promise<OwnedData> => {
+  const getOwnedObjects = async (userAddr: string, daoId: string): Promise<OwnedData> => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await getOrInitClient(userAddr, daoId);
       return client.getOwnedObjects();
     } catch (error) {
       console.error("Error getting owned objects:", error);
@@ -143,12 +142,51 @@ export function useDaoClient() {
     }
   };
 
+  const getDaoDeps = async (userAddr: string, daoId: string): Promise<Dep[]> => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.getDaoDeps();
+    } catch (error) {
+      console.error("Error getting dao dependencies:", error);
+      throw error;
+    }
+  };
+
+  const getVerifiedDeps = async (userAddr: string, daoId: string): Promise<Dep[]> => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.getVerifiedDeps();
+    } catch (error) {
+      console.error("Error getting verified dependencies:", error);
+      throw error;
+    }
+  };
+
+  const getUnverifiedDeps = async (userAddr: string, daoId: string): Promise<Dep[]> => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.getUnverifiedDeps();
+    } catch (error) {
+      console.error("Error getting unverified dependencies:", error);
+      throw error;
+    }
+  };
+
+  const getDepsStatus = async (userAddr: string, daoId: string): Promise<DepStatus[]> => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      return client.getDepsStatus();
+    } catch (error) {
+      console.error("Error getting dependencies status:", error);
+      throw error;
+    }
+  };
+
   //====================ACTIONS====================
 
-  const authenticate = async (userAddr: string) => {
+  const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
-      const tx = new Transaction();
+      const client = await getOrInitClient(userAddr, daoId);
       await client.authenticate(tx);
       return tx;
     } catch (error) {
@@ -223,10 +261,9 @@ export function useDaoClient() {
     }
   };
 
-  const modifyName = async (userAddr: string, newName: string) => {
+  const modifyName = async (tx: Transaction, userAddr: string, daoId: string, newName: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
-      const tx = new Transaction();
+      const client = await getOrInitClient(userAddr, daoId);
       await client.modifyName(tx, newName);
       return tx;
     } catch (error) {
@@ -235,14 +272,26 @@ export function useDaoClient() {
     }
   };
 
+  const updateVerifiedDeps = async (userAddr: string, daoId: string, tx: Transaction) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      await client.updateVerifiedDeps(tx);
+      return tx;
+    } catch (error) {
+      console.error("Error updating verified dependencies:", error);
+      throw error;
+    }
+  };
+
   //====================DAO INTENTS====================
 
   const requestConfigDao = async (
     userAddr: string,
-    params: RequestConfigDaoParams
+    params: RequestConfigDaoParams,
+    daoId: string
   ) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await getOrInitClient(userAddr, daoId);
       await client.requestConfigDao(
         params.tx,
         params.intentArgs,
@@ -261,6 +310,22 @@ export function useDaoClient() {
     }
   };
 
+  const requestToggleUnverifiedDepsAllowed = async (
+    tx: Transaction,
+    userAddr: string,
+    intentArgs: VoteIntentArgs,
+    daoId: string
+  ) => {
+    try {
+      const client = await getOrInitClient(userAddr, daoId);
+      await client.requestToggleUnverifiedDepsAllowed(tx, intentArgs);
+      return tx;
+    } catch (error) {
+      console.error("Error requesting toggle unverified deps:", error);
+      throw error;
+    }
+  };
+
   return {
     initDaoClient,
     refresh,
@@ -273,6 +338,10 @@ export function useDaoClient() {
     getDaoMetadata,
     getParticipant,
     getOwnedObjects,
+    getDaoDeps,
+    getVerifiedDeps,
+    getUnverifiedDeps,
+    getDepsStatus,
     authenticate,
     followDao,
     unfollowDao,
@@ -280,6 +349,8 @@ export function useDaoClient() {
     unstake,
     claim,
     modifyName,
+    updateVerifiedDeps,
     requestConfigDao,
+    requestToggleUnverifiedDepsAllowed,
   };
 }
