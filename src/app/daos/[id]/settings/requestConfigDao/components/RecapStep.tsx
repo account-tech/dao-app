@@ -172,7 +172,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
       <div className="grid gap-6">
         <Section 
           title="Proposal Details"
-          icon={formData.proposalName && formData.proposalDescription ? (
+          icon={formData.proposalName ? (
             <Check className="w-4 h-4 text-green-500" />
           ) : (
             <AlertCircle className="w-4 h-4 text-yellow-500" />

@@ -21,6 +21,7 @@ import { DaoConfigProvider } from '../context/DaoConfigContext';
 import { RecapStep } from './RecapStep';
 import Loading from '../loading';
 import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
+import { validateStep } from '../helpers/validation';
 
 const ConfigDaoView = () => {
   const router = useRouter();
@@ -99,8 +100,8 @@ const ConfigDaoView = () => {
       return;
     }
 
-    if (!formData.proposalName || !formData.proposalDescription) {
-      toast.error("Please fill in the proposal name and description");
+    if (!formData.proposalName) {
+      toast.error("Please fill in the proposal name");
       return;
     }
 
@@ -273,7 +274,20 @@ const ConfigDaoView = () => {
             isLoading={isLoading}
             isCompleted={isCompleted}
             formData={formData}
-            validateStep={() => true} // We'll implement proper validation later
+            validateStep={(step) => validateStep(step, formData, {
+              hasChanges: () => {
+                if (!originalConfig) return false;
+                return (
+                  formData.assetType !== originalConfig.assetType ||
+                  formData.authVotingPower !== originalConfig.authVotingPower ||
+                  formData.unstakingCooldown !== originalConfig.unstakingCooldown ||
+                  formData.votingRule !== originalConfig.votingRule ||
+                  formData.maxVotingPower !== originalConfig.maxVotingPower ||
+                  formData.minimumVotes !== originalConfig.minimumVotes ||
+                  formData.votingQuorum !== originalConfig.votingQuorum
+                );
+              }
+            })}
           />
         </DaoConfigProvider>
       </div>
