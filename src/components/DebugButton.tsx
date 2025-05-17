@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 export function DebugButton() {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
-  const { client, currentAddress } = useDaoStore();
+  const { client } = useDaoStore();
   const { getDao } = useDaoClient();
   const [walletObjects, setWalletObjects] = useState<any[]>([]);
 

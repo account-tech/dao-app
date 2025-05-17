@@ -38,11 +38,11 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
   const [isLoading, setIsLoading] = useState(true);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState(false);
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger);
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
   
   const currentAccount = useCurrentAccount();
   const { getVerifiedDeps, getUnverifiedDeps, getDepsStatus, updateVerifiedDeps } = useDaoClient();
-  const { resetClient, triggerRefresh } = useDaoStore();
+  const { refreshClient } = useDaoStore();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
 
@@ -79,7 +79,7 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
 
   useEffect(() => {
     fetchDependencies();
-  }, [currentAccount?.address, daoId, refreshTrigger]);
+  }, [currentAccount?.address, daoId, refreshCounter]);
 
   const handleUpgradeAll = async () => {
     if (!currentAccount?.address || !daoId) {
@@ -103,8 +103,8 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
       });
 
       handleTxResult(result, toast);
-      resetClient();
-      triggerRefresh();
+      refreshClient();
+      
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unknown error occurred");
     } finally {

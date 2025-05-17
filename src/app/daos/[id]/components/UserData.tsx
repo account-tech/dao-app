@@ -27,11 +27,21 @@ import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { useDaoStore } from "@/store/useDaoStore";
 import UserDataSkeleton from "./UserDataSkeleton";
 
+interface StakePosition {
+  daoAddr: string;
+  value: bigint;
+}
+
 interface UnstakingPosition {
   assetType: string;
   daoAddr: string;
   id: string;
   unstaked: bigint | null;
+  value: bigint;
+}
+
+interface ClaimPosition {
+  daoAddr: string;
   value: bigint;
 }
 
@@ -54,10 +64,9 @@ export default function UserData({ daoId }: { daoId: string }) {
   const [totalUnstaking, setTotalUnstaking] = useState<string>("0");
   const [unstakingPositions, setUnstakingPositions] = useState<UnstakingPosition[]>([]);
   const [totalClaimable, setTotalClaimable] = useState<string>("0");
-  const resetClient = useDaoStore(state => state.resetClient);
-  const triggerRefresh = useDaoStore(state => state.triggerRefresh);
+  const { refreshClient} = useDaoStore();
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
   const [isClaiming, setIsClaiming] = useState(false);
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
   const [isQuadratic, setIsQuadratic] = useState(false);
   const [authVotingPower, setAuthVotingPower] = useState<string>("0");
   const [maxVotingPower, setMaxVotingPower] = useState<string>("0");
@@ -96,9 +105,9 @@ export default function UserData({ daoId }: { daoId: string }) {
         // Calculate total staked amount
         let totalStakedValue = BigInt(0);
         if (participant.staked && Array.isArray(participant.staked)) {
-          totalStakedValue = participant.staked.reduce((acc, stake) => {
+          totalStakedValue = participant.staked.reduce((acc: bigint, stake: StakePosition) => {
             if (stake.daoAddr === daoId) {
-              return acc + BigInt(stake.value);
+              return acc + stake.value;
             }
             return acc;
           }, BigInt(0));
@@ -137,9 +146,9 @@ export default function UserData({ daoId }: { daoId: string }) {
         const currentPositions: UnstakingPosition[] = [];
         
         if (participant.unstaked && Array.isArray(participant.unstaked)) {
-          participant.unstaked.forEach(unstakePos => {
+          participant.unstaked.forEach((unstakePos: UnstakingPosition) => {
             if (unstakePos.daoAddr === daoId) {
-              totalUnstakingValue += BigInt(unstakePos.value);
+              totalUnstakingValue += unstakePos.value;
               currentPositions.push(unstakePos);
             }
           });
@@ -151,9 +160,9 @@ export default function UserData({ daoId }: { daoId: string }) {
         // Calculate total claimable amount
         let totalClaimableValue = BigInt(0);
         if (participant.claimable && Array.isArray(participant.claimable)) {
-          participant.claimable.forEach(claim => {
+          participant.claimable.forEach((claim: ClaimPosition) => {
             if (claim.daoAddr === daoId) {
-              totalClaimableValue += BigInt(claim.value);
+              totalClaimableValue += claim.value;
             }
           });
         }
@@ -176,7 +185,7 @@ export default function UserData({ daoId }: { daoId: string }) {
     };
 
     fetchData();
-  }, [currentAccount?.address, refreshTrigger]);
+  }, [currentAccount?.address, refreshCounter, daoId]);
 
   // Format date to mm/dd/yyyy hour:minutes
   const formatUnstakeDate = (timestamp: bigint | null) => {
@@ -203,14 +212,9 @@ export default function UserData({ daoId }: { daoId: string }) {
 
     try {
       setIsStaking(true);
-      // Convert amount to bigint considering decimals
       const bigintAmount = BigInt(Math.floor(Number(stakeAmount) * Math.pow(10, decimals)));
-      console.log("Bigint amount:", bigintAmount);
-      
-      // Get transaction from stake function
       const tx = await stake(currentAccount.address, bigintAmount);
 
-      // Sign and execute transaction
       const result = await signAndExecute({
         suiClient,
         currentAccount,
@@ -221,12 +225,8 @@ export default function UserData({ daoId }: { daoId: string }) {
       });
 
       handleTxResult(result, toast);
+      refreshClient();
 
-      // Reset client and trigger refresh
-      resetClient();
-      triggerRefresh();
-      
-      // Clear input and close dialog
       setStakeAmount("");
       setStakeDialogOpen(false);
     } catch (error) {
@@ -242,14 +242,9 @@ export default function UserData({ daoId }: { daoId: string }) {
 
     try {
       setIsUnstaking(true);
-      // Convert amount to bigint considering decimals
       const bigintAmount = BigInt(Math.floor(Number(unstakeAmount) * Math.pow(10, decimals)));
-      console.log("Bigint amount to unstake:", bigintAmount);
-      
-      // Get transaction from unstake function
       const tx = await unstake(currentAccount.address, bigintAmount);
 
-      // Sign and execute transaction
       const result = await signAndExecute({
         suiClient,
         currentAccount,
@@ -260,12 +255,8 @@ export default function UserData({ daoId }: { daoId: string }) {
       });
 
       handleTxResult(result, toast);
-
-      // Reset client and trigger refresh
-      resetClient();
-      triggerRefresh();
+      refreshClient();
       
-      // Clear input and close dialog
       setUnstakeAmount("");
       setUnstakeDialogOpen(false);
     } catch (error) {
@@ -281,11 +272,8 @@ export default function UserData({ daoId }: { daoId: string }) {
 
     try {
       setIsClaiming(true);
-      
-      // Get transaction from claim function
       const tx = await claim(currentAccount.address);
 
-      // Sign and execute transaction
       const result = await signAndExecute({
         suiClient,
         currentAccount,
@@ -296,10 +284,7 @@ export default function UserData({ daoId }: { daoId: string }) {
       });
 
       handleTxResult(result, toast);
-
-      // Reset client and trigger refresh
-      resetClient();
-      triggerRefresh();
+      refreshClient();
     } catch (error) {
       console.error("Error claiming tokens:", error);
       toast.error(error instanceof Error ? error.message : "Failed to claim tokens");

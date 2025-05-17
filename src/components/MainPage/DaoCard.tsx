@@ -22,8 +22,7 @@ export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardPro
   const { followDao, unfollowDao } = useDaoClient();
   const [isHovering, setIsHovering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const triggerRefresh = useDaoStore(state => state.triggerRefresh);
-  const resetClient = useDaoStore(state => state.resetClient);
+  const { refreshClient} = useDaoStore();
 
   // Helper function to validate image URL
   const isValidImageUrl = (url: string | undefined) => {
@@ -65,8 +64,7 @@ export function DaoCard({ dao, isFollowed = false, width = "265px" }: DaoCardPro
 
       handleTxResult(result, toast);
 
-      resetClient();
-      triggerRefresh();
+      refreshClient();
     } catch (error) {
       console.error("Error following/unfollowing DAO:", error);
       toast.error(error instanceof Error ? error.message : "Failed to follow/unfollow DAO");

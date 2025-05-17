@@ -28,17 +28,19 @@ interface DaoActions {
   setAddress: (address: string | null) => void;
   /** Trigger a UI refresh */
   refresh: () => void;
+  /** Refresh the client data and trigger UI refresh */
+  refreshClient: () => Promise<void>;
 }
 
-const initialState: DaoState = {
+const initialState: Omit<DaoState, 'refreshCounter'> = {
   client: null,
   address: null,
   daoId: null,
-  refreshCounter: 0
 };
 
 export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
   ...initialState,
+  refreshCounter: 0,
 
   initClient: async (address: string, daoId?: string) => {
     const state = get();
@@ -66,22 +68,41 @@ export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
       // Return existing client
       return state.client;
     } catch (error) {
-      // Reset state on error
-      set(initialState);
+      // Reset state on error but keep refreshCounter
+      const { refreshCounter } = get();
+      set({ ...initialState, refreshCounter });
       throw error;
     }
   },
 
-  reset: () => set(initialState),
+  reset: () => {
+    // Keep the current refreshCounter when resetting
+    const { refreshCounter } = get();
+    set({ ...initialState, refreshCounter });
+  },
 
   setAddress: (address) => {
-    const { address: currentAddress } = get();
+    const { address: currentAddress, refreshCounter } = get();
     if (currentAddress !== address) {
-      set({ ...initialState, address });
+      set({ ...initialState, address, refreshCounter });
     }
   },
 
   refresh: () => set(state => ({ 
-    refreshCounter: state.refreshCounter + 1 
-  }))
+    refreshCounter: state.refreshCounter + 1
+  })),
+
+  refreshClient: async () => {
+    const state = get();
+    if (state.client) {
+      try {
+        await state.client.refresh();
+        // Trigger UI refresh after client refresh
+        set(state => ({ refreshCounter: state.refreshCounter + 1 }));
+      } catch (error) {
+        console.error("Error refreshing client:", error);
+        throw error;
+      }
+    }
+  }
 }));

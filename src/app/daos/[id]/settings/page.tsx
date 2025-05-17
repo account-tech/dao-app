@@ -49,7 +49,7 @@ export default function DaoSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [hasAuthPower, setHasAuthPower] = useState(false);
   const [votingPower, setVotingPower] = useState<string>("0");
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger);
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   useEffect(() => {
     const initDao = async () => {
@@ -114,7 +114,7 @@ export default function DaoSettingsPage() {
     };
 
     initDao();
-  }, [currentAccount?.address, refreshTrigger]);
+  }, [currentAccount?.address, refreshCounter]);
 
   if (!currentAccount?.address) {
     return (

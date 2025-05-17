@@ -31,7 +31,7 @@ const ConfigDaoView = () => {
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
   const { getDao, requestConfigDao } = useDaoClient();
-  const { resetClient, triggerRefresh } = useDaoStore();
+  const { refreshClient } = useDaoStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [originalConfig, setOriginalConfig] = useState<DaoConfigFormData | null>(null);
@@ -147,8 +147,7 @@ const ConfigDaoView = () => {
 
       handleTxResult(result, toast);
 
-      resetClient();
-      triggerRefresh();
+      refreshClient();
 
       setIsCompleted(true);
 

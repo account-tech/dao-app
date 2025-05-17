@@ -6,34 +6,13 @@ import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
 
 export function useDaoClient() {
-  const { initClient, reset, refresh } = useDaoStore();
+  const { initClient } = useDaoStore();
 
   const initDaoClient = async (
     userAddr: string,
     multisigId?: string
   ): Promise<DaoClient> => {
     return initClient(userAddr, multisigId);
-  };
-
-  const refreshDao = async (userAddr: string) => {
-    try {
-      const client = await initClient(userAddr);
-      await client.refresh();
-      refresh();
-    } catch (error) {
-      console.error("Error refreshing multisig:", error);
-      throw error;
-    }
-  };
-
-  const switchDao = async (userAddr: string, daoId: string) => {
-    try {
-      const client = await initClient(userAddr, daoId);
-      return client;
-    } catch (error) {
-      console.error("Error switching dao:", error);
-      throw error;
-    }
   };
 
   const createDao = async (
@@ -60,7 +39,6 @@ export function useDaoClient() {
         params.github,
         params.website,
       );
-      reset();
       return result;
     } catch (error) {
       console.error("Error creating dao:", error);
@@ -329,8 +307,6 @@ export function useDaoClient() {
 
   return {
     initDaoClient,
-    refreshDao,
-    switchDao,
     createDao,
     getUser,
     getUserDaos,

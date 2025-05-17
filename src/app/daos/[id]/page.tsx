@@ -48,13 +48,12 @@ export default function DaoPage() {
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const getOrInitClient = useDaoStore(state => state.getOrInitClient);
   const { getDaoMetadata, getUserDaos } = useDaoClient();
   const [dao, setDao] = useState<DaoMetadata | null>(null);
   const [isFollowed, setIsFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const { isSmallHeight, isLargeHeight, isMobile } = useScreenHeight();
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger);
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   useEffect(() => {
     const initDao = async () => {
@@ -62,12 +61,14 @@ export default function DaoPage() {
 
       try {
         setLoading(true);
-        const [fetchingDaoMetadata, userDaos] = await Promise.all([
+        
+        // Fetch metadata and user daos in parallel
+        const [fetchedDaoMetadata, userDaos] = await Promise.all([
           getDaoMetadata(currentAccount.address, daoId),
           getUserDaos(currentAccount.address)
         ]);
         
-        setDao(fetchingDaoMetadata);
+        setDao(fetchedDaoMetadata);
         setIsFollowed(userDaos.some(userDao => userDao.id === daoId));
       } catch (error) {
         console.error("Error initializing dao:", error);
@@ -78,7 +79,7 @@ export default function DaoPage() {
     };
 
     initDao();
-  }, [currentAccount?.address, daoId, getOrInitClient, refreshTrigger]);
+  }, [currentAccount?.address, daoId, refreshCounter]);
 
   if (!currentAccount?.address) {
     return (

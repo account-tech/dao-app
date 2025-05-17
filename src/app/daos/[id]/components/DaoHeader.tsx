@@ -30,8 +30,7 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
   const { followDao, unfollowDao } = useDaoClient();
   const [isHovering, setIsHovering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const triggerRefresh = useDaoStore(state => state.triggerRefresh);
-  const resetClient = useDaoStore(state => state.resetClient);
+  const { refreshClient } = useDaoStore();
 
   const formatUrl = (url: string) => {
     if (!url) return '';
@@ -64,9 +63,8 @@ export default function DaoHeader({ dao, isSmallHeight, isFollowed = false }: Da
       });
 
       handleTxResult(result, toast);
+      refreshClient();
 
-      resetClient();
-      triggerRefresh();
     } catch (error) {
       console.error("Error following/unfollowing DAO:", error);
       toast.error(error instanceof Error ? error.message : "Failed to follow/unfollow DAO");

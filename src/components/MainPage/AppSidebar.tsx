@@ -31,7 +31,7 @@ export function AppSidebar() {
   const [allDaos, setAllDaos] = React.useState<DaoMetadata[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState("")
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   const getCardWidth = () => {
     if (isMobile) return "100%"
@@ -60,7 +60,7 @@ export function AppSidebar() {
     }
 
     fetchData()
-  }, [currentAccount?.address, refreshTrigger])
+  }, [currentAccount?.address, refreshCounter])
 
   if (!currentAccount?.address) {
     return <UnconnectedView />

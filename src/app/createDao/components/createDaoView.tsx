@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { CreateDaoParams } from "@/types/dao";
 import { validateStep } from "../helpers/validation";
+import { useDaoStore } from "@/store/useDaoStore";
 
 const DEFAULT_VOTING_POWER = BigInt(50); // a person needs to have atleast 50 voting power to partake in the DAO this depends on linear or quadratic rule
 const DEFAULT_COOLDOWN = BigInt(86400000); // 24 hours in milliseconds
@@ -36,6 +37,7 @@ const CreateDaoView = () => {
   const { createDao } = useDaoClient();
   const [isCreating, setIsCreating] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const { refreshClient} = useDaoStore();
 
   const [formData, setFormData] = useState<DaoFormData>({
     daoType: 'coin',
@@ -111,7 +113,7 @@ const CreateDaoView = () => {
       });
 
       handleTxResult(result, toast);
-
+      refreshClient();
       setIsCompleted(true);
 
       setTimeout(() => {
