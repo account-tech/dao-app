@@ -6,19 +6,20 @@ import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
 
 export function useDaoClient() {
-  const { getOrInitClient, resetClient } = useDaoStore();
+  const { initClient, reset, refresh } = useDaoStore();
 
   const initDaoClient = async (
     userAddr: string,
     multisigId?: string
   ): Promise<DaoClient> => {
-    return getOrInitClient(userAddr, multisigId);
+    return initClient(userAddr, multisigId);
   };
 
-  const refresh = async (userAddr: string) => {
+  const refreshDao = async (userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       await client.refresh();
+      refresh();
     } catch (error) {
       console.error("Error refreshing multisig:", error);
       throw error;
@@ -27,8 +28,8 @@ export function useDaoClient() {
 
   const switchDao = async (userAddr: string, daoId: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
-      await client.switchDao(daoId);
+      const client = await initClient(userAddr, daoId);
+      return client;
     } catch (error) {
       console.error("Error switching dao:", error);
       throw error;
@@ -40,7 +41,7 @@ export function useDaoClient() {
     params: CreateDaoParams
   ): Promise<TransactionResult> => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       const result = await client.createDao(
         params.tx,
         params.assetType,
@@ -59,7 +60,7 @@ export function useDaoClient() {
         params.github,
         params.website,
       );
-      resetClient();
+      reset();
       return result;
     } catch (error) {
       console.error("Error creating dao:", error);
@@ -71,7 +72,7 @@ export function useDaoClient() {
 
   const getAllDaos = async (userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       if (!client.registry) {
         throw new Error("Registry not initialized");
       }
@@ -84,8 +85,8 @@ export function useDaoClient() {
 
   const getUser = async (userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
-      return client.user
+      const client = await initClient(userAddr);
+      return client.user;
     } catch (error) {
       console.error("Error getting user profile:", error);
       throw error;
@@ -94,7 +95,7 @@ export function useDaoClient() {
 
   const getUserDaos = async (userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       return await client.getUserDaos();
     } catch (error) {
       console.error("Error getting user daos:", error);
@@ -104,7 +105,7 @@ export function useDaoClient() {
 
   const getDao = async (userAddr: string, daoId: string) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.dao;
     } catch (error) {
       console.error("Error getting dao:", error);
@@ -114,7 +115,7 @@ export function useDaoClient() {
 
   const getDaoMetadata = async (userAddr: string, daoId: string) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.getDaoMetadata();
     } catch (error) {
       console.error("Error getting dao metadata:", error);
@@ -124,7 +125,7 @@ export function useDaoClient() {
 
   const getParticipant = async (userAddr: string, daoId: string) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.participant;
     } catch (error) {
       console.error("Error getting participant:", error);
@@ -134,7 +135,7 @@ export function useDaoClient() {
 
   const getOwnedObjects = async (userAddr: string, daoId: string): Promise<OwnedData> => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.getOwnedObjects();
     } catch (error) {
       console.error("Error getting owned objects:", error);
@@ -144,7 +145,7 @@ export function useDaoClient() {
 
   const getDaoDeps = async (userAddr: string, daoId: string): Promise<Dep[]> => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.getDaoDeps();
     } catch (error) {
       console.error("Error getting dao dependencies:", error);
@@ -154,7 +155,7 @@ export function useDaoClient() {
 
   const getVerifiedDeps = async (userAddr: string, daoId: string): Promise<Dep[]> => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.getVerifiedDeps();
     } catch (error) {
       console.error("Error getting verified dependencies:", error);
@@ -164,7 +165,7 @@ export function useDaoClient() {
 
   const getUnverifiedDeps = async (userAddr: string, daoId: string): Promise<Dep[]> => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.getUnverifiedDeps();
     } catch (error) {
       console.error("Error getting unverified dependencies:", error);
@@ -174,7 +175,7 @@ export function useDaoClient() {
 
   const getDepsStatus = async (userAddr: string, daoId: string): Promise<DepStatus[]> => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       return client.getDepsStatus();
     } catch (error) {
       console.error("Error getting dependencies status:", error);
@@ -186,7 +187,7 @@ export function useDaoClient() {
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       await client.authenticate(tx);
       return tx;
     } catch (error) {
@@ -202,7 +203,7 @@ export function useDaoClient() {
     profilePicture?: string
   ) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       const tx = new Transaction();
       await client.followDao(tx, daoId, username, profilePicture);
       return tx;
@@ -214,7 +215,7 @@ export function useDaoClient() {
 
   const unfollowDao = async (userAddr: string, daoId: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       const tx = new Transaction();
       await client.unfollowDao(tx, daoId);
       return tx;
@@ -226,7 +227,7 @@ export function useDaoClient() {
 
   const stake = async (userAddr: string, assets: bigint | string[]) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       const tx = new Transaction();
       tx.setSender(userAddr);
       await client.stake(tx, assets);
@@ -239,7 +240,7 @@ export function useDaoClient() {
 
   const unstake = async (userAddr: string, assets: bigint | string[]) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       const tx = new Transaction();
       await client.unstake(tx, assets);
       return tx;
@@ -251,7 +252,7 @@ export function useDaoClient() {
 
   const claim = async (userAddr: string) => {
     try {
-      const client = await getOrInitClient(userAddr);
+      const client = await initClient(userAddr);
       const tx = new Transaction();
       await client.claim(tx);
       return tx;
@@ -263,7 +264,7 @@ export function useDaoClient() {
 
   const modifyName = async (tx: Transaction, userAddr: string, daoId: string, newName: string) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       await client.modifyName(tx, newName);
       return tx;
     } catch (error) {
@@ -274,7 +275,7 @@ export function useDaoClient() {
 
   const updateVerifiedDeps = async (userAddr: string, daoId: string, tx: Transaction) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       await client.updateVerifiedDeps(tx);
       return tx;
     } catch (error) {
@@ -291,7 +292,7 @@ export function useDaoClient() {
     daoId: string
   ) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       await client.requestConfigDao(
         params.tx,
         params.intentArgs,
@@ -317,7 +318,7 @@ export function useDaoClient() {
     daoId: string
   ) => {
     try {
-      const client = await getOrInitClient(userAddr, daoId);
+      const client = await initClient(userAddr, daoId);
       await client.requestToggleUnverifiedDepsAllowed(tx, intentArgs);
       return tx;
     } catch (error) {
@@ -328,7 +329,7 @@ export function useDaoClient() {
 
   return {
     initDaoClient,
-    refresh,
+    refreshDao,
     switchDao,
     createDao,
     getUser,

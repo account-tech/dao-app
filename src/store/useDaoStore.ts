@@ -2,73 +2,86 @@ import { create } from 'zustand'
 import { DaoClient } from "@account.tech/dao";
 import { NETWORK_TYPE } from "@/constants/network";
 
+/**
+ * State interface for the DAO store
+ */
 interface DaoState {
-  currentDaoId: string | null;
+  /** Current active DAO client instance */
   client: DaoClient | null;
-  refreshTrigger: number;
-  currentAddress: string | null;
-  setClient: (client: DaoClient) => void;
-  resetClient: () => void;
-  setCurrentAddress: (address: string | null) => void;
-  getOrInitClient: (userAddr: string, daoId?: string) => Promise<DaoClient>;
-  triggerRefresh: () => void;
+  /** Currently connected wallet address */
+  address: string | null;
+  /** Currently selected DAO ID */
+  daoId: string | null;
+  /** Counter to trigger UI refreshes */
+  refreshCounter: number;
 }
 
-export const useDaoStore = create<DaoState>((set, get) => ({
-  currentDaoId: null,
+/**
+ * Actions interface for the DAO store
+ */
+interface DaoActions {
+  /** Initialize or retrieve a DAO client */
+  initClient: (address: string, daoId?: string) => Promise<DaoClient>;
+  /** Reset the store state */
+  reset: () => void;
+  /** Update the connected wallet address */
+  setAddress: (address: string | null) => void;
+  /** Trigger a UI refresh */
+  refresh: () => void;
+}
+
+const initialState: DaoState = {
   client: null,
-  refreshTrigger: 0,
-  currentAddress: null,
-  setClient: (client) => set({ client }),
-  resetClient: () => {
-    set({ client: null, currentDaoId: null });
-  },
-  setCurrentAddress: (address) => {
-    const currentAddress = get().currentAddress
-    // If address changed, reset the client
-    if (currentAddress !== address) {
-      set({ client: null, currentAddress: address, currentDaoId: null })
-    }
-  },
-  getOrInitClient: async (userAddr: string, daoId?: string) => {
-    const { client, currentAddress, currentDaoId } = get()
+  address: null,
+  daoId: null,
+  refreshCounter: 0
+};
 
-    // If address changed, daoId changed, or no client exists, create new one
-    if (
-      currentAddress !== userAddr || 
-      !client || 
-      (daoId && currentDaoId !== daoId)
-    ) {
-      try {
-        console.log("Creating new client for:", userAddr, "daoId:", daoId);
-        const newClient = await DaoClient.init(NETWORK_TYPE, userAddr, daoId)
+export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
+  ...initialState,
+
+  initClient: async (address: string, daoId?: string) => {
+    const state = get();
+    
+    try {
+      // Case 1: No client exists or address changed - need full initialization
+      if (!state.client || state.address !== address) {
+        console.log("initializing client", address, daoId);
+        const client = await DaoClient.init(NETWORK_TYPE, address, daoId);
         set({ 
-          client: newClient, 
-          currentAddress: userAddr,
-          currentDaoId: daoId || null
-        })
-        return newClient
-      } catch (error) {
-        console.error("Error initializing DaoClient:", error)
-        throw error
+          client,
+          address,
+          daoId: daoId || null
+        });
+        return client;
       }
-    }
-
-    // If daoId is provided but different from current, switch to it
-    if (daoId && client && client.dao?.id !== daoId) {
-      try {
-        console.log("Switching client to daoId:", daoId);
-        await client.switchDao(daoId);
-        set({ currentDaoId: daoId });
-      } catch (error) {
-        console.error("Error switching dao:", error);
-        throw error;
+      
+      // Case 2: Client exists, same address, but daoId changed - use switchDao
+      if (daoId && state.daoId !== daoId) {
+        console.log("switching dao", daoId);
+        await state.client.switchDao(daoId);
+        set({ daoId });
       }
+      
+      // Return existing client
+      return state.client;
+    } catch (error) {
+      // Reset state on error
+      set(initialState);
+      throw error;
     }
-
-    return client
   },
-  triggerRefresh: () => {
-    set(state => ({ refreshTrigger: state.refreshTrigger + 1 }));
-  }
-}))
+
+  reset: () => set(initialState),
+
+  setAddress: (address) => {
+    const { address: currentAddress } = get();
+    if (currentAddress !== address) {
+      set({ ...initialState, address });
+    }
+  },
+
+  refresh: () => set(state => ({ 
+    refreshCounter: state.refreshCounter + 1 
+  }))
+}));
