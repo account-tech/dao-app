@@ -1,16 +1,28 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from "next/navigation";
+import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { toast } from "sonner";
 import { ConfigProposalStep } from '@/components/CommonProposalSteps/ConfigProposalStep';
 import { ToggleUnverifiedFormData } from '../helpers/types';
 import SteppedProgress from '@/components/CommonProposalSteps/Stepper';
 import { useDaoStore } from "@/store/useDaoStore";
 import { validateStep } from '../helpers/validation';
+import { useDaoClient } from "@/hooks/useDaoClient";
+import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
+import { RecapStep } from './RecapStep';
 
 const ToggleUnverifiedDepsView = () => {
+  const router = useRouter();
+  const params = useParams();
+  const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const client = useDaoStore(state => state.client);
+  const suiClient = useSuiClient();
+  const signTransaction = useSignTransaction();
+  const { requestToggleUnverifiedDepsAllowed } = useDaoClient();
+  const { refreshClient, client } = useDaoStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [formData, setFormData] = useState<ToggleUnverifiedFormData>({
@@ -22,7 +34,7 @@ const ToggleUnverifiedDepsView = () => {
   });
 
   useEffect(() => {
-    if (client) {
+    if (client?.account) {
       const currentStatus = client.account.unverifiedDepsAllowed;
       setFormData(prev => ({
         ...prev,
@@ -39,7 +51,58 @@ const ToggleUnverifiedDepsView = () => {
   };
 
   const handleComplete = async () => {
-    
+    if (!currentAccount) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
+    if (!formData.proposalName) {
+      toast.error("Please fill in the proposal name");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const tx = new Transaction();
+
+      const intentArgs = {
+        key: formData.proposalName,
+        description: formData.proposalDescription,
+        startTime: BigInt(formData.executionDate?.getTime() || Date.now()),
+        endTime: BigInt(formData.expirationDate?.getTime() || Date.now() + (7 * 24 * 60 * 60 * 1000))
+      };
+
+      await requestToggleUnverifiedDepsAllowed(
+        tx,
+        currentAccount.address,
+        intentArgs,
+        daoId
+      );
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+
+      refreshClient();
+
+      setIsCompleted(true);
+
+      setTimeout(() => {
+        router.push(`/daos/${daoId}`);
+      }, 500);
+    } catch (error) {
+      setIsCompleted(false);
+      toast.error(error instanceof Error ? error.message : "Unknown error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const validateStepWrapper = (stepIndex: number) => {
@@ -57,6 +120,16 @@ const ToggleUnverifiedDepsView = () => {
         />
       )
     },
+    {
+      title: "Review Changes",
+      description: "Review all configuration changes before submitting",
+      component: (
+        <RecapStep
+          formData={formData}
+          updateFormData={updateFormData}
+        />
+      )
+    }
   ];
 
   if (!currentAccount) {
@@ -81,8 +154,8 @@ const ToggleUnverifiedDepsView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-16 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-100 via-80% to-teal-200">
+      <div className="container mx-auto py-32 px-4">
         <SteppedProgress<ToggleUnverifiedFormData>
           steps={steps}
           onComplete={handleComplete}

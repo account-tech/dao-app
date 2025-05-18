@@ -266,7 +266,7 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
                       <Button
                         variant={unverifiedDepsAllowed ? "destructive" : "default"}
                         size="sm"
-                        onClick={() => router.push(`/daos/${daoId}/settings/requestToggleUnverifiedDepsAllowed`)}
+                        onClick={() => router.push(`/daos/${daoId}/settings/requestToggleUnverifiedDeps`)}
                         className={`${!hasAuthPower ? 'bg-gray-100 text-gray-400' : unverifiedDepsAllowed ? 'bg-red-600 hover:bg-red-700' : 'bg-teal-600 hover:bg-teal-700'}`}
                         disabled={!hasAuthPower}
                       >

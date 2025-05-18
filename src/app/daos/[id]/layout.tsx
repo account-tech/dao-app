@@ -71,8 +71,9 @@ export default function DaoLayout({
 
   // Check if we're in the requestConfigDao route
   const isConfigPage = pathname.includes('/settings/requestConfigDao');
+  const isToggleUnverifiedDepsPage = pathname.includes('/settings/requestToggleUnverifiedDeps');
 
-  if (isConfigPage) {
+  if (isConfigPage || isToggleUnverifiedDepsPage) {
     return (
       <div className="min-h-screen">
         {children}
