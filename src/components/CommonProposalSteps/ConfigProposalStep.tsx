@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Clock, X } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, isBefore, isAfter } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,8 +15,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface BaseFormData {
   proposalName: string;
   proposalDescription: string;
-  executionDate?: Date | null;
-  expirationDate?: Date | null;
+  votingStartDate?: Date | null;  // When voting starts
+  votingEndDate?: Date | null;    // When voting ends
+  executionDate?: Date | null;    // When proposal executes if approved
+  expirationDate?: Date | null;   // When proposal expires if not executed (auto-calculated)
 }
 
 interface ConfigProposalStepProps<T extends BaseFormData> {
@@ -32,9 +34,11 @@ export function ConfigProposalStep<T extends BaseFormData>({
   showMinimumDelayAlert = false,
   minimumDelayMs = BigInt(0)
 }: ConfigProposalStepProps<T>) {
+  const [votingStartTimeOpen, setVotingStartTimeOpen] = useState(false);
+  const [votingEndTimeOpen, setVotingEndTimeOpen] = useState(false);
   const [executionTimeOpen, setExecutionTimeOpen] = useState(false);
-  const [expirationTimeOpen, setExpirationTimeOpen] = useState(false);
   const [showInvalidAlert, setShowInvalidAlert] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
   
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -54,48 +58,143 @@ export function ConfigProposalStep<T extends BaseFormData>({
     updateFormData({ proposalDescription: e.target.value } as Partial<T>);
   };
 
-  const handleExecutionDateChange = (date: Date | undefined) => {
-    if (date) {
-      const currentExecutionDate = formData.executionDate || new Date();
-      const newDate = new Date(date);
-      newDate.setHours(currentExecutionDate.getHours());
-      newDate.setMinutes(currentExecutionDate.getMinutes());
-      updateFormData({ executionDate: newDate } as Partial<T>);
+  const validateDates = (
+    startDate: Date | null | undefined,
+    endDate: Date | null | undefined,
+    executionDate: Date | null | undefined
+  ): boolean => {
+    const now = new Date();
+    setDateError(null);
+
+    if (startDate && isBefore(startDate, now)) {
+      setDateError("Voting start time must be in the future");
+      return false;
     }
+
+    if (startDate && endDate && !isAfter(endDate, startDate)) {
+      setDateError("Voting end time must be after start time");
+      return false;
+    }
+
+    if (endDate && executionDate && !isAfter(executionDate, endDate)) {
+      setDateError("Execution time must be after voting end time");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Voting Start Date handlers
+  const handleVotingStartDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    const currentDate = formData.votingStartDate || new Date();
+    const newDate = new Date(date);
+    newDate.setHours(currentDate.getHours());
+    newDate.setMinutes(currentDate.getMinutes());
+
+    if (!validateDates(newDate, formData.votingEndDate, formData.executionDate)) {
+      return;
+    }
+
+    // Only update start date, don't auto-set other dates
+    updateFormData({ votingStartDate: newDate } as Partial<T>);
+  };
+
+  const handleVotingStartTimeChange = (time: string) => {
+    if (!formData.votingStartDate) return;
+
+    const [hours, minutes] = time.split(':').map(Number);
+    const newDate = new Date(formData.votingStartDate);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+
+    if (!validateDates(newDate, formData.votingEndDate, formData.executionDate)) {
+      return;
+    }
+
+    // Only update start date
+    updateFormData({ votingStartDate: newDate } as Partial<T>);
+  };
+
+  // Voting End Date handlers
+  const handleVotingEndDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    const currentDate = formData.votingEndDate || new Date();
+    const newDate = new Date(date);
+    newDate.setHours(currentDate.getHours());
+    newDate.setMinutes(currentDate.getMinutes());
+
+    if (!validateDates(formData.votingStartDate, newDate, formData.executionDate)) {
+      return;
+    }
+
+    const updates: Partial<T> = {
+      votingEndDate: newDate,
+      // Always update expiration date based on end date
+      expirationDate: addDays(newDate, 7)
+    } as Partial<T>;
+
+    updateFormData(updates);
+  };
+
+  const handleVotingEndTimeChange = (time: string) => {
+    if (!formData.votingEndDate) return;
+
+    const [hours, minutes] = time.split(':').map(Number);
+    const newDate = new Date(formData.votingEndDate);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+
+    if (!validateDates(formData.votingStartDate, newDate, formData.executionDate)) {
+      return;
+    }
+
+    const updates: Partial<T> = {
+      votingEndDate: newDate,
+      // Always update expiration date based on end date
+      expirationDate: addDays(newDate, 7)
+    } as Partial<T>;
+
+    updateFormData(updates);
+  };
+
+  // Execution Date handlers
+  const handleExecutionDateChange = (date: Date | undefined) => {
+    if (!date || !formData.votingEndDate) return;
+
+    const currentDate = formData.executionDate || formData.votingEndDate;
+    const newDate = new Date(date);
+    newDate.setHours(currentDate.getHours());
+    newDate.setMinutes(currentDate.getMinutes());
+
+    if (!validateDates(formData.votingStartDate, formData.votingEndDate, newDate)) {
+      return;
+    }
+
+    updateFormData({ executionDate: newDate } as Partial<T>);
   };
 
   const handleExecutionTimeChange = (time: string) => {
-    if (formData.executionDate) {
-      const [hours, minutes] = time.split(':').map(Number);
-      const newDate = new Date(formData.executionDate);
-      newDate.setHours(hours);
-      newDate.setMinutes(minutes);
-      newDate.setSeconds(0);
-      newDate.setMilliseconds(0);
-      updateFormData({ executionDate: newDate } as Partial<T>);
-    }
-  };
+    if (!formData.executionDate || !formData.votingEndDate) return;
 
-  const handleExpirationDateChange = (date: Date | undefined) => {
-    if (date) {
-      const currentExpirationDate = formData.expirationDate || new Date();
-      const newDate = new Date(date);
-      newDate.setHours(currentExpirationDate.getHours());
-      newDate.setMinutes(currentExpirationDate.getMinutes());
-      updateFormData({ expirationDate: newDate } as Partial<T>);
-    }
-  };
+    const [hours, minutes] = time.split(':').map(Number);
+    const newDate = new Date(formData.executionDate);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
 
-  const handleExpirationTimeChange = (time: string) => {
-    if (formData.expirationDate) {
-      const [hours, minutes] = time.split(':').map(Number);
-      const newDate = new Date(formData.expirationDate);
-      newDate.setHours(hours);
-      newDate.setMinutes(minutes);
-      newDate.setSeconds(0);
-      newDate.setMilliseconds(0);
-      updateFormData({ expirationDate: newDate } as Partial<T>);
+    if (!validateDates(formData.votingStartDate, formData.votingEndDate, newDate)) {
+      return;
     }
+
+    updateFormData({ executionDate: newDate } as Partial<T>);
   };
 
   // Generate time options for select
@@ -104,19 +203,6 @@ export function ConfigProposalStep<T extends BaseFormData>({
     const minutes = (i % 4) * 15;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   });
-
-  const formatDelay = (delayMs: bigint): string => {
-    const days = Number(delayMs) / (24 * 60 * 60 * 1000);
-    const hours = (Number(delayMs) % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000);
-    const minutes = (Number(delayMs) % (60 * 60 * 1000)) / (60 * 1000);
-
-    const parts = [];
-    if (days >= 1) parts.push(`${Math.floor(days)} day${Math.floor(days) !== 1 ? 's' : ''}`);
-    if (hours >= 1) parts.push(`${Math.floor(hours)} hour${Math.floor(hours) !== 1 ? 's' : ''}`);
-    if (minutes >= 1) parts.push(`${Math.floor(minutes)} minute${Math.floor(minutes) !== 1 ? 's' : ''}`);
-
-    return parts.join(', ');
-  };
 
   return (
     <div className="w-full mx-auto">
@@ -157,17 +243,129 @@ export function ConfigProposalStep<T extends BaseFormData>({
           />
         </div>
 
+        {dateError && (
+          <Alert variant="destructive">
+            <AlertDescription>{dateError}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-6">
+          {/* Voting Start Date and Time */}
+          <div className="space-y-2">
+            <Label>Voting Start Date & Time</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Popover open={votingStartTimeOpen} onOpenChange={setVotingStartTimeOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.votingStartDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.votingStartDate ? format(formData.votingStartDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.votingStartDate || undefined}
+                    onSelect={handleVotingStartDateChange}
+                    disabled={(date) => isBefore(date, new Date())}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Select
+                disabled={!formData.votingStartDate}
+                value={formData.votingStartDate ? 
+                  `${formData.votingStartDate.getHours().toString().padStart(2, '0')}:${formData.votingStartDate.getMinutes().toString().padStart(2, '0')}` : 
+                  ""}
+                onValueChange={handleVotingStartTimeChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select time">
+                    <div className="flex items-center">
+                      <Clock className="mr-2 h-4 w-4" />
+                      {formData.votingStartDate ? 
+                        `${formData.votingStartDate.getHours().toString().padStart(2, '0')}:${formData.votingStartDate.getMinutes().toString().padStart(2, '0')}` : 
+                        "Select time"}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Voting End Date and Time */}
+          <div className="space-y-2">
+            <Label>Voting End Date & Time</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Popover open={votingEndTimeOpen} onOpenChange={setVotingEndTimeOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.votingEndDate && "text-muted-foreground"
+                    )}
+                    disabled={!formData.votingStartDate}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.votingEndDate ? format(formData.votingEndDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.votingEndDate || undefined}
+                    onSelect={handleVotingEndDateChange}
+                    disabled={(date) => formData.votingStartDate ? isBefore(date, formData.votingStartDate) : true}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Select
+                disabled={!formData.votingEndDate || !formData.votingStartDate}
+                value={formData.votingEndDate ? 
+                  `${formData.votingEndDate.getHours().toString().padStart(2, '0')}:${formData.votingEndDate.getMinutes().toString().padStart(2, '0')}` : 
+                  ""}
+                onValueChange={handleVotingEndTimeChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select time">
+                    <div className="flex items-center">
+                      <Clock className="mr-2 h-4 w-4" />
+                      {formData.votingEndDate ? 
+                        `${formData.votingEndDate.getHours().toString().padStart(2, '0')}:${formData.votingEndDate.getMinutes().toString().padStart(2, '0')}` : 
+                        "Select time"}
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Execution Date and Time */}
           <div className="space-y-2">
             <Label>Execution Date & Time</Label>
-            {showMinimumDelayAlert && minimumDelayMs > 0 && (
-              <Alert className="mb-4 text-yellow-500 bg-yellow-500/10 border-yellow-500">
-                <AlertDescription>
-                  The execution time must be at least {formatDelay(minimumDelayMs)} from now due to package delay settings.
-                </AlertDescription>
-              </Alert>
-            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Popover open={executionTimeOpen} onOpenChange={setExecutionTimeOpen}>
                 <PopoverTrigger asChild>
@@ -177,6 +375,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
                       "w-full justify-start text-left font-normal",
                       !formData.executionDate && "text-muted-foreground"
                     )}
+                    disabled={!formData.votingEndDate}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.executionDate ? format(formData.executionDate, "PPP") : <span>Pick a date</span>}
@@ -187,13 +386,14 @@ export function ConfigProposalStep<T extends BaseFormData>({
                     mode="single"
                     selected={formData.executionDate || undefined}
                     onSelect={handleExecutionDateChange}
+                    disabled={(date) => formData.votingEndDate ? isBefore(date, formData.votingEndDate) : true}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
 
               <Select
-                disabled={!formData.executionDate}
+                disabled={!formData.executionDate || !formData.votingEndDate}
                 value={formData.executionDate ? 
                   `${formData.executionDate.getHours().toString().padStart(2, '0')}:${formData.executionDate.getMinutes().toString().padStart(2, '0')}` : 
                   ""}
@@ -218,61 +418,9 @@ export function ConfigProposalStep<T extends BaseFormData>({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* Expiration Date and Time */}
-          <div className="space-y-2">
-            <Label>Expiration Date & Time (Optional)</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Popover open={expirationTimeOpen} onOpenChange={setExpirationTimeOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.expirationDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.expirationDate ? format(formData.expirationDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.expirationDate || undefined}
-                    onSelect={handleExpirationDateChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <Select
-                disabled={!formData.expirationDate}
-                value={formData.expirationDate ? 
-                  `${formData.expirationDate.getHours().toString().padStart(2, '0')}:${formData.expirationDate.getMinutes().toString().padStart(2, '0')}` : 
-                  ""}
-                onValueChange={handleExpirationTimeChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select time">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      {formData.expirationDate ? 
-                        `${formData.expirationDate.getHours().toString().padStart(2, '0')}:${formData.expirationDate.getMinutes().toString().padStart(2, '0')}` : 
-                        "Select time"}
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              The proposal will expire {formData.votingEndDate ? format(addDays(formData.votingEndDate, 7), "PPP") : "7 days after voting ends"} if not executed.
+            </p>
           </div>
         </div>
       </div>

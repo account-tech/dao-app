@@ -28,8 +28,10 @@ const ToggleUnverifiedDepsView = () => {
   const [formData, setFormData] = useState<ToggleUnverifiedFormData>({
     proposalName: '',
     proposalDescription: '',
-    executionDate: new Date(),
-    expirationDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 7 days in milliseconds
+    votingStartDate: null,
+    votingEndDate: null,
+    executionDate: null,
+    expirationDate: null,
     allowUnverifiedDeps: false
   });
 
@@ -65,19 +67,31 @@ const ToggleUnverifiedDepsView = () => {
       setIsLoading(true);
       const tx = new Transaction();
 
-      // Only adjust startTime if executionDate is in the past
-      const now = Date.now();
-      const executionTime = formData.executionDate?.getTime() || now;
-      const startTime = BigInt(
-        executionTime < now ? now + 10000 : executionTime
-      );
+      // Validate all required dates are set
+      if (!formData.votingStartDate || !formData.votingEndDate || !formData.executionDate) {
+        toast.error("Please set all required dates");
+        return;
+      }
+
+      // Convert dates to BigInt timestamps
+      const startTime = BigInt(formData.votingStartDate.getTime());
+      const votingEndTime = BigInt(formData.votingEndDate.getTime());
+      const proposalExecutionTime = BigInt(formData.executionDate.getTime());
+      const expirationTime = BigInt(formData.expirationDate?.getTime() || formData.votingEndDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const intentArgs = {
+        // IntentArgs fields
         key: formData.proposalName,
         description: formData.proposalDescription,
-        startTime,
-        endTime: BigInt(formData.expirationDate?.getTime() || Date.now() + (7 * 24 * 60 * 60 * 1000))
+        executionTimes: [proposalExecutionTime], // When proposal can be executed
+        expirationTime: expirationTime,    // When proposal expires if not executed
+        
+        // VoteIntentArgs fields
+        startTime: startTime,           // When voting starts
+        endTime: votingEndTime     // When voting ends
       };
+
+      console.log(intentArgs);
 
       await requestToggleUnverifiedDepsAllowed(
         tx,

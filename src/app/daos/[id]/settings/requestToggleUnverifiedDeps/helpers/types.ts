@@ -1,6 +1,8 @@
 export interface ToggleUnverifiedFormData {
     proposalName: string;
     proposalDescription: string;
+    votingStartDate: Date | null;
+    votingEndDate: Date | null;
     executionDate: Date | null;
     expirationDate: Date | null;
     allowUnverifiedDeps: boolean;

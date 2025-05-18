@@ -1,6 +1,6 @@
 import React from 'react';
 import { StepProps } from "../helpers/types";
-import { Check, AlertCircle, ArrowRight } from "lucide-react";
+import { Check, AlertCircle, ArrowRight, Calendar, Clock } from "lucide-react";
 
 export const RecapStep: React.FC<StepProps> = ({ formData }) => {
   const formatDate = (date: Date | null): string => {
@@ -15,13 +15,17 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
     });
   };
 
-  const InfoRowSimple = ({ label, value, isDescription = false }: { 
+  const InfoRowSimple = ({ label, value, isDescription = false, icon }: { 
     label: string, 
     value: any,
-    isDescription?: boolean
+    isDescription?: boolean,
+    icon?: React.ReactNode
   }) => (
     <div className={`${isDescription ? 'block space-y-2' : 'grid grid-cols-2 gap-4'} py-2 border-b last:border-b-0 border-teal-50`}>
-      <span className="text-gray-600 font-medium">{label}</span>
+      <span className="text-gray-600 font-medium flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
       {isDescription ? (
         <div className="w-full mt-1 p-3 rounded-md text-gray-900 whitespace-pre-wrap">
           {value}
@@ -70,16 +74,34 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
           />
           <InfoRowSimple 
             label="Description"
-            value={formData.proposalDescription}
+            value={formData.proposalDescription || "No description provided"}
             isDescription={true}
           />
+        </Section>
+
+        <Section 
+          title="Proposal Timeline"
+          icon={<Calendar className="w-4 h-4 text-teal-500" />}
+        >
           <InfoRowSimple 
-            label="Execution Date"
-            value={formatDate(formData.executionDate)}
+            label="Voting Start"
+            value={formatDate(formData.votingStartDate)}
+            icon={<Clock className="w-4 h-4 text-teal-400" />}
           />
           <InfoRowSimple 
-            label="Expiration Date"
+            label="Voting End"
+            value={formatDate(formData.votingEndDate)}
+            icon={<Clock className="w-4 h-4 text-teal-400" />}
+          />
+          <InfoRowSimple 
+            label="Execution Time"
+            value={formatDate(formData.executionDate)}
+            icon={<Clock className="w-4 h-4 text-teal-400" />}
+          />
+          <InfoRowSimple 
+            label="Expiration Time"
             value={formatDate(formData.expirationDate)}
+            icon={<Clock className="w-4 h-4 text-yellow-400" />}
           />
         </Section>
 
@@ -101,6 +123,11 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             <p className="text-sm text-yellow-700">
               This change will {formData.allowUnverifiedDeps ? 'allow' : 'disallow'} the use of unverified dependencies in this DAO.
               This modification will need to be approved through the DAO's governance process before taking effect.
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              • Voting period: {formatDate(formData.votingStartDate)} → {formatDate(formData.votingEndDate)}<br />
+              • If approved, executes at: {formatDate(formData.executionDate)}<br />
+              • Expires if not executed by: {formatDate(formData.expirationDate)}
             </p>
           </div>
         </div>
