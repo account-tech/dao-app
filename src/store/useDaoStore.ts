@@ -96,7 +96,10 @@ export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
     const state = get();
     if (state.client) {
       try {
+        //normally we would just call state.client.refresh() bit its not triggering a loading state
         await state.client.refresh();
+        // Reset the client and address
+        //set({...initialState})
         // Trigger UI refresh after client refresh
         set(state => ({ refreshCounter: state.refreshCounter + 1 }));
       } catch (error) {
