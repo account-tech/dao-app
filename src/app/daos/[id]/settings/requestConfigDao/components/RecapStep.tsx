@@ -1,7 +1,7 @@
 import React from 'react';
 import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
-import { ExternalLink, Check, AlertCircle, ArrowRight } from "lucide-react";
+import { ExternalLink, Check, AlertCircle, ArrowRight, CalendarIcon } from "lucide-react";
 import { useOriginalDaoConfig } from "../context/DaoConfigContext";
 import { formatBigInt } from "@/utils/GlobalHelpers";
 
@@ -187,12 +187,26 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             value={formData.proposalDescription}
             isDescription={true}
           />
+        </Section>
+
+        <Section 
+          title="Proposal Timeline"
+          icon={<CalendarIcon className="w-4 h-4 text-teal-500" />}
+        >
           <InfoRowSimple 
-            label="Execution Date"
+            label="Voting Start"
+            value={formData.votingStartDate}
+          />
+          <InfoRowSimple 
+            label="Voting End"
+            value={formData.votingEndDate}
+          />
+          <InfoRowSimple 
+            label="Execution Time"
             value={formData.executionDate}
           />
           <InfoRowSimple 
-            label="Expiration Date"
+            label="Expiration Time"
             value={formData.expirationDate}
           />
         </Section>
@@ -277,6 +291,11 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
               <p className="text-sm text-yellow-700">
                 Please review all changes carefully. These modifications will need to be approved through
                 the DAO's governance process before taking effect.
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                • Voting period: {formatDate(formData.votingStartDate)} → {formatDate(formData.votingEndDate)}<br />
+                • If approved, executes at: {formatDate(formData.executionDate)}<br />
+                • Expires if not executed by: {formatDate(formData.expirationDate)}
               </p>
             </div>
           </div>

@@ -39,8 +39,10 @@ const ConfigDaoView = () => {
     // Initialize with empty values
     proposalName: '',
     proposalDescription: '',
-    executionDate: new Date(),
-    expirationDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 7 days from now
+    votingStartDate: null,
+    votingEndDate: null,
+    executionDate: null,
+    expirationDate: null,
     assetType: '',
     authVotingPower: BigInt(0),
     unstakingCooldown: BigInt(0),
@@ -105,21 +107,31 @@ const ConfigDaoView = () => {
       return;
     }
 
+    // Validate all required dates are set
+    if (!formData.votingStartDate || !formData.votingEndDate || !formData.executionDate) {
+      toast.error("Please set all required dates");
+      return;
+    }
+
     try {
       const tx = new Transaction();
 
-      // Only adjust startTime if executionDate is in the past
-      const now = Date.now();
-      const executionTime = formData.executionDate?.getTime() || now;
-      const startTime = BigInt(
-        executionTime < now ? now + 10000 : executionTime
-      );
+      // Convert dates to BigInt timestamps
+      const startTime = BigInt(formData.votingStartDate.getTime());
+      const endTime = BigInt(formData.votingEndDate.getTime());
+      const executionTime = BigInt(formData.executionDate.getTime());
+      const expirationTime = BigInt(formData.expirationDate?.getTime() || formData.votingEndDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const intentArgs = {
+        // IntentArgs fields
         key: formData.proposalName,
         description: formData.proposalDescription,
+        executionTimes: [executionTime],
+        expirationTime,
+        
+        // VoteIntentArgs fields
         startTime,
-        endTime: BigInt(formData.expirationDate?.getTime() || Date.now() + (7 * 24 * 60 * 60 * 1000))
+        endTime
       };
 
       const paramsConfigDao: RequestConfigDaoParams = {  
@@ -133,7 +145,7 @@ const ConfigDaoView = () => {
         maxVotingPower: formData.maxVotingPower,
         minimumVotes: formData.minimumVotes,
         votingQuorum: formData.votingQuorum
-      }
+      };
 
       console.log(paramsConfigDao);
       
