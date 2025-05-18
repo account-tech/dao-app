@@ -108,10 +108,17 @@ const ConfigDaoView = () => {
     try {
       const tx = new Transaction();
 
+      // Only adjust startTime if executionDate is in the past
+      const now = Date.now();
+      const executionTime = formData.executionDate?.getTime() || now;
+      const startTime = BigInt(
+        executionTime < now ? now + 10000 : executionTime
+      );
+
       const intentArgs = {
         key: formData.proposalName,
         description: formData.proposalDescription,
-        startTime: BigInt(formData.executionDate?.getTime() || Date.now()),
+        startTime,
         endTime: BigInt(formData.expirationDate?.getTime() || Date.now() + (7 * 24 * 60 * 60 * 1000))
       };
 
