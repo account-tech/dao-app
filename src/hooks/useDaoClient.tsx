@@ -21,7 +21,7 @@ export function useDaoClient() {
   ): Promise<TransactionResult> => {
     try {
       const client = await initClient(userAddr);
-      const result = await client.createDao(
+      const result = client.createDao(
         params.tx,
         params.assetType,
         params.authVotingPower,
@@ -74,7 +74,7 @@ export function useDaoClient() {
   const getUserDaos = async (userAddr: string) => {
     try {
       const client = await initClient(userAddr);
-      return await client.getUserDaos();
+      return client.getUserDaos();
     } catch (error) {
       console.error("Error getting user daos:", error);
       throw error;
@@ -166,7 +166,7 @@ export function useDaoClient() {
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
     try {
       const client = await initClient(userAddr, daoId);
-      await client.authenticate(tx);
+      client.authenticate(tx);
       return tx;
     } catch (error) {
       console.error("Error authenticating:", error);
@@ -183,7 +183,7 @@ export function useDaoClient() {
     try {
       const client = await initClient(userAddr);
       const tx = new Transaction();
-      await client.followDao(tx, daoId, username, profilePicture);
+      client.followDao(tx, daoId, username, profilePicture);
       return tx;
     } catch (error) {
       console.error("Error following dao:", error);
@@ -195,7 +195,7 @@ export function useDaoClient() {
     try {
       const client = await initClient(userAddr);
       const tx = new Transaction();
-      await client.unfollowDao(tx, daoId);
+      client.unfollowDao(tx, daoId);
       return tx;
     } catch (error) {
       console.error("Error unfollowing dao:", error);
@@ -208,7 +208,7 @@ export function useDaoClient() {
       const client = await initClient(userAddr);
       const tx = new Transaction();
       tx.setSender(userAddr);
-      await client.stake(tx, assets);
+      client.stake(tx, assets);
       return tx;
     } catch (error) {
       console.error("Error staking assets:", error);
@@ -220,7 +220,7 @@ export function useDaoClient() {
     try {
       const client = await initClient(userAddr);
       const tx = new Transaction();
-      await client.unstake(tx, assets);
+      client.unstake(tx, assets);
       return tx;
     } catch (error) {
       console.error("Error unstaking assets:", error);
@@ -232,10 +232,91 @@ export function useDaoClient() {
     try {
       const client = await initClient(userAddr);
       const tx = new Transaction();
-      await client.claim(tx);
+      client.claim(tx);
       return tx;
     } catch (error) {
       console.error("Error claiming assets:", error);
+      throw error;
+    }
+  };
+
+  const execute = async (
+    userAddr: string,
+    multisigId: string,
+    tx: Transaction,
+    intentKey: string
+  ): Promise<TransactionResult | void> => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.execute(tx, intentKey);
+      return result;
+    } catch (error) {
+      console.error("Error executing intent:", error);
+      throw error;
+    }
+  };
+
+  const deleteIntent = async (
+    userAddr: string,
+    multisigId: string,
+    tx: Transaction,
+    intentKey: string
+  ) => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.delete(tx, intentKey);
+      return result;
+    } catch (error) {
+      console.error("Error deleting intent:", error);
+      throw error;
+    }
+  };
+
+  const vote = async (
+    userAddr: string,
+    multisigId: string,
+    tx: Transaction,
+    intentKey: string,
+    answer: "no" | "yes" | "abstain"
+  ) => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.vote(tx, intentKey, answer);
+      return result;
+    } catch (error) {
+      console.error("Error voting on intent:", error);
+      throw error;
+    }
+  };
+
+  const changeVote = async (
+    userAddr: string,
+    multisigId: string,
+    tx: Transaction,
+    intentKey: string,
+    answer: "no" | "yes" | "abstain"
+  ) => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.changeVote(tx, intentKey, answer);
+      return result;
+    } catch (error) {
+      console.error("Error changing vote:", error);
+      throw error;
+    }
+  };
+
+  const retrieveVotes = async (
+    userAddr: string,
+    multisigId: string,
+    tx: Transaction
+  ) => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.retrieveVotes(tx);
+      return result;
+    } catch (error) {
+      console.error("Error retrieving votes:", error);
       throw error;
     }
   };
@@ -325,6 +406,11 @@ export function useDaoClient() {
     stake,
     unstake,
     claim,
+    execute,
+    deleteIntent,
+    vote,
+    changeVote,
+    retrieveVotes,
     modifyName,
     updateVerifiedDeps,
     requestConfigDao,
