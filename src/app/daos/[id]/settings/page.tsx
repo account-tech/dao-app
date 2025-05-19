@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { DaoMetadata, Dao } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
 import { useDaoClient } from "@/hooks/useDaoClient";
@@ -43,12 +43,26 @@ export default function DaoSettingsPage() {
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const { getDaoMetadata, getDao, getParticipant } = useDaoClient();
+  const suiClient = useSuiClient();
+  const { getDaoMetadata, getDao, getDaoVotingPowerInfo } = useDaoClient();
   const [dao, setDao] = useState<DaoMetadata | null>(null);
   const [daoParams, setDaoParams] = useState<Dao | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasAuthPower, setHasAuthPower] = useState(false);
-  const [votingPower, setVotingPower] = useState<string>("0");
+  const [votingPowerInfo, setVotingPowerInfo] = useState<{
+    votingPower: string;
+    authVotingPower: string;
+    maxVotingPower: string;
+    minimumVotes: string;
+    hasAuthPower: boolean;
+    isQuadratic: boolean;
+  }>({
+    votingPower: "0",
+    authVotingPower: "0",
+    maxVotingPower: "0",
+    minimumVotes: "0",
+    hasAuthPower: false,
+    isQuadratic: false
+  });
   const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   useEffect(() => {
@@ -57,57 +71,28 @@ export default function DaoSettingsPage() {
 
       try {
         setLoading(true);
-        const [metadata, params, participant] = await Promise.all([
+        const [metadata, params, powerInfo] = await Promise.all([
           getDaoMetadata(currentAccount.address, daoId),
           getDao(currentAccount.address, daoId),
-          getParticipant(currentAccount.address, daoId)
+          getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient)
         ]);
         
         setDao(metadata);
         setDaoParams(params);
-
-        if (!participant || !params) {
-          throw new Error("Failed to fetch participant or dao data");
-        }
-
-        // Calculate total staked amount
-        let totalStakedValue = BigInt(0);
-        if (participant.staked && Array.isArray(participant.staked)) {
-          totalStakedValue = participant.staked.reduce((acc, stake) => {
-            if (stake.daoAddr === daoId) {
-              return acc + BigInt(stake.value);
-            }
-            return acc;
-          }, BigInt(0));
-        }
-
-        // Get decimals for the asset type
-        const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
-        const fetchedDecimals = await getCoinDecimals(simplifiedAssetType);
-        
-        // Calculate voting power based on the rule
-        const isQuadraticVoting = params.votingRule === 1;
-        const stakedAmount = Number(formatCoinAmount(totalStakedValue, fetchedDecimals));
-        
-        let power: string | number;
-        if (isQuadraticVoting) {
-          power = Math.sqrt(stakedAmount);
-        } else {
-          power = stakedAmount;
-        }
-        
-        const formattedPower = Number(power).toFixed(2);
-        setVotingPower(formattedPower);
-        
-        // Check if user has enough voting power for auth actions
-        setHasAuthPower(Number(formattedPower) >= Number(params.authVotingPower));
+        setVotingPowerInfo(powerInfo);
 
       } catch (error) {
         console.error("Error initializing dao:", error);
         setDao(null);
         setDaoParams(null);
-        setHasAuthPower(false);
-        setVotingPower("0");
+        setVotingPowerInfo({
+          votingPower: "0",
+          authVotingPower: "0",
+          maxVotingPower: "0",
+          minimumVotes: "0",
+          hasAuthPower: false,
+          isQuadratic: false
+        });
       } finally {
         setLoading(false);
       }
@@ -391,7 +376,7 @@ export default function DaoSettingsPage() {
                 </div>
                 <input
                   type="text"
-                  value={daoParams.authVotingPower.toString()}
+                  value={votingPowerInfo.authVotingPower}
                   disabled
                   className="w-full px-3 py-2 border rounded-lg bg-gray-50"
                 />
@@ -415,7 +400,7 @@ export default function DaoSettingsPage() {
                 </div>
                 <input
                   type="text"
-                  value={daoParams.maxVotingPower.toString()}
+                  value={votingPowerInfo.maxVotingPower}
                   disabled
                   className="w-full px-3 py-2 border rounded-lg bg-gray-50"
                 />
@@ -439,7 +424,7 @@ export default function DaoSettingsPage() {
                 </div>
                 <input
                   type="text"
-                  value={daoParams.minimumVotes.toString()}
+                  value={votingPowerInfo.minimumVotes}
                   disabled
                   className="w-full px-3 py-2 border rounded-lg bg-gray-50"
                 />
@@ -457,7 +442,7 @@ export default function DaoSettingsPage() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-xs">
-                          {daoParams.votingRule === 1 
+                          {votingPowerInfo.isQuadratic 
                             ? "Quadratic voting: voting power scales as the square root of tokens staked, promoting fair distribution."
                             : "Linear voting: voting power is directly proportional to tokens staked."}
                         </p>
@@ -467,7 +452,7 @@ export default function DaoSettingsPage() {
                 </div>
                 <input
                   type="text"
-                  value={daoParams.votingRule === 1 ? "Quadratic" : "Linear"}
+                  value={votingPowerInfo.isQuadratic ? "Quadratic" : "Linear"}
                   disabled
                   className="w-full px-3 py-2 border rounded-lg bg-gray-50"
                 />
@@ -553,25 +538,25 @@ export default function DaoSettingsPage() {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => router.push(`/daos/${daoId}/settings/requestConfigDao`)}
-                    disabled={!hasAuthPower}
+                    disabled={!votingPowerInfo.hasAuthPower}
                     className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     Request DAO Configuration
                   </button>
                 </TooltipTrigger>
-                {!hasAuthPower && (
+                {!votingPowerInfo.hasAuthPower && (
                   <TooltipContent>
-                    <p>You need to stake more DAO tokens to reach the required voting power of {daoParams.authVotingPower}</p>
+                    <p>You need to stake more DAO tokens to reach the required voting power of {votingPowerInfo.authVotingPower}</p>
                   </TooltipContent>
                 )}
               </Tooltip>
             </TooltipProvider>
 
-            <Alert className={`border shadow-none ${!hasAuthPower ? 'bg-yellow-50/50 border-yellow-100' : 'bg-teal-50/50 border-teal-100'}`}>
-              <Info className={!hasAuthPower ? 'h-4 w-4 text-yellow-600' : 'h-4 w-4 text-teal-600'} />
-              <AlertDescription className={!hasAuthPower ? 'text-yellow-800 text-sm' : 'text-teal-800 text-sm'}>
-                {!hasAuthPower 
-                  ? `You need at least ${daoParams.authVotingPower} voting power to request configuration changes. Current: ${votingPower}. Stake more tokens to request configuration changes.`
+            <Alert className={`border shadow-none ${!votingPowerInfo.hasAuthPower ? 'bg-yellow-50/50 border-yellow-100' : 'bg-teal-50/50 border-teal-100'}`}>
+              <Info className={!votingPowerInfo.hasAuthPower ? 'h-4 w-4 text-yellow-600' : 'h-4 w-4 text-teal-600'} />
+              <AlertDescription className={!votingPowerInfo.hasAuthPower ? 'text-yellow-800 text-sm' : 'text-teal-800 text-sm'}>
+                {!votingPowerInfo.hasAuthPower 
+                  ? `You need at least ${votingPowerInfo.authVotingPower} voting power to request configuration changes. Current: ${votingPowerInfo.votingPower}. Stake more tokens to request configuration changes.`
                   : "You have enough voting power to request configuration changes"}
               </AlertDescription>
             </Alert>
@@ -583,9 +568,9 @@ export default function DaoSettingsPage() {
       <div className="mt-8">
         <DependenciesSection 
           daoId={daoId} 
-          hasAuthPower={hasAuthPower}
-          authVotingPower={daoParams.authVotingPower}
-          votingPower={votingPower}
+          hasAuthPower={votingPowerInfo.hasAuthPower}
+          authVotingPower={votingPowerInfo.authVotingPower}
+          votingPower={votingPowerInfo.votingPower}
         />
       </div>
     </div>

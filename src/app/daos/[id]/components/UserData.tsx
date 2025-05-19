@@ -49,7 +49,7 @@ export default function UserData({ daoId }: { daoId: string }) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { getParticipant, getDao, stake, unstake, claim } = useDaoClient();
+  const { getParticipant, getDao, stake, unstake, claim, getDaoVotingPowerInfo } = useDaoClient();
   const [votingPower, setVotingPower] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [stakeAmount, setStakeAmount] = useState("");
@@ -114,32 +114,13 @@ export default function UserData({ daoId }: { daoId: string }) {
         }
         setTotalStaked(formatCoinAmount(totalStakedValue, fetchedDecimals));
 
-        // Store DAO parameters - direct voting power values
-        setAuthVotingPower(dao.authVotingPower.toString());
-        setMaxVotingPower(dao.maxVotingPower.toString());
-
-        // Determine voting rule first
-        const isQuadraticVoting = dao.votingRule === 1;
-        setIsQuadratic(isQuadraticVoting);
-
-        // Calculate voting power based on the determined rule
-        let power: string | number;
-        const stakedAmount = Number(formatCoinAmount(totalStakedValue, fetchedDecimals));
-        
-        if (isQuadraticVoting) {
-          // For quadratic voting: sqrt(stakedAmount)
-          power = Math.sqrt(stakedAmount);
-        } else {
-          // For linear voting: just the staked amount
-          power = stakedAmount;
-        }
-        
-        // Format to 2 decimal places
-        const formattedPower = Number(power).toFixed(2);
-        setVotingPower(formattedPower);
-        
-        // Check if user has enough voting power for auth actions
-        setHasAuthPower(Number(formattedPower) >= Number(dao.authVotingPower));
+        // Get voting power info using the new helper function
+        const votingPowerInfo = await getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient);
+        setVotingPower(votingPowerInfo.votingPower);
+        setAuthVotingPower(votingPowerInfo.authVotingPower);
+        setMaxVotingPower(votingPowerInfo.maxVotingPower);
+        setHasAuthPower(votingPowerInfo.hasAuthPower);
+        setIsQuadratic(votingPowerInfo.isQuadratic);
 
         // Calculate total unstaking amount and store positions
         let totalUnstakingValue = BigInt(0);
@@ -178,6 +159,7 @@ export default function UserData({ daoId }: { daoId: string }) {
         setAuthVotingPower("0");
         setMaxVotingPower("0");
         setHasAuthPower(false);
+        setIsQuadratic(false);
         setCoinSymbol("");
       } finally {
         setLoading(false);

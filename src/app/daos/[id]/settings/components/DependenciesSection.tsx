@@ -27,7 +27,7 @@ interface EnhancedDep extends Dep {
 interface DependenciesSectionProps {
   daoId: string;
   hasAuthPower: boolean;
-  authVotingPower: bigint;
+  authVotingPower: string;
   votingPower: string;
 }
 
