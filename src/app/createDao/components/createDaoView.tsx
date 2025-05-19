@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Transaction } from "@mysten/sui/transactions";
 import {
   useSuiClient,
@@ -24,10 +24,11 @@ import { CreateDaoParams } from "@/types/dao";
 import { validateStep } from "../helpers/validation";
 import { useDaoStore } from "@/store/useDaoStore";
 
-const DEFAULT_VOTING_POWER = BigInt(50); // a person needs to have atleast 50 voting power to partake in the DAO this depends on linear or quadratic rule
+// Base values (without decimals)
+const BASE_VOTING_POWER = BigInt(50); // Base 50 voting power
 const DEFAULT_COOLDOWN = BigInt(86400000); // 24 hours in milliseconds
 const DEFAULT_QUORUM = BigInt(500000000); // 50% according to the sdk
-const DEFAULT_MIN_VOTES = BigInt(10); // 50 votes alteast for the proposal to pass
+const BASE_MIN_VOTES = BigInt(10); // Base 10 minimum votes
 
 const CreateDaoView = () => {
   const router = useRouter();
@@ -44,11 +45,11 @@ const CreateDaoView = () => {
     coinType: '',
     // Initialize DAO specific fields with defaults
     assetType: '',
-    authVotingPower: DEFAULT_VOTING_POWER,
+    authVotingPower: BASE_VOTING_POWER,
     unstakingCooldown: DEFAULT_COOLDOWN,
     votingRule: 0, // Simple majority
-    maxVotingPower: DEFAULT_VOTING_POWER,
-    minimumVotes: DEFAULT_MIN_VOTES,
+    maxVotingPower: BASE_VOTING_POWER,
+    minimumVotes: BASE_MIN_VOTES,
     votingQuorum: DEFAULT_QUORUM,
     name: '',
     description: '',
@@ -59,6 +60,36 @@ const CreateDaoView = () => {
     github: '',
     website: '',
   });
+
+  // Update default values when coin decimals change
+  useEffect(() => {
+    if (formData.coinDecimals !== undefined) {
+      const multiplier = BigInt(10) ** BigInt(formData.coinDecimals);
+      
+      // Only update if the values are still at their defaults
+      // This prevents overwriting user-modified values
+      if (formData.authVotingPower === BASE_VOTING_POWER) {
+        setFormData(prev => ({
+          ...prev,
+          authVotingPower: BASE_VOTING_POWER * multiplier
+        }));
+      }
+      
+      if (formData.maxVotingPower === BASE_VOTING_POWER) {
+        setFormData(prev => ({
+          ...prev,
+          maxVotingPower: BASE_VOTING_POWER * multiplier
+        }));
+      }
+      
+      if (formData.minimumVotes === BASE_MIN_VOTES) {
+        setFormData(prev => ({
+          ...prev,
+          minimumVotes: BASE_MIN_VOTES * multiplier
+        }));
+      }
+    }
+  }, [formData.coinDecimals]);
 
   const updateFormData = (updates: Partial<DaoFormData>) => {
     setFormData(current => ({
@@ -102,7 +133,7 @@ const CreateDaoView = () => {
       };
 
       await createDao(currentAccount.address, daoParams);
-
+      console.log(daoParams);
       const result = await signAndExecute({
         suiClient,
         currentAccount,

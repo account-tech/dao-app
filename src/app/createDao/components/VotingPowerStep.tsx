@@ -3,13 +3,32 @@ import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const VotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const [displayValue, setDisplayValue] = useState("0");
+
+  useEffect(() => {
+    // When formData.authVotingPower changes, update display value
+    // We need to account for the decimals when displaying
+    if (formData.coinDecimals !== undefined) {
+      const divisor = BigInt(10) ** BigInt(formData.coinDecimals);
+      const displayNum = formData.authVotingPower / divisor;
+      setDisplayValue(displayNum.toString());
+    }
+  }, [formData.authVotingPower, formData.coinDecimals]);
+
   const handleVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Convert to BigInt and ensure it's not negative
-    const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
-    updateFormData({ authVotingPower: bigIntValue });
+    const numValue = Math.max(0, parseInt(value) || 0);
+    setDisplayValue(numValue.toString());
+
+    // Convert to actual value with decimals
+    if (formData.coinDecimals !== undefined) {
+      const multiplier = BigInt(10) ** BigInt(formData.coinDecimals);
+      const actualValue = BigInt(numValue) * multiplier;
+      updateFormData({ authVotingPower: actualValue });
+    }
   };
 
   return (
@@ -21,7 +40,7 @@ export const VotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData 
           type="number"
           min="0"
           placeholder="Enter minimum voting power..."
-          value={formData.authVotingPower.toString()}
+          value={displayValue}
           onChange={handleVotingPowerChange}
         />
         <Alert>

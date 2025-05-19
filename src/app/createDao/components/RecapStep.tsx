@@ -25,6 +25,34 @@ const formatDuration = (milliseconds: bigint): string => {
   return parts.join(', ');
 };
 
+// Helper function to format BigInt values with decimals
+const formatBigIntWithDecimals = (value: bigint, decimals: number | undefined): string => {
+  if (decimals === undefined) return value.toString();
+  
+  const divisor = BigInt(10) ** BigInt(decimals);
+  const wholePart = value / divisor;
+  const fractionalPart = value % divisor;
+  
+  if (fractionalPart === BigInt(0)) {
+    return wholePart.toString();
+  }
+  
+  // Convert fractional part to string and pad with leading zeros if needed
+  let fractionalStr = fractionalPart.toString();
+  fractionalStr = fractionalStr.padStart(decimals, '0');
+  
+  // Remove trailing zeros
+  fractionalStr = fractionalStr.replace(/0+$/, '');
+  
+  return fractionalStr ? `${wholePart}.${fractionalStr}` : wholePart.toString();
+};
+
+// Helper function to format voting quorum as percentage
+const formatQuorumAsPercentage = (quorum: bigint): string => {
+  const percentage = (Number(quorum) / 1_000_000_000) * 100;
+  return `${percentage.toFixed(2)}%`;
+};
+
 export const RecapStep: React.FC<StepProps> = ({ formData }) => {
   const TruncatedText = ({ text, maxLength = 30 }: { text: string | undefined, maxLength?: number }) => {
     if (!text) return <span className="text-gray-400 italic">Not set</span>;
@@ -51,10 +79,22 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
     </a>
   );
 
-  const InfoRow = ({ label, value, important = false }: { label: string, value: React.ReactNode, important?: boolean }) => (
+  const InfoRow = ({ label, value, important = false, tooltip }: { 
+    label: string, 
+    value: React.ReactNode, 
+    important?: boolean,
+    tooltip?: string 
+  }) => (
     <div className="grid grid-cols-2 gap-4 py-2 border-b last:border-b-0 border-teal-50">
       <span className="text-gray-600 font-medium">{label}</span>
-      <div className={important ? "font-semibold text-teal-700" : ""}>{value}</div>
+      <div className={`${important ? "font-semibold text-teal-700" : ""} group relative`}>
+        {value}
+        {tooltip && (
+          <div className="absolute z-10 invisible group-hover:visible bg-gray-900 text-white text-xs rounded-md py-1 px-2 -top-1 left-full ml-2 w-48 break-words font-normal">
+            {tooltip}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -155,21 +195,22 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
           />
           <InfoRow 
             label="Authentication Voting Power" 
-            value={formData.authVotingPower.toString()}
+            value={formatBigIntWithDecimals(formData.authVotingPower, formData.coinDecimals)}
             important
           />
           <InfoRow 
             label="Maximum Voting Power" 
-            value={formData.maxVotingPower.toString()}
+            value={formatBigIntWithDecimals(formData.maxVotingPower, formData.coinDecimals)}
             important
           />
           <InfoRow 
             label="Minimum Votes" 
-            value={formData.minimumVotes.toString()}
+            value={formatBigIntWithDecimals(formData.minimumVotes, formData.coinDecimals)}
           />
           <InfoRow 
             label="Voting Quorum" 
-            value={formData.votingQuorum.toString()}
+            value={formatQuorumAsPercentage(formData.votingQuorum)}
+            tooltip="Percentage of total voting power required for proposals"
           />
           <InfoRow 
             label="Unstaking Cooldown" 

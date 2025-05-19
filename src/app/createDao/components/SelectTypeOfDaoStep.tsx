@@ -101,7 +101,14 @@ export const SelectTypeOfDaoStep: React.FC<StepProps> = ({ formData, updateFormD
 
   const handleSelect = (value: string) => {
     const wrappedCoinType = `0x2::coin::Coin<${value}>`;
-    updateFormData({ coinType: wrappedCoinType });
+    const selectedCoin = coins.find(coin => coin.type === value);
+    if (selectedCoin) {
+      console.log('Selected coin decimals:', selectedCoin.decimals);
+      updateFormData({ 
+        coinType: wrappedCoinType,
+        coinDecimals: selectedCoin.decimals || 9 // default to 9 if not found
+      });
+    }
     setInputValue(wrappedCoinType);
     setOpen(false);
   };
@@ -110,12 +117,18 @@ export const SelectTypeOfDaoStep: React.FC<StepProps> = ({ formData, updateFormD
     // If the input already contains the wrapper, use it as is
     if (value.startsWith('0x2::coin::Coin<') && value.endsWith('>')) {
       setInputValue(value);
-      updateFormData({ coinType: value });
+      updateFormData({ 
+        coinType: value,
+        coinDecimals: 9 // default to 9 for custom inputs
+      });
     } else {
       // Otherwise, wrap it
       const wrappedValue = `0x2::coin::Coin<${value}>`;
       setInputValue(wrappedValue);
-      updateFormData({ coinType: wrappedValue });
+      updateFormData({ 
+        coinType: wrappedValue,
+        coinDecimals: 9 // default to 9 for custom inputs
+      });
     }
   };
 

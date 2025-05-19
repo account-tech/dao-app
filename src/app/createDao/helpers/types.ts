@@ -1,6 +1,7 @@
 export interface DaoFormData {
     daoType: 'coin' | 'nft';
     coinType?: string;
+    coinDecimals?: number;
     assetType: string;
     authVotingPower: bigint;
     unstakingCooldown: bigint;
