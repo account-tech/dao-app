@@ -40,11 +40,8 @@ export default function ProposalsPage() {
 
     try {
       const fetchedResult = await getIntents(currentAccount.address, daoId);
-      console.log('Fetched result:', fetchedResult);
 
       const fetchedIntents = fetchedResult?.intents;
-      
-      console.log('Extracted intents:', fetchedIntents);
 
       if (fetchedIntents) {
         setIntents(fetchedIntents);

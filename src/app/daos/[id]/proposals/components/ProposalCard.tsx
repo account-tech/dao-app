@@ -17,24 +17,96 @@ interface ProposalCardProps {
   intent: Intent;
 }
 
+interface VoteResults {
+  yes: string;
+  no: string;
+  abstain: string;
+}
+
 export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { deleteIntent, execute, getIntentStatus } = useDaoClient();
-  const { refreshClient} = useDaoStore();
+  const { deleteIntent, execute, getIntentStatus, vote } = useDaoClient();
+  const { refreshClient } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<IntentStatus>({ stage: 'pending', deletable: false });
 
+  // Get voting information from intent
+  const voteOutcome = (intent as any).outcome;
+  const startTime = voteOutcome?.startTime ? new Date(Number(voteOutcome.startTime)) : null;
+  const endTime = voteOutcome?.endTime ? new Date(Number(voteOutcome.endTime)) : null;
+  const results: VoteResults = voteOutcome?.results || { yes: "0", no: "0", abstain: "0" };
+
+  // Calculate total votes and percentages
+  const totalVotes = parseInt(results.yes) + parseInt(results.no) + parseInt(results.abstain);
+  const yesPercentage = totalVotes > 0 ? (parseInt(results.yes) / totalVotes) * 100 : 0;
+  const noPercentage = totalVotes > 0 ? (parseInt(results.no) / totalVotes) * 100 : 0;
+  const abstainPercentage = totalVotes > 0 ? (parseInt(results.abstain) / totalVotes) * 100 : 0;
+
+  // Calculate remaining time
+  const now = new Date();
+  const remainingTime = endTime ? endTime.getTime() - now.getTime() : 0;
+  const remainingHours = Math.max(0, Math.floor(remainingTime / (1000 * 60 * 60)));
+  const remainingMinutes = Math.max(0, Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60)));
+
+  // Format dates
+  const formatDate = (date: Date | null) => {
+    if (!date) return "";
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleVote = async (answer: "yes" | "no" | "abstain") => {
+    if (!currentAccount || !daoId) {
+      toast.error("No account or DAO selected");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const tx = new Transaction();
+      await vote(
+        currentAccount.address,
+        daoId,
+        tx,
+        intentKey,
+        answer
+      );
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+      refreshClient();
+    } catch (error) {
+      console.error('Error voting:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to vote");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
+    console.log("outcome", voteOutcome);
     const fetchStatus = async () => {
       if (currentAccount && daoId) {
         try {
           const intentStatus = await getIntentStatus(currentAccount.address, daoId, intentKey);
+          console.log('Intent status:', intentStatus);
           setStatus(intentStatus);
         } catch (error) {
           console.error('Error fetching intent status:', error);
@@ -121,7 +193,6 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     }
   };
 
-  const hasUserApproved = currentAccount && (intent as any).outcome?.approved?.includes(currentAccount.address);
   const intentType = (intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
   const intentDisplay = getIntentDisplay(intentType);
 
@@ -141,117 +212,125 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   };
 
   return (
-    <div 
-      className="group relative flex flex-col xl:flex-row xl:items-center gap-4 py-4 px-6 bg-white rounded-lg border cursor-pointer hover:bg-gray-50 hover:border-black transition-colors"
-    >
-      {/* Mobile Layout (default to xl) */}
-      <div className="flex flex-col gap-4 w-full xl:hidden">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-gray-100 shrink-0">
-              <intentDisplay.icon className="h-5 w-5" />
-            </div>
-            <div className="flex flex-col md:hidden">
-              <span className="text-sm font-medium">
-                {intentKey}
-              </span>
-            </div>
-            <span className="text-xs text-gray-600">
-              {intentDisplay.title}
-            </span>
+    <div className="bg-white rounded-lg border p-6 space-y-4">
+      <div className="flex justify-between items-start">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded bg-gray-100">
+            <intentDisplay.icon className="h-5 w-5" />
           </div>
-          
-          <div className={`px-2 py-1 rounded text-xs font-medium ${getStatusStyle()}`}>
-            {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
+          <div>
+            <p className="text-sm text-gray-600">{intentDisplay.title}</p>
+            <h3 className="font-medium">{intentKey}</h3>
           </div>
         </div>
-
-        <div className="flex flex-col gap-4 md:pl-8">
-          <div className="hidden md:flex md:flex-col">
-            <span className="text-sm font-medium">
-              {intentKey}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 md:justify-end">
-            <Button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleExecute();
-              }} 
-              variant="default" 
-              size="sm"
-              disabled={isLoading || status.stage !== 'executable'}
-              className="flex-1 md:flex-initial md:w-[120px]"
-            >
-              {(intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') === 'UpgradePackage' ? 'Configure' :
-               (intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') === 'BorrowCap' ? 'Configure' :
-               'Execute'}
-            </Button>
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete();
-              }}
-              variant="ghost"
-              size="sm"
-              disabled={isLoading || !status.deletable}
-              className="h-8 w-8 p-0"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle()}`}>
+          {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
         </div>
       </div>
 
-      {/* Desktop Layout (xl and above) */}
-      <div className="hidden xl:flex items-center gap-4 w-full">
-        
-        <div className={`px-2 py-1 rounded text-sm font-medium ${getStatusStyle()} w-24 shrink-0 text-left`}>
-          {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
-        </div>
+      {/* Vote Counts */}
+      <div className="flex gap-4 text-sm">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          Yes {results.yes}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+          Abstain {results.abstain}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+          No {results.no}
+        </span>
+      </div>
 
-        <div className="flex items-center gap-2 w-72 shrink-0">
-          <div className="p-1 rounded bg-gray-100">
-            <intentDisplay.icon className="h-5 w-5" />
+      {/* Voting Progress Bar */}
+      <div className="flex h-2 rounded-full overflow-hidden">
+        <div 
+          className="bg-green-500" 
+          style={{ width: `${yesPercentage}%` }} 
+        />
+        <div 
+          className="bg-gray-300" 
+          style={{ width: `${abstainPercentage}%` }} 
+        />
+        <div 
+          className="bg-red-500" 
+          style={{ width: `${noPercentage}%` }} 
+        />
+      </div>
+
+      {/* Timer */}
+      {startTime && endTime && (
+        <div className="text-sm text-gray-500">
+          <div className="flex justify-between">
+            <span>
+              Started {formatDate(startTime)}
+            </span>
+            <span>
+              Ends {formatDate(endTime)}
+            </span>
           </div>
-          <span className="whitespace-nowrap">{intentDisplay.title}</span>
+          <div className="text-center mt-1">
+            {remainingTime > 0 ? (
+              <span>{remainingHours}h {remainingMinutes}m remaining</span>
+            ) : (
+              <span>Voting ended</span>
+            )}
+          </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2 min-w-0 w-32 shrink-0">
-          <span className="text-sm truncate block" title={intentKey}>
-            {intentKey}
-          </span>
-        </div>
+      {/* Voting Buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        <Button
+          onClick={() => handleVote("yes")}
+          variant="outline"
+          className="bg-green-50 hover:bg-green-100 border-green-200"
+          disabled={isLoading || remainingTime <= 0}
+        >
+          Yes
+        </Button>
+        <Button
+          onClick={() => handleVote("abstain")}
+          variant="outline"
+          className="bg-gray-50 hover:bg-gray-100 border-gray-200"
+          disabled={isLoading || remainingTime <= 0}
+        >
+          Abstain
+        </Button>
+        <Button
+          onClick={() => handleVote("no")}
+          variant="outline"
+          className="bg-red-50 hover:bg-red-100 border-red-200"
+          disabled={isLoading || remainingTime <= 0}
+        >
+          No
+        </Button>
+      </div>
 
-        <div className="flex items-center gap-2 shrink-0 ml-auto">
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2">
+        {status.stage === 'executable' && (
           <Button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleExecute();
-            }} 
-            variant="default" 
+            onClick={handleExecute}
+            disabled={isLoading}
+            variant="default"
             size="sm"
-            disabled={isLoading || status.stage !== 'executable'}
           >
-            {(intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') === 'UpgradePackage' ? 'Configure' :
-             (intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') === 'BorrowCap' ? 'Configure' :
-             'Execute'}
+            Execute
           </Button>
-
-          <Button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete();
-            }} 
-            variant="ghost" 
-            size="icon"
-            disabled={isLoading || !status.deletable}
+        )}
+        {status.deletable && (
+          <Button
+            onClick={handleDelete}
+            disabled={isLoading}
+            variant="ghost"
+            size="sm"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-          <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
-        </div>
+        )}
       </div>
     </div>
   );
