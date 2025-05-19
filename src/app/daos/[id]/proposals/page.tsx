@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useDaoStore } from "@/store/useDaoStore";
 import { toast } from "sonner";
-import { ProposalStatus } from "./helpers/types";
 import { IntentStatus } from "@account.tech/dao";
 import { Intent } from "@account.tech/core";
 import { ProposalCard } from "./components/ProposalCard";
@@ -16,13 +15,11 @@ export default function ProposalsPage() {
   const params = useParams();
   const daoId = params.id as string;
   const { getIntents, getIntentStatus } = useDaoClient();
-  const { refreshClient } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
 
 
   const [intents, setIntents] = useState<Record<string, Intent> | undefined>(undefined);
   const [intentStatuses, setIntentStatuses] = useState<Record<string, IntentStatus>>({});
-  const [selectedFilter, setSelectedFilter] = useState<ProposalStatus>('all');
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchIntents = async () => {

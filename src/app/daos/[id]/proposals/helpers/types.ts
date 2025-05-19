@@ -1,5 +1,5 @@
 import { IntentStatus } from "@account.tech/dao";
-import { LucideIcon, Bolt, HelpCircle, Banknote, ArrowUpRight, Clock3, Package, ToggleLeft, Shield, HardDriveDownload, ChevronsUp } from "lucide-react";
+import { LucideIcon, Bolt, HelpCircle, ToggleLeft } from "lucide-react";
 
 export interface IntentDisplay {
   title: string;
