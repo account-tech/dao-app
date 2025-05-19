@@ -265,6 +265,21 @@ export function useDaoClient() {
     }
   };
 
+  const retrieveVotes = async (
+    userAddr: string,
+    multisigId: string,
+    tx: Transaction
+  ) => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      client.retrieveVotes(tx);
+      return tx;
+    } catch (error) {
+      console.error("Error retrieving votes:", error);
+      throw error;
+    }
+  };
+
   const execute = async (
     userAddr: string,
     multisigId: string,
@@ -327,21 +342,6 @@ export function useDaoClient() {
       return result;
     } catch (error) {
       console.error("Error changing vote:", error);
-      throw error;
-    }
-  };
-
-  const retrieveVotes = async (
-    userAddr: string,
-    multisigId: string,
-    tx: Transaction
-  ) => {
-    try {
-      const client = await initClient(userAddr, multisigId);
-      const result = client.retrieveVotes(tx);
-      return result;
-    } catch (error) {
-      console.error("Error retrieving votes:", error);
       throw error;
     }
   };
@@ -433,11 +433,11 @@ export function useDaoClient() {
     stake,
     unstake,
     claim,
+    retrieveVotes,
     execute,
     deleteIntent,
     vote,
     changeVote,
-    retrieveVotes,
     modifyName,
     updateVerifiedDeps,
     requestConfigDao,

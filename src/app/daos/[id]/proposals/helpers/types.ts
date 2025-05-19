@@ -20,46 +20,10 @@ export const getIntentDisplay = (intentType: string): IntentDisplay => {
       title: 'Toggle Unverified',
       icon: ToggleLeft
     },
-    'ConfigMultisig': {
-      title: 'Config Multisig',
+    'ConfigDao': {
+      title: 'Config Dao',
       icon: Bolt
     },
-    'SpendAndTransfer': {
-      title: 'Spend and Transfer',
-      icon: Banknote
-    },
-    'SpendAndVest': {
-      title: 'Spend and Vest',
-      icon: Clock3
-    },
-    'WithdrawAndTransferToVault': {
-      title: 'Withdraw and Transfer to Vault',
-      icon: ArrowUpRight
-    },
-    'ConfigDeps': {
-      title: 'Config Dependencies',
-      icon: Package
-    },
-    'WithdrawAndVest': {
-      title: 'Withdraw and Vest',
-      icon: Clock3
-    },
-    'WithdrawAndTransfer': {
-      title: 'Withdraw and Transfer',
-      icon: Banknote
-    },
-    'RestrictPolicy': {
-      title: 'Restrict Policy',
-      icon: Shield
-    },
-    'BorrowCap': {
-      title: 'Borrow Cap',
-      icon: HardDriveDownload
-    },
-    'UpgradePackage': {
-      title: 'Upgrade Package',
-      icon: ChevronsUp
-    }
   };
 
   return intentMap[intentType] || {

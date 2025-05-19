@@ -174,31 +174,6 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
           </div>
 
           <div className="flex items-center gap-2 md:justify-end">
-            {!hasUserApproved ? (
-              <Button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                }} 
-                variant="default" 
-                size="sm"
-                disabled={isLoading}
-                className="flex-1 md:flex-initial md:w-[120px]"
-              >
-                Approve
-              </Button>
-            ) : (
-              <Button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                }} 
-                variant="outline" 
-                size="sm"
-                disabled={isLoading}
-                className="flex-1 md:flex-initial md:w-[120px]"
-              >
-                Disapprove
-              </Button>
-            )}
             <Button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -250,32 +225,6 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0 ml-auto">
-          {!hasUserApproved ? (
-            <Button 
-              onClick={(e) => {
-                e.stopPropagation();
-              }} 
-              variant="default" 
-              size="sm"
-              disabled={isLoading}
-              className="w-[85px]"
-            >
-              Approve
-            </Button>
-          ) : (
-            <Button 
-              onClick={(e) => {
-                e.stopPropagation();
-              }} 
-              variant="outline" 
-              size="sm"
-              disabled={isLoading}
-              className="w-[85px]"
-            >
-              Disapprove
-            </Button>
-          )}
-
           <Button 
             onClick={(e) => {
               e.stopPropagation();
