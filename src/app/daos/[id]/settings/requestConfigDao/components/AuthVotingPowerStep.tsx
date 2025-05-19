@@ -4,23 +4,23 @@ import { StepProps } from "../helpers/types";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, AlertCircle } from "lucide-react";
 import { useOriginalDaoConfig } from "../context/DaoConfigContext";
-import { formatBigInt } from "@/utils/GlobalHelpers";
 import { cn } from "@/lib/utils";
 
 export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   const originalConfig = useOriginalDaoConfig();
+  const decimals = formData.coinDecimals || 9;
 
   const handleVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Convert to BigInt and ensure it's not negative
-    const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
-    updateFormData({ authVotingPower: bigIntValue });
+    // Convert user input to raw value with decimals
+    const rawValue = BigInt(Math.floor(parseFloat(value || "0") * Math.pow(10, decimals)));
+    updateFormData({ authVotingPower: rawValue });
   };
 
   // Calculate the difference percentage for warning messages
   const calculatePercentageChange = () => {
-    const original = Number(originalConfig.authVotingPower);
-    const new_value = Number(formData.authVotingPower);
+    const original = Number(originalConfig.authVotingPower) / Math.pow(10, decimals);
+    const new_value = Number(formData.authVotingPower) / Math.pow(10, decimals);
     if (original === 0) return new_value > 0 ? 100 : 0;
     return ((new_value - original) / original) * 100;
   };
@@ -29,6 +29,10 @@ export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormD
   const isIncreased = formData.authVotingPower > originalConfig.authVotingPower;
   const isChanged = formData.authVotingPower !== originalConfig.authVotingPower;
 
+  // Format display values
+  const displayOriginalValue = (Number(originalConfig.authVotingPower) / Math.pow(10, decimals)).toString();
+  const displayCurrentValue = (Number(formData.authVotingPower) / Math.pow(10, decimals)).toString();
+
   return (
     <div className="space-y-6">
       {/* Current Value Display */}
@@ -36,7 +40,7 @@ export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormD
         <Label>Current Authentication Voting Power</Label>
         <div className="p-4 bg-gray-50 rounded-lg border">
           <code className="text-sm">
-            {formatBigInt(originalConfig.authVotingPower)}
+            {displayOriginalValue}
           </code>
         </div>
       </div>
@@ -49,7 +53,7 @@ export const AuthVotingPowerStep: React.FC<StepProps> = ({ formData, updateFormD
           type="number"
           min="0"
           placeholder="Enter new minimum voting power..."
-          value={formData.authVotingPower.toString()}
+          value={displayCurrentValue}
           onChange={handleVotingPowerChange}
           className="font-mono"
         />

@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
 import { ExternalLink, Check, AlertCircle, ArrowRight, CalendarIcon } from "lucide-react";
 import { useOriginalDaoConfig } from "../context/DaoConfigContext";
-import { formatBigInt } from "@/utils/GlobalHelpers";
+import { getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 
 // Constants for time conversion
 const MILLISECONDS_PER_MINUTE = BigInt(60 * 1000);
@@ -49,9 +49,25 @@ const getCurrentPercentage = (value: bigint): string => {
 
 export const RecapStep: React.FC<StepProps> = ({ formData }) => {
   const originalConfig = useOriginalDaoConfig();
+  const decimals = formData.coinDecimals || 9;
 
   const TruncatedText = ({ text, maxLength = 30 }: { text: string | undefined, maxLength?: number }) => {
     if (!text) return <span className="text-gray-400 italic">Not set</span>;
+    
+    // For asset type, simplify and truncate
+    if (text.startsWith('0x2::coin::Coin<')) {
+      const simplified = getSimplifiedAssetType(text);
+      if (simplified.length <= maxLength) return <span>{simplified}</span>;
+      return (
+        <div className="group relative cursor-help">
+          <span>{simplified.slice(0, maxLength)}...</span>
+          <div className="absolute z-10 invisible group-hover:visible bg-gray-900 text-white text-sm rounded-md py-1 px-2 -top-1 left-full ml-2 w-64 break-words">
+            {simplified}
+          </div>
+        </div>
+      );
+    }
+
     if (text.length <= maxLength) return <span>{text}</span>;
     return (
       <div className="group relative cursor-help">
@@ -61,6 +77,10 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
         </div>
       </div>
     );
+  };
+
+  const formatValue = (value: bigint): string => {
+    return (Number(value) / Math.pow(10, decimals)).toString();
   };
 
   const ValueComparison = ({ 
@@ -94,7 +114,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
     );
   };
 
-  const formatValue = (value: any): string => {
+  const formatDisplayValue = (value: any): string => {
     if (value === null || value === undefined) {
       return "Not set";
     }
@@ -116,10 +136,10 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
       <span className="text-gray-600 font-medium">{label}</span>
       {isDescription ? (
         <div className="w-full mt-1 p-3 rounded-md text-gray-900 whitespace-pre-wrap">
-          {formatValue(value)}
+          {formatDisplayValue(value)}
         </div>
       ) : (
-        <span className="text-gray-900">{formatValue(value)}</span>
+        <span className="text-gray-900">{formatDisplayValue(value)}</span>
       )}
     </div>
   );
@@ -225,7 +245,7 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             label="Auth Voting Power" 
             original={originalConfig.authVotingPower}
             current={formData.authVotingPower}
-            formatter={formatBigInt}
+            formatter={formatValue}
           />
           <InfoRow 
             label="Unstaking Cooldown" 
@@ -252,13 +272,13 @@ export const RecapStep: React.FC<StepProps> = ({ formData }) => {
             label="Maximum Voting Power" 
             original={originalConfig.maxVotingPower}
             current={formData.maxVotingPower}
-            formatter={formatBigInt}
+            formatter={formatValue}
           />
           <InfoRow 
             label="Minimum Votes" 
             original={originalConfig.minimumVotes}
             current={formData.minimumVotes}
-            formatter={formatBigInt}
+            formatter={formatValue}
           />
         </Section>
       </div>

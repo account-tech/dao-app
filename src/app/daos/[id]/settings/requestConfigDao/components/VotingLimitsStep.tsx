@@ -5,33 +5,41 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, AlertCircle } from "lucide-react";
 import { useOriginalDaoConfig } from "../context/DaoConfigContext";
 import { cn } from "@/lib/utils";
-import { formatBigInt } from "@/utils/GlobalHelpers";
 
 export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
   const originalConfig = useOriginalDaoConfig();
+  const decimals = formData.coinDecimals || 9;
 
   const handleMaxVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
-    updateFormData({ maxVotingPower: bigIntValue });
+    // Convert user input to raw value with decimals
+    const rawValue = BigInt(Math.floor(Math.max(0, parseFloat(value) || 0) * Math.pow(10, decimals)));
+    updateFormData({ maxVotingPower: rawValue });
   };
 
   const handleMinimumVotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
-    updateFormData({ minimumVotes: bigIntValue });
+    // Convert user input to raw value with decimals
+    const rawValue = BigInt(Math.floor(Math.max(0, parseFloat(value) || 0) * Math.pow(10, decimals)));
+    updateFormData({ minimumVotes: rawValue });
   };
 
   // Calculate percentage changes for warnings
   const calculatePercentageChange = (newValue: bigint, originalValue: bigint) => {
-    const original = Number(originalValue);
-    const new_value = Number(newValue);
+    const original = Number(originalValue) / Math.pow(10, decimals);
+    const new_value = Number(newValue) / Math.pow(10, decimals);
     if (original === 0) return new_value > 0 ? 100 : 0;
     return ((new_value - original) / original) * 100;
   };
 
   const maxVotingPowerChange = calculatePercentageChange(formData.maxVotingPower, originalConfig.maxVotingPower);
   const minimumVotesChange = calculatePercentageChange(formData.minimumVotes, originalConfig.minimumVotes);
+
+  // Format display values
+  const displayOriginalMaxPower = (Number(originalConfig.maxVotingPower) / Math.pow(10, decimals)).toString();
+  const displayCurrentMaxPower = (Number(formData.maxVotingPower) / Math.pow(10, decimals)).toString();
+  const displayOriginalMinVotes = (Number(originalConfig.minimumVotes) / Math.pow(10, decimals)).toString();
+  const displayCurrentMinVotes = (Number(formData.minimumVotes) / Math.pow(10, decimals)).toString();
 
   return (
     <div className="space-y-8">
@@ -42,7 +50,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           <Label>Current Maximum Voting Power</Label>
           <div className="p-4 bg-gray-50 rounded-lg border">
             <code className="text-sm">
-              {formatBigInt(originalConfig.maxVotingPower)}
+              {displayOriginalMaxPower}
             </code>
           </div>
         </div>
@@ -55,7 +63,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
             type="number"
             min="0"
             placeholder="Enter new maximum voting power..."
-            value={formData.maxVotingPower.toString()}
+            value={displayCurrentMaxPower}
             onChange={handleMaxVotingPowerChange}
             className="font-mono"
           />
@@ -97,7 +105,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           <Label>Current Minimum Votes Required</Label>
           <div className="p-4 bg-gray-50 rounded-lg border">
             <code className="text-sm">
-              {formatBigInt(originalConfig.minimumVotes)}
+              {displayOriginalMinVotes}
             </code>
           </div>
         </div>
@@ -110,7 +118,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
             type="number"
             min="0"
             placeholder="Enter new minimum votes required..."
-            value={formData.minimumVotes.toString()}
+            value={displayCurrentMinVotes}
             onChange={handleMinimumVotesChange}
             className="font-mono"
           />
@@ -150,7 +158,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           <AlertTitle>About Voting Limits</AlertTitle>
           <AlertDescription className="mt-2 space-y-2">
             <div>
-              <p className="font-medium">Maximum Voting Power:</p>
+              <p className="font-medium">Maximum Voting Power ({displayCurrentMaxPower}):</p>
               <ul className="list-disc pl-4 mt-1 space-y-1 text-sm">
                 <li>Caps individual voting power to prevent dominance</li>
                 <li>Helps maintain decentralized decision-making</li>
@@ -158,7 +166,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
               </ul>
             </div>
             <div className="mt-4">
-              <p className="font-medium">Minimum Votes Required:</p>
+              <p className="font-medium">Minimum Votes Required ({displayCurrentMinVotes}):</p>
               <ul className="list-disc pl-4 mt-1 space-y-1 text-sm">
                 <li>Ensures sufficient participation in proposals</li>
                 <li>Prevents decisions with low engagement</li>

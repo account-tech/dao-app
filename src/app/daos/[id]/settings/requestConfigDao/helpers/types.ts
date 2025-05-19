@@ -9,6 +9,7 @@ export interface DaoConfigFormData {
 
     // DAO configuration parameters
     assetType: string;
+    coinDecimals?: number;  // Number of decimals for the selected coin
     authVotingPower: bigint;
     unstakingCooldown: bigint;
     votingRule: number;
