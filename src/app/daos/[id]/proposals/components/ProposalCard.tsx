@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useDaoStore } from "@/store/useDaoStore";
 import { handleTxResult, signAndExecute } from "@/utils/tx/Tx";
 import { useState, useEffect } from "react";
+import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 import {
   Tooltip,
   TooltipContent,
@@ -22,10 +23,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { formatCoinAmount, getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ProposalCardProps {
@@ -39,13 +38,20 @@ interface VoteResults {
   abstain: string;
 }
 
+interface FormattedVoteResults {
+  yes: string;
+  no: string;
+  abstain: string;
+  total: number;
+}
+
 export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { deleteIntent, execute, getIntentStatus, vote, getDaoVotingPowerInfo } = useDaoClient();
+  const { deleteIntent, execute, getIntentStatus, vote, getDaoVotingPowerInfo, getParticipant, getDao } = useDaoClient();
   const { refreshClient } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
@@ -57,6 +63,12 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const [isQuadratic, setIsQuadratic] = useState(false);
   const [minimumVotingPower, setMinimumVotingPower] = useState<string>("0");
   const [hasEnoughPower, setHasEnoughPower] = useState(false);
+  const [formattedResults, setFormattedResults] = useState<FormattedVoteResults>({
+    yes: "0",
+    no: "0",
+    abstain: "0",
+    total: 0
+  });
 
   // Get voting information from intent
   const voteOutcome = (intent as any).outcome;
@@ -64,11 +76,54 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const endTime = voteOutcome?.endTime ? new Date(Number(voteOutcome.endTime)) : null;
   const results: VoteResults = voteOutcome?.results || { yes: "0", no: "0", abstain: "0" };
 
+  useEffect(() => {
+    const formatVoteResults = async () => {
+      if (!currentAccount?.address || !daoId) return;
+
+      try {
+        // Get the DAO and participant info to determine decimals
+        const [participant, dao] = await Promise.all([
+          getParticipant(currentAccount.address, daoId),
+          getDao(currentAccount.address, daoId)
+        ]);
+
+        if (!participant) return;
+
+        // Get coin decimals
+        const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
+        const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+        const divisor = BigInt(10) ** BigInt(decimals);
+
+        // Format each vote count
+        const formattedYes = (Number(results.yes) / Number(divisor)).toString();
+        const formattedNo = (Number(results.no) / Number(divisor)).toString();
+        const formattedAbstain = (Number(results.abstain) / Number(divisor)).toString();
+        
+        // Calculate total votes with decimals
+        const total = Number(formattedYes) + Number(formattedNo) + Number(formattedAbstain);
+
+        setFormattedResults({
+          yes: formattedYes,
+          no: formattedNo,
+          abstain: formattedAbstain,
+          total
+        });
+
+      } catch (error) {
+        console.error("Error formatting vote results:", error);
+      }
+    };
+
+    formatVoteResults();
+  }, [currentAccount?.address, daoId, results, refreshCounter]);
+
+  // Calculate percentages using formatted results
+  const yesPercentage = formattedResults.total > 0 ? (Number(formattedResults.yes) / formattedResults.total) * 100 : 0;
+  const noPercentage = formattedResults.total > 0 ? (Number(formattedResults.no) / formattedResults.total) * 100 : 0;
+  const abstainPercentage = formattedResults.total > 0 ? (Number(formattedResults.abstain) / formattedResults.total) * 100 : 0;
+
   // Calculate total votes and percentages
   const totalVotes = parseInt(results.yes) + parseInt(results.no) + parseInt(results.abstain);
-  const yesPercentage = totalVotes > 0 ? (parseInt(results.yes) / totalVotes) * 100 : 0;
-  const noPercentage = totalVotes > 0 ? (parseInt(results.no) / totalVotes) * 100 : 0;
-  const abstainPercentage = totalVotes > 0 ? (parseInt(results.abstain) / totalVotes) * 100 : 0;
 
   // Calculate remaining time
   const now = new Date();
@@ -347,17 +402,17 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             <div className="flex items-center gap-1">
               <Check className="h-4 w-4 text-green-600" />
               <span className="text-gray-600">Yes</span>
-              <span className="font-medium">{results.yes}</span>
+              <span className="font-medium">{formattedResults.yes}</span>
             </div>
             <div className="flex items-center gap-1">
               <Minus className="h-4 w-4 text-gray-400" />
               <span className="text-gray-600">Abstain</span>
-              <span className="font-medium">{results.abstain}</span>
+              <span className="font-medium">{formattedResults.abstain}</span>
             </div>
             <div className="flex items-center gap-1">
               <X className="h-4 w-4 text-red-600" />
               <span className="text-gray-600">No</span>
-              <span className="font-medium">{results.no}</span>
+              <span className="font-medium">{formattedResults.no}</span>
             </div>
           </div>
 
