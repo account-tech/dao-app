@@ -4,6 +4,17 @@ import { OwnedData, Dep } from "@account.tech/core";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
+import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { SuiClient } from "@mysten/sui/client";
+
+interface VotingPowerInfo {
+  votingPower: string;
+  authVotingPower: string;
+  maxVotingPower: string;
+  minimumVotes: string;
+  hasAuthPower: boolean;
+  isQuadratic: boolean;
+}
 
 export function useDaoClient() {
   const { initClient } = useDaoStore();
@@ -183,6 +194,71 @@ export function useDaoClient() {
     } catch (error) {
       console.error("Error getting intent status:", error);
       throw error;
+    }
+  };
+
+  const getDaoVotingPowerInfo = async (
+    userAddr: string,
+    daoId: string,
+    suiClient: SuiClient
+  ): Promise<VotingPowerInfo> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      const [participant, dao] = await Promise.all([
+        client.participant,
+        client.dao
+      ]);
+
+      if (!participant || !dao) {
+        throw new Error("Failed to fetch participant or dao data");
+      }
+
+      // Get coin decimals
+      const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
+      const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+
+      // Calculate total staked amount
+      let totalStakedValue = BigInt(0);
+      if (participant.staked && Array.isArray(participant.staked)) {
+        totalStakedValue = participant.staked.reduce((acc: bigint, stake: any) => {
+          if (stake.daoAddr === daoId) {
+            return acc + stake.value;
+          }
+          return acc;
+        }, BigInt(0));
+      }
+
+      // Format values with decimals
+      const divisor = BigInt(10) ** BigInt(decimals);
+      const stakedAmount = Number(totalStakedValue) / Number(divisor);
+      const formattedAuthVotingPower = Number(dao.authVotingPower) / Number(divisor);
+      const formattedMaxVotingPower = Number(dao.maxVotingPower) / Number(divisor);
+      const formattedMinimumVotes = Number(dao.minimumVotes) / Number(divisor);
+
+      // Calculate voting power based on rule
+      const isQuadratic = dao.votingRule === 1;
+      const votingPower = isQuadratic 
+        ? Math.sqrt(stakedAmount)
+        : stakedAmount;
+
+      return {
+        votingPower: votingPower.toFixed(2),
+        authVotingPower: formattedAuthVotingPower.toString(),
+        maxVotingPower: formattedMaxVotingPower.toString(),
+        minimumVotes: formattedMinimumVotes.toString(),
+        hasAuthPower: votingPower >= formattedAuthVotingPower,
+        isQuadratic
+      };
+    } catch (error) {
+      console.error("Error getting voting power info:", error);
+      return {
+        votingPower: "0.00",
+        authVotingPower: "0",
+        maxVotingPower: "0",
+        minimumVotes: "0",
+        hasAuthPower: false,
+        isQuadratic: false
+      };
     }
   };
 
@@ -442,5 +518,6 @@ export function useDaoClient() {
     updateVerifiedDeps,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
+    getDaoVotingPowerInfo,
   };
 }
