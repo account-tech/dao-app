@@ -417,140 +417,128 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
 
       {/* Voting Buttons and Timer for open proposals */}
       {status.stage === 'open' && (
-        <div className="space-y-4">
-          {!hasEnoughPower && (
-            <Alert variant="destructive" className="bg-red-50 text-red-800 border-red-200">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                You need at least {minimumVotingPower} voting power to participate. Your current power is {votingPower}.
-                Please stake more tokens to vote on this proposal.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="flex items-center gap-4">
-            <div className="grid grid-cols-3 gap-2 flex-1">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        onClick={() => handleVoteClick("yes")}
-                        variant="outline"
-                        className="w-full bg-green-50 hover:bg-green-100 border-green-200"
-                        disabled={isLoading || !hasEnoughPower}
-                      >
-                        Yes
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!hasEnoughPower && (
-                    <TooltipContent>
-                      <p>Insufficient voting power</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        onClick={() => handleVoteClick("abstain")}
-                        variant="outline"
-                        className="w-full bg-gray-50 hover:bg-gray-100 border-gray-200"
-                        disabled={isLoading || !hasEnoughPower}
-                      >
-                        Abstain
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!hasEnoughPower && (
-                    <TooltipContent>
-                      <p>Insufficient voting power</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        onClick={() => handleVoteClick("no")}
-                        variant="outline"
-                        className="w-full bg-red-50 hover:bg-red-100 border-red-200"
-                        disabled={isLoading || !hasEnoughPower}
-                      >
-                        No
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!hasEnoughPower && (
-                    <TooltipContent>
-                      <p>Insufficient voting power</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            <div className="text-sm text-gray-500">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger className="cursor-help">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{formatRemainingTime()}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Started: {formatDate(startTime)}</p>
-                    <p>Will close on: {formatDate(endTime)}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {/* Voting Power Confirmation Dialog */}
-            <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirm Your Vote</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <p className="text-sm text-gray-600 mb-4">
-                    You are about to vote <span className="font-medium">{selectedVote}</span> on this proposal.
-                  </p>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">Your voting power:</p>
-                    <p className="text-2xl font-bold text-gray-900">{votingPower}</p>
-                    {isQuadratic && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Using quadratic voting (square root of staked tokens)
-                      </p>
-                    )}
+        <div className="flex items-center gap-4">
+          <div className="grid grid-cols-3 gap-2 flex-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => handleVoteClick("yes")}
+                      variant="outline"
+                      className="w-full bg-green-50 hover:bg-green-100 border-green-200"
+                      disabled={isLoading || !hasEnoughPower}
+                    >
+                      Yes
+                    </Button>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setIsVotingDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleVoteConfirm}
-                    disabled={isLoading}
-                  >
-                    Confirm Vote
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </TooltipTrigger>
+                {!hasEnoughPower && (
+                  <TooltipContent>
+                    <p>You need atleast {minimumVotingPower} voting power to participate (Current: {votingPower})</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => handleVoteClick("abstain")}
+                      variant="outline"
+                      className="w-full bg-gray-50 hover:bg-gray-100 border-gray-200"
+                      disabled={isLoading || !hasEnoughPower}
+                    >
+                      Abstain
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!hasEnoughPower && (
+                  <TooltipContent>
+                    <p>You need atleast {minimumVotingPower} voting power to participate (Current: {votingPower})</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => handleVoteClick("no")}
+                      variant="outline"
+                      className="w-full bg-red-50 hover:bg-red-100 border-red-200"
+                      disabled={isLoading || !hasEnoughPower}
+                    >
+                      No
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!hasEnoughPower && (
+                  <TooltipContent>
+                    <p>You need atleast {minimumVotingPower} voting power to participate (Current: {votingPower})</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
+
+          <div className="text-sm text-gray-500">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger className="cursor-help">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatRemainingTime()}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Started: {formatDate(startTime)}</p>
+                  <p>Will close on: {formatDate(endTime)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {/* Voting Power Confirmation Dialog */}
+          <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Your Vote</DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  You are about to vote <span className="font-medium">{selectedVote}</span> on this proposal.
+                </p>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">Your voting power:</p>
+                  <p className="text-2xl font-bold text-gray-900">{votingPower}</p>
+                  {isQuadratic && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Using quadratic voting (square root of staked tokens)
+                    </p>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsVotingDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleVoteConfirm}
+                  disabled={isLoading}
+                >
+                  Confirm Vote
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 
