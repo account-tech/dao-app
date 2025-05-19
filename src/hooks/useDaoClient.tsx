@@ -1,5 +1,5 @@
 'use client';
-import { DaoClient, DepStatus, VoteIntentArgs } from "@account.tech/dao";
+import { DaoClient, DepStatus, VoteIntentArgs, IntentStatus } from "@account.tech/dao";
 import { OwnedData, Dep } from "@account.tech/core";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
@@ -91,6 +91,16 @@ export function useDaoClient() {
     }
   };
 
+  const getIntents = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.intents;
+    } catch (error) {
+      console.error("Error getting intents:", error);
+      throw error;
+    }
+  };
+
   const getDaoMetadata = async (userAddr: string, daoId: string) => {
     try {
       const client = await initClient(userAddr, daoId);
@@ -157,6 +167,21 @@ export function useDaoClient() {
       return client.getDepsStatus();
     } catch (error) {
       console.error("Error getting dependencies status:", error);
+      throw error;
+    }
+  };
+
+  const getIntentStatus = async (
+    userAddr: string,
+    multisigId: string,
+    key: string
+  ): Promise<IntentStatus> => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.getIntentStatus(key);
+      return result;
+    } catch (error) {
+      console.error("Error getting intent status:", error);
       throw error;
     }
   };
@@ -324,7 +349,7 @@ export function useDaoClient() {
   const modifyName = async (tx: Transaction, userAddr: string, daoId: string, newName: string) => {
     try {
       const client = await initClient(userAddr, daoId);
-      await client.modifyName(tx, newName);
+      client.modifyName(tx, newName);
       return tx;
     } catch (error) {
       console.error("Error modifying name:", error);
@@ -335,7 +360,7 @@ export function useDaoClient() {
   const updateVerifiedDeps = async (userAddr: string, daoId: string, tx: Transaction) => {
     try {
       const client = await initClient(userAddr, daoId);
-      await client.updateVerifiedDeps(tx);
+      client.updateVerifiedDeps(tx);
       return tx;
     } catch (error) {
       console.error("Error updating verified dependencies:", error);
@@ -352,7 +377,7 @@ export function useDaoClient() {
   ) => {
     try {
       const client = await initClient(userAddr, daoId);
-      await client.requestConfigDao(
+      client.requestConfigDao(
         params.tx,
         params.intentArgs,
         params.assetType,
@@ -378,7 +403,7 @@ export function useDaoClient() {
   ) => {
     try {
       const client = await initClient(userAddr, daoId);
-      await client.requestToggleUnverifiedDepsAllowed(tx, intentArgs);
+      client.requestToggleUnverifiedDepsAllowed(tx, intentArgs);
       return tx;
     } catch (error) {
       console.error("Error requesting toggle unverified deps:", error);
@@ -393,6 +418,7 @@ export function useDaoClient() {
     getUserDaos,
     getAllDaos,
     getDao,
+    getIntents,
     getDaoMetadata,
     getParticipant,
     getOwnedObjects,
@@ -400,6 +426,7 @@ export function useDaoClient() {
     getVerifiedDeps,
     getUnverifiedDeps,
     getDepsStatus,
+    getIntentStatus,
     authenticate,
     followDao,
     unfollowDao,
