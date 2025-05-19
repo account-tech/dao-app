@@ -10,6 +10,9 @@ import UserData from "./components/UserData";
 import DaoHeader from "./components/DaoHeader";
 import Image from "next/image";
 import WalletPreview from "@/app/daos/[id]/components/WalletPreview";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 
 // Custom hook for height-based media queries
 const useScreenHeight = () => {
@@ -54,6 +57,7 @@ export default function DaoPage() {
   const [loading, setLoading] = useState(true);
   const { isSmallHeight, isLargeHeight, isMobile } = useScreenHeight();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
+  const router = useRouter();
 
   useEffect(() => {
     const initDao = async () => {
@@ -152,8 +156,20 @@ export default function DaoPage() {
         {/* Left Column (Proposals) */}
         <div className="flex-1 order-2 mt-8 md:mt-0 md:order-1">
           <h2 className="text-xl font-semibold mb-4">Proposals</h2>
-          <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400">
-            Proposals coming soon
+          <div className="bg-gray-50 rounded-lg">
+            <div className="h-96 flex items-center justify-center text-gray-400">
+              Proposals coming soon
+            </div>
+            <div className="p-4 border-t border-gray-100">
+              <Button
+                onClick={() => router.push(`/daos/${daoId}/proposals`)}
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+              >
+                View All Proposals
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 

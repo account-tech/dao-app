@@ -2,7 +2,7 @@ import { getIntentDisplay } from "../helpers/types";
 import { IntentStatus } from "@account.tech/dao";
 import { Intent } from "@account.tech/core";
 import { Button } from "@/components/ui/button";
-import { Trash2, ChevronRight } from "lucide-react";
+import { Trash2, ChevronRight, Clock } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
@@ -11,6 +11,12 @@ import { toast } from "sonner";
 import { useDaoStore } from "@/store/useDaoStore";
 import { handleTxResult, signAndExecute } from "@/utils/tx/Tx";
 import { useState, useEffect } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ProposalCardProps {
   intentKey: string;
@@ -51,18 +57,74 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   // Calculate remaining time
   const now = new Date();
   const remainingTime = endTime ? endTime.getTime() - now.getTime() : 0;
-  const remainingHours = Math.max(0, Math.floor(remainingTime / (1000 * 60 * 60)));
-  const remainingMinutes = Math.max(0, Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60)));
+  const remainingDays = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+  const remainingHours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const remainingMinutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+
+  const formatRemainingTime = () => {
+    if (remainingTime <= 0) return "Time expired";
+    
+    const parts = [];
+    if (remainingDays > 0) parts.push(`${remainingDays}d`);
+    if (remainingHours > 0) parts.push(`${remainingHours}h`);
+    if (remainingMinutes > 0) parts.push(`${remainingMinutes}m`);
+    
+    return parts.join(" ");
+  };
 
   // Format dates
   const formatDate = (date: Date | null) => {
     if (!date) return "";
     return date.toLocaleDateString('en-US', {
+      year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const renderTimeInfo = () => {
+    if (!startTime || !endTime) return null;
+
+    switch (status.stage) {
+      case 'pending':
+        return (
+          <div className="text-sm text-gray-500">
+            <span>Starting: {formatDate(startTime)}</span>
+          </div>
+        );
+      case 'open':
+        return (
+          <div className="text-sm text-gray-500 text-center">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger className="cursor-help">
+                  {remainingTime > 0 && (
+                    <span>{remainingHours}h {remainingMinutes}m remaining</span>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Started: {formatDate(startTime)}</p>
+                  <p>Will close on: {formatDate(endTime)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      case 'closed':
+      case 'executable':
+        return (
+          <div className="text-sm text-gray-500">
+            <div className="flex justify-between">
+              <span>Started: {formatDate(startTime)}</span>
+              <span>Closed: {formatDate(endTime)}</span>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   const handleVote = async (answer: "yes" | "no" | "abstain") => {
@@ -229,85 +291,91 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       </div>
 
       {/* Vote Counts */}
-      <div className="flex gap-4 text-sm">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          Yes {results.yes}
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-          Abstain {results.abstain}
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-red-500"></span>
-          No {results.no}
-        </span>
-      </div>
-
-      {/* Voting Progress Bar */}
-      <div className="flex h-2 rounded-full overflow-hidden">
-        <div 
-          className="bg-green-500" 
-          style={{ width: `${yesPercentage}%` }} 
-        />
-        <div 
-          className="bg-gray-300" 
-          style={{ width: `${abstainPercentage}%` }} 
-        />
-        <div 
-          className="bg-red-500" 
-          style={{ width: `${noPercentage}%` }} 
-        />
-      </div>
-
-      {/* Timer */}
-      {startTime && endTime && (
-        <div className="text-sm text-gray-500">
-          <div className="flex justify-between">
-            <span>
-              Started {formatDate(startTime)}
+      {status.stage !== 'pending' && (
+        <>
+          <div className="flex gap-4 text-sm">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              Yes {results.yes}
             </span>
-            <span>
-              Ends {formatDate(endTime)}
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+              Abstain {results.abstain}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+              No {results.no}
             </span>
           </div>
-          <div className="text-center mt-1">
-            {remainingTime > 0 ? (
-              <span>{remainingHours}h {remainingMinutes}m remaining</span>
-            ) : (
-              <span>Voting ended</span>
-            )}
+
+          {/* Voting Progress Bar */}
+          <div className="flex h-2 rounded-full overflow-hidden">
+            <div 
+              className="bg-green-500" 
+              style={{ width: `${yesPercentage}%` }} 
+            />
+            <div 
+              className="bg-gray-300" 
+              style={{ width: `${abstainPercentage}%` }} 
+            />
+            <div 
+              className="bg-red-500" 
+              style={{ width: `${noPercentage}%` }} 
+            />
+          </div>
+        </>
+      )}
+
+      {/* Timer */}
+      {status.stage !== 'open' && renderTimeInfo()}
+
+      {/* Voting Buttons and Timer for open proposals */}
+      {status.stage === 'open' && (
+        <div className="flex items-center gap-4">
+          <div className="grid grid-cols-3 gap-2 flex-1">
+            <Button
+              onClick={() => handleVote("yes")}
+              variant="outline"
+              className="bg-green-50 hover:bg-green-100 border-green-200"
+              disabled={isLoading}
+            >
+              Yes
+            </Button>
+            <Button
+              onClick={() => handleVote("abstain")}
+              variant="outline"
+              className="bg-gray-50 hover:bg-gray-100 border-gray-200"
+              disabled={isLoading}
+            >
+              Abstain
+            </Button>
+            <Button
+              onClick={() => handleVote("no")}
+              variant="outline"
+              className="bg-red-50 hover:bg-red-100 border-red-200"
+              disabled={isLoading}
+            >
+              No
+            </Button>
+          </div>
+          <div className="text-sm text-gray-500">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger className="cursor-help">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{formatRemainingTime()}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Started: {formatDate(startTime)}</p>
+                  <p>Will close on: {formatDate(endTime)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       )}
-
-      {/* Voting Buttons */}
-      <div className="grid grid-cols-3 gap-2">
-        <Button
-          onClick={() => handleVote("yes")}
-          variant="outline"
-          className="bg-green-50 hover:bg-green-100 border-green-200"
-          disabled={isLoading || remainingTime <= 0}
-        >
-          Yes
-        </Button>
-        <Button
-          onClick={() => handleVote("abstain")}
-          variant="outline"
-          className="bg-gray-50 hover:bg-gray-100 border-gray-200"
-          disabled={isLoading || remainingTime <= 0}
-        >
-          Abstain
-        </Button>
-        <Button
-          onClick={() => handleVote("no")}
-          variant="outline"
-          className="bg-red-50 hover:bg-red-100 border-red-200"
-          disabled={isLoading || remainingTime <= 0}
-        >
-          No
-        </Button>
-      </div>
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2">
