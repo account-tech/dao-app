@@ -6,8 +6,8 @@ import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { DaoMetadata, Dao } from "@account.tech/dao";
 import { useDaoStore } from "@/store/useDaoStore";
 import { useDaoClient } from "@/hooks/useDaoClient";
-import { getSimplifiedAssetType, getCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
-import { Copy, Info, AlertCircle } from "lucide-react";
+import { getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { Copy, Info} from "lucide-react";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import {

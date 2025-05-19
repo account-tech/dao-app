@@ -62,26 +62,26 @@ export function ConfigProposalStep<T extends BaseFormData>({
     startDate: Date | null | undefined,
     endDate: Date | null | undefined,
     executionDate: Date | null | undefined
-  ): boolean => {
+  ): string[] => {
     const now = new Date();
-    setDateError(null);
+    const warnings: string[] = [];
 
-    if (startDate && isBefore(startDate, now)) {
-      setDateError("Voting start time must be in the future");
-      return false;
+    // Check start date/time
+    if (startDate && startDate.getTime() <= now.getTime()) {
+      warnings.push("Warning: Voting start time should be in the future");
     }
 
-    if (startDate && endDate && !isAfter(endDate, startDate)) {
-      setDateError("Voting end time must be after start time");
-      return false;
+    // Check end date/time
+    if (startDate && endDate && endDate.getTime() <= startDate.getTime()) {
+      warnings.push("Warning: Voting end time should be after start time");
     }
 
-    if (endDate && executionDate && !isAfter(executionDate, endDate)) {
-      setDateError("Execution time must be after voting end time");
-      return false;
+    // Check execution date/time
+    if (endDate && executionDate && executionDate.getTime() <= endDate.getTime()) {
+      warnings.push("Warning: Execution time should be after voting end time");
     }
 
-    return true;
+    return warnings;
   };
 
   // Voting Start Date handlers
@@ -93,11 +93,9 @@ export function ConfigProposalStep<T extends BaseFormData>({
     newDate.setHours(currentDate.getHours());
     newDate.setMinutes(currentDate.getMinutes());
 
-    if (!validateDates(newDate, formData.votingEndDate, formData.executionDate)) {
-      return;
-    }
+    const warnings = validateDates(newDate, formData.votingEndDate, formData.executionDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
 
-    // Only update start date, don't auto-set other dates
     updateFormData({ votingStartDate: newDate } as Partial<T>);
   };
 
@@ -111,11 +109,9 @@ export function ConfigProposalStep<T extends BaseFormData>({
     newDate.setSeconds(0);
     newDate.setMilliseconds(0);
 
-    if (!validateDates(newDate, formData.votingEndDate, formData.executionDate)) {
-      return;
-    }
+    const warnings = validateDates(newDate, formData.votingEndDate, formData.executionDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
 
-    // Only update start date
     updateFormData({ votingStartDate: newDate } as Partial<T>);
   };
 
@@ -128,13 +124,11 @@ export function ConfigProposalStep<T extends BaseFormData>({
     newDate.setHours(currentDate.getHours());
     newDate.setMinutes(currentDate.getMinutes());
 
-    if (!validateDates(formData.votingStartDate, newDate, formData.executionDate)) {
-      return;
-    }
+    const warnings = validateDates(formData.votingStartDate, newDate, formData.executionDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
 
     const updates: Partial<T> = {
       votingEndDate: newDate,
-      // Always update expiration date based on end date
       expirationDate: addDays(newDate, 7)
     } as Partial<T>;
 
@@ -151,13 +145,11 @@ export function ConfigProposalStep<T extends BaseFormData>({
     newDate.setSeconds(0);
     newDate.setMilliseconds(0);
 
-    if (!validateDates(formData.votingStartDate, newDate, formData.executionDate)) {
-      return;
-    }
+    const warnings = validateDates(formData.votingStartDate, newDate, formData.executionDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
 
     const updates: Partial<T> = {
       votingEndDate: newDate,
-      // Always update expiration date based on end date
       expirationDate: addDays(newDate, 7)
     } as Partial<T>;
 
@@ -166,22 +158,21 @@ export function ConfigProposalStep<T extends BaseFormData>({
 
   // Execution Date handlers
   const handleExecutionDateChange = (date: Date | undefined) => {
-    if (!date || !formData.votingEndDate) return;
+    if (!date) return;
 
-    const currentDate = formData.executionDate || formData.votingEndDate;
+    const currentDate = formData.executionDate || formData.votingEndDate || new Date();
     const newDate = new Date(date);
     newDate.setHours(currentDate.getHours());
     newDate.setMinutes(currentDate.getMinutes());
 
-    if (!validateDates(formData.votingStartDate, formData.votingEndDate, newDate)) {
-      return;
-    }
+    const warnings = validateDates(formData.votingStartDate, formData.votingEndDate, newDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
 
     updateFormData({ executionDate: newDate } as Partial<T>);
   };
 
   const handleExecutionTimeChange = (time: string) => {
-    if (!formData.executionDate || !formData.votingEndDate) return;
+    if (!formData.executionDate) return;
 
     const [hours, minutes] = time.split(':').map(Number);
     const newDate = new Date(formData.executionDate);
@@ -190,9 +181,8 @@ export function ConfigProposalStep<T extends BaseFormData>({
     newDate.setSeconds(0);
     newDate.setMilliseconds(0);
 
-    if (!validateDates(formData.votingStartDate, formData.votingEndDate, newDate)) {
-      return;
-    }
+    const warnings = validateDates(formData.votingStartDate, formData.votingEndDate, newDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
 
     updateFormData({ executionDate: newDate } as Partial<T>);
   };
@@ -244,8 +234,8 @@ export function ConfigProposalStep<T extends BaseFormData>({
         </div>
 
         {dateError && (
-          <Alert variant="destructive">
-            <AlertDescription>{dateError}</AlertDescription>
+          <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+            <AlertDescription className="whitespace-pre-line">{dateError}</AlertDescription>
           </Alert>
         )}
 
@@ -272,14 +262,12 @@ export function ConfigProposalStep<T extends BaseFormData>({
                     mode="single"
                     selected={formData.votingStartDate || undefined}
                     onSelect={handleVotingStartDateChange}
-                    disabled={(date) => isBefore(date, new Date())}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
 
               <Select
-                disabled={!formData.votingStartDate}
                 value={formData.votingStartDate ? 
                   `${formData.votingStartDate.getHours().toString().padStart(2, '0')}:${formData.votingStartDate.getMinutes().toString().padStart(2, '0')}` : 
                   ""}
@@ -318,7 +306,6 @@ export function ConfigProposalStep<T extends BaseFormData>({
                       "w-full justify-start text-left font-normal",
                       !formData.votingEndDate && "text-muted-foreground"
                     )}
-                    disabled={!formData.votingStartDate}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.votingEndDate ? format(formData.votingEndDate, "PPP") : <span>Pick a date</span>}
@@ -329,14 +316,12 @@ export function ConfigProposalStep<T extends BaseFormData>({
                     mode="single"
                     selected={formData.votingEndDate || undefined}
                     onSelect={handleVotingEndDateChange}
-                    disabled={(date) => formData.votingStartDate ? isBefore(date, formData.votingStartDate) : true}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
 
               <Select
-                disabled={!formData.votingEndDate || !formData.votingStartDate}
                 value={formData.votingEndDate ? 
                   `${formData.votingEndDate.getHours().toString().padStart(2, '0')}:${formData.votingEndDate.getMinutes().toString().padStart(2, '0')}` : 
                   ""}
@@ -375,7 +360,6 @@ export function ConfigProposalStep<T extends BaseFormData>({
                       "w-full justify-start text-left font-normal",
                       !formData.executionDate && "text-muted-foreground"
                     )}
-                    disabled={!formData.votingEndDate}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.executionDate ? format(formData.executionDate, "PPP") : <span>Pick a date</span>}
@@ -386,14 +370,12 @@ export function ConfigProposalStep<T extends BaseFormData>({
                     mode="single"
                     selected={formData.executionDate || undefined}
                     onSelect={handleExecutionDateChange}
-                    disabled={(date) => formData.votingEndDate ? isBefore(date, formData.votingEndDate) : true}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
 
               <Select
-                disabled={!formData.executionDate || !formData.votingEndDate}
                 value={formData.executionDate ? 
                   `${formData.executionDate.getHours().toString().padStart(2, '0')}:${formData.executionDate.getMinutes().toString().padStart(2, '0')}` : 
                   ""}

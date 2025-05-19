@@ -45,7 +45,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { deleteIntent, execute, getIntentStatus, vote, getParticipant, getDao } = useDaoClient();
+  const { deleteIntent, execute, getIntentStatus, vote, getDaoVotingPowerInfo } = useDaoClient();
   const { refreshClient } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
@@ -200,46 +200,13 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       if (!currentAccount?.address || !daoId) return;
 
       try {
-        const [participant, dao] = await Promise.all([
-          getParticipant(currentAccount.address, daoId),
-          getDao(currentAccount.address, daoId)
-        ]);
-
-        if (!participant || !dao) return;
-
-        // Get simplified asset type and decimals
-        const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
-        const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
-
-        // Calculate total staked amount
-        let totalStakedValue = BigInt(0);
-        if (participant.staked && Array.isArray(participant.staked)) {
-          totalStakedValue = participant.staked.reduce((acc: bigint, stake: any) => {
-            if (stake.daoAddr === daoId) {
-              return acc + stake.value;
-            }
-            return acc;
-          }, BigInt(0));
-        }
-
-        // Calculate voting power
-        const stakedAmount = Number(formatCoinAmount(totalStakedValue, decimals));
-        const isQuadraticVoting = dao.votingRule === 1;
-        setIsQuadratic(isQuadraticVoting);
-
-        let power: number;
-        if (isQuadraticVoting) {
-          power = Math.sqrt(stakedAmount);
-        } else {
-          power = stakedAmount;
-        }
-
-        const calculatedPower = power.toFixed(2);
-        setVotingPower(calculatedPower);
+        const powerInfo = await getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient);
         
-        // Store minimum voting power and check if user has enough
-        setMinimumVotingPower(dao.minimumVotes.toString());
-        setHasEnoughPower(Number(calculatedPower) >= Number(dao.minimumVotes));
+        setVotingPower(powerInfo.votingPower);
+        setMinimumVotingPower(powerInfo.minimumVotes);
+        setIsQuadratic(powerInfo.isQuadratic);
+        setHasEnoughPower(Number(powerInfo.votingPower) >= Number(powerInfo.minimumVotes));
+
       } catch (error) {
         console.error("Error fetching voting power:", error);
         toast.error("Failed to fetch voting power");
