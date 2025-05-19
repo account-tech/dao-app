@@ -2,7 +2,7 @@ import { getIntentDisplay } from "../helpers/types";
 import { IntentStatus } from "@account.tech/dao";
 import { Intent } from "@account.tech/core";
 import { Button } from "@/components/ui/button";
-import { Trash2, ChevronRight, Clock } from "lucide-react";
+import { Trash2, ChevronRight, Clock, AlertCircle, Check, Minus, X } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
@@ -17,6 +17,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { formatCoinAmount, getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ProposalCardProps {
   intentKey: string;
@@ -35,12 +45,18 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { deleteIntent, execute, getIntentStatus, vote } = useDaoClient();
+  const { deleteIntent, execute, getIntentStatus, vote, getParticipant, getDao } = useDaoClient();
   const { refreshClient } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<IntentStatus>({ stage: 'pending', deletable: false });
+  const [votingPower, setVotingPower] = useState<string>("0");
+  const [isVotingDialogOpen, setIsVotingDialogOpen] = useState(false);
+  const [selectedVote, setSelectedVote] = useState<"yes" | "no" | "abstain" | null>(null);
+  const [isQuadratic, setIsQuadratic] = useState(false);
+  const [minimumVotingPower, setMinimumVotingPower] = useState<string>("0");
+  const [hasEnoughPower, setHasEnoughPower] = useState(false);
 
   // Get voting information from intent
   const voteOutcome = (intent as any).outcome;
@@ -179,6 +195,73 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     fetchStatus();
   }, [currentAccount, daoId, intentKey, refreshCounter]);
 
+  useEffect(() => {
+    const fetchVotingPower = async () => {
+      if (!currentAccount?.address || !daoId) return;
+
+      try {
+        const [participant, dao] = await Promise.all([
+          getParticipant(currentAccount.address, daoId),
+          getDao(currentAccount.address, daoId)
+        ]);
+
+        if (!participant || !dao) return;
+
+        // Get simplified asset type and decimals
+        const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
+        const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+
+        // Calculate total staked amount
+        let totalStakedValue = BigInt(0);
+        if (participant.staked && Array.isArray(participant.staked)) {
+          totalStakedValue = participant.staked.reduce((acc: bigint, stake: any) => {
+            if (stake.daoAddr === daoId) {
+              return acc + stake.value;
+            }
+            return acc;
+          }, BigInt(0));
+        }
+
+        // Calculate voting power
+        const stakedAmount = Number(formatCoinAmount(totalStakedValue, decimals));
+        const isQuadraticVoting = dao.votingRule === 1;
+        setIsQuadratic(isQuadraticVoting);
+
+        let power: number;
+        if (isQuadraticVoting) {
+          power = Math.sqrt(stakedAmount);
+        } else {
+          power = stakedAmount;
+        }
+
+        const calculatedPower = power.toFixed(2);
+        setVotingPower(calculatedPower);
+        
+        // Store minimum voting power and check if user has enough
+        setMinimumVotingPower(dao.minimumVotes.toString());
+        setHasEnoughPower(Number(calculatedPower) >= Number(dao.minimumVotes));
+      } catch (error) {
+        console.error("Error fetching voting power:", error);
+        toast.error("Failed to fetch voting power");
+      }
+    };
+
+    fetchVotingPower();
+  }, [currentAccount?.address, daoId, refreshCounter]);
+
+  const handleVoteClick = (answer: "yes" | "no" | "abstain") => {
+    setSelectedVote(answer);
+    setIsVotingDialogOpen(true);
+  };
+
+  const handleVoteConfirm = async () => {
+    if (!selectedVote) return;
+    
+    setIsVotingDialogOpen(false);
+    await handleVote(selectedVote);
+    setSelectedVote(null);
+  };
+
   const handleExecute = async () => {
     if (!currentAccount || !daoId) {
       toast.error("No account or DAO selected");
@@ -293,33 +376,36 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       {/* Vote Counts */}
       {status.stage !== 'pending' && (
         <>
-          <div className="flex gap-4 text-sm">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              Yes {results.yes}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-              Abstain {results.abstain}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              No {results.no}
-            </span>
+          <div className="flex gap-5 text-sm">
+            <div className="flex items-center gap-1">
+              <Check className="h-4 w-4 text-green-600" />
+              <span className="text-gray-600">Yes</span>
+              <span className="font-medium">{results.yes}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Minus className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-600">Abstain</span>
+              <span className="font-medium">{results.abstain}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <X className="h-4 w-4 text-red-600" />
+              <span className="text-gray-600">No</span>
+              <span className="font-medium">{results.no}</span>
+            </div>
           </div>
 
           {/* Voting Progress Bar */}
-          <div className="flex h-2 rounded-full overflow-hidden">
+          <div className="flex h-2 overflow-hidden">
             <div 
-              className="bg-green-500" 
+              className="bg-green-600 mr-1" 
               style={{ width: `${yesPercentage}%` }} 
             />
             <div 
-              className="bg-gray-300" 
+              className="bg-gray-300 mr-1" 
               style={{ width: `${abstainPercentage}%` }} 
             />
             <div 
-              className="bg-red-500" 
+              className="bg-red-600" 
               style={{ width: `${noPercentage}%` }} 
             />
           </div>
@@ -331,48 +417,139 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
 
       {/* Voting Buttons and Timer for open proposals */}
       {status.stage === 'open' && (
-        <div className="flex items-center gap-4">
-          <div className="grid grid-cols-3 gap-2 flex-1">
-            <Button
-              onClick={() => handleVote("yes")}
-              variant="outline"
-              className="bg-green-50 hover:bg-green-100 border-green-200"
-              disabled={isLoading}
-            >
-              Yes
-            </Button>
-            <Button
-              onClick={() => handleVote("abstain")}
-              variant="outline"
-              className="bg-gray-50 hover:bg-gray-100 border-gray-200"
-              disabled={isLoading}
-            >
-              Abstain
-            </Button>
-            <Button
-              onClick={() => handleVote("no")}
-              variant="outline"
-              className="bg-red-50 hover:bg-red-100 border-red-200"
-              disabled={isLoading}
-            >
-              No
-            </Button>
-          </div>
-          <div className="text-sm text-gray-500">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger className="cursor-help">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{formatRemainingTime()}</span>
+        <div className="space-y-4">
+          {!hasEnoughPower && (
+            <Alert variant="destructive" className="bg-red-50 text-red-800 border-red-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                You need at least {minimumVotingPower} voting power to participate. Your current power is {votingPower}.
+                Please stake more tokens to vote on this proposal.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="flex items-center gap-4">
+            <div className="grid grid-cols-3 gap-2 flex-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        onClick={() => handleVoteClick("yes")}
+                        variant="outline"
+                        className="w-full bg-green-50 hover:bg-green-100 border-green-200"
+                        disabled={isLoading || !hasEnoughPower}
+                      >
+                        Yes
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {!hasEnoughPower && (
+                    <TooltipContent>
+                      <p>Insufficient voting power</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        onClick={() => handleVoteClick("abstain")}
+                        variant="outline"
+                        className="w-full bg-gray-50 hover:bg-gray-100 border-gray-200"
+                        disabled={isLoading || !hasEnoughPower}
+                      >
+                        Abstain
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {!hasEnoughPower && (
+                    <TooltipContent>
+                      <p>Insufficient voting power</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        onClick={() => handleVoteClick("no")}
+                        variant="outline"
+                        className="w-full bg-red-50 hover:bg-red-100 border-red-200"
+                        disabled={isLoading || !hasEnoughPower}
+                      >
+                        No
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {!hasEnoughPower && (
+                    <TooltipContent>
+                      <p>Insufficient voting power</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <div className="text-sm text-gray-500">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger className="cursor-help">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{formatRemainingTime()}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Started: {formatDate(startTime)}</p>
+                    <p>Will close on: {formatDate(endTime)}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Voting Power Confirmation Dialog */}
+            <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Your Vote</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    You are about to vote <span className="font-medium">{selectedVote}</span> on this proposal.
+                  </p>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">Your voting power:</p>
+                    <p className="text-2xl font-bold text-gray-900">{votingPower}</p>
+                    {isQuadratic && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Using quadratic voting (square root of staked tokens)
+                      </p>
+                    )}
                   </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Started: {formatDate(startTime)}</p>
-                  <p>Will close on: {formatDate(endTime)}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsVotingDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleVoteConfirm}
+                    disabled={isLoading}
+                  >
+                    Confirm Vote
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       )}
