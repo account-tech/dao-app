@@ -25,7 +25,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ProposalCardProps {
   intentKey: string;
@@ -74,6 +73,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const voteOutcome = (intent as any).outcome;
   const startTime = voteOutcome?.startTime ? new Date(Number(voteOutcome.startTime)) : null;
   const endTime = voteOutcome?.endTime ? new Date(Number(voteOutcome.endTime)) : null;
+  const executionTime = (intent as any).fields?.executionTimes?.[0] ? new Date(Number((intent as any).fields.executionTimes[0])) : null;
   const results: VoteResults = voteOutcome?.results || { yes: "0", no: "0", abstain: "0" };
 
   useEffect(() => {
@@ -387,6 +387,21 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     const hasMetQuorum = yesRatio >= votingQuorum;
     const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
 
+    // If all conditions are met but waiting for execution time
+    if (hasMetQuorum && hasMetMinimumVotes && executionTime) {
+      const now = new Date();
+      if (now < executionTime) {
+        return (
+          <div className="space-y-2 max-w-xs">
+            <p className="font-medium mb-2">All conditions met!</p>
+            <p>Executable on: {formatDate(executionTime)}</p>
+          </div>
+        );
+      }
+      return null;
+    }
+
+    // If conditions are not met, show requirements
     if (!hasMetQuorum || !hasMetMinimumVotes) {
       return (
         <div className="space-y-2 max-w-xs">
@@ -410,21 +425,41 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     return null;
   };
 
+  const getStatusDisplay = () => {
+    const baseStatus = status.stage.charAt(0).toUpperCase() + status.stage.slice(1);
+    
+    if (status.stage === 'closed') {
+      const totalVotesPower = Number(formattedResults.yes) + Number(formattedResults.no);
+      const yesRatio = totalVotesPower > 0 ? Number(formattedResults.yes) / totalVotesPower : 0;
+      const hasMetQuorum = yesRatio >= votingQuorum;
+      const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
+
+      if (hasMetQuorum && hasMetMinimumVotes && executionTime) {
+        const now = new Date();
+        if (now < executionTime) {
+          return "Awaiting Execution Time";
+        }
+      }
+    }
+
+    return baseStatus;
+  };
+
   return (
-    <div className="bg-white rounded-lg border p-6 space-y-4">
-      <div className="flex justify-between items-start">
+    <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-3 sm:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded bg-gray-100">
             <intentDisplay.icon className="h-5 w-5" />
           </div>
           <div>
             <p className="text-sm text-gray-600">{intentDisplay.title}</p>
-            <h3 className="font-medium">{intentKey}</h3>
+            <h3 className="font-medium text-sm sm:text-base break-all">{intentKey}</h3>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle()}`}>
-            {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
+        <div className="flex items-center gap-0">
+          <div className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusStyle()}`}>
+            {getStatusDisplay()}
           </div>
           {status.stage === 'closed' && getExecutionRequirements() && (
             <TooltipProvider>
@@ -446,32 +481,32 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       {/* Vote Counts */}
       {status.stage !== 'pending' && (
         <>
-          <div className="flex gap-5 text-sm">
+          <div className="flex flex-wrap gap-3 sm:gap-5 text-xs sm:text-sm">
             <div className="flex items-center gap-1">
-              <Check className="h-4 w-4 text-green-600" />
+              <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
               <span className="text-gray-600">Yes</span>
               <span className="font-medium">{formattedResults.yes}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Minus className="h-4 w-4 text-gray-400" />
+              <Minus className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
               <span className="text-gray-600">Abstain</span>
               <span className="font-medium">{formattedResults.abstain}</span>
             </div>
             <div className="flex items-center gap-1">
-              <X className="h-4 w-4 text-red-600" />
+              <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
               <span className="text-gray-600">No</span>
               <span className="font-medium">{formattedResults.no}</span>
             </div>
           </div>
 
           {/* Voting Progress Bar */}
-          <div className="flex h-2 overflow-hidden">
+          <div className="flex h-1.5 sm:h-2 overflow-hidden rounded-full">
             <div 
-              className="bg-green-600 mr-1" 
+              className="bg-green-600 mr-0.5 sm:mr-1" 
               style={{ width: `${yesPercentage}%` }} 
             />
             <div 
-              className="bg-gray-300 mr-1" 
+              className="bg-gray-300 mr-0.5 sm:mr-1" 
               style={{ width: `${abstainPercentage}%` }} 
             />
             <div 
@@ -483,12 +518,25 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       )}
 
       {/* Timer */}
-      {status.stage !== 'open' && renderTimeInfo()}
+      {status.stage !== 'open' && (
+        <div className="text-xs sm:text-sm text-gray-500">
+          {status.stage === 'pending' ? (
+            <div>
+              <span>Starting: {formatDate(startTime)}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4">
+              <span>Started: {formatDate(startTime)}</span>
+              <span>Closed: {formatDate(endTime)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Voting Buttons and Timer for open proposals */}
       {status.stage === 'open' && (
-        <div className="flex items-center gap-4">
-          <div className="grid grid-cols-3 gap-2 flex-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex-1">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -496,7 +544,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                     <Button
                       onClick={() => handleVoteClick("yes")}
                       variant="outline"
-                      className="w-full bg-green-50 hover:bg-green-100 border-green-200"
+                      className="w-full text-xs sm:text-sm bg-green-50 hover:bg-green-100 border-green-200"
                       disabled={isLoading || Number(votingPower) === 0}
                     >
                       Yes
@@ -518,7 +566,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                     <Button
                       onClick={() => handleVoteClick("abstain")}
                       variant="outline"
-                      className="w-full bg-gray-50 hover:bg-gray-100 border-gray-200"
+                      className="w-full text-xs sm:text-sm bg-gray-50 hover:bg-gray-100 border-gray-200"
                       disabled={isLoading || Number(votingPower) === 0}
                     >
                       Abstain
@@ -540,7 +588,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                     <Button
                       onClick={() => handleVoteClick("no")}
                       variant="outline"
-                      className="w-full bg-red-50 hover:bg-red-100 border-red-200"
+                      className="w-full text-xs sm:text-sm bg-red-50 hover:bg-red-100 border-red-200"
                       disabled={isLoading || Number(votingPower) === 0}
                     >
                       No
@@ -556,59 +604,22 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             </TooltipProvider>
           </div>
 
-          <div className="text-sm text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500 w-full sm:w-auto text-center sm:text-left">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger className="cursor-help">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                  <div className="flex items-center justify-center sm:justify-start gap-1">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>{formatRemainingTime()}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Started: {formatDate(startTime)}</p>
-                  <p>Will close on: {formatDate(endTime)}</p>
+                  <p className="text-xs">Started: {formatDate(startTime)}</p>
+                  <p className="text-xs">Will close on: {formatDate(endTime)}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-
-          {/* Voting Power Confirmation Dialog */}
-          <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Confirm Your Vote</DialogTitle>
-              </DialogHeader>
-              <div className="py-4">
-                <p className="text-sm text-gray-600 mb-4">
-                  You are about to vote <span className="font-medium">{selectedVote}</span> on this proposal.
-                </p>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">Your voting power:</p>
-                  <p className="text-2xl font-bold text-gray-900">{votingPower}</p>
-                  {isQuadratic && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Using quadratic voting (square root of staked tokens)
-                    </p>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsVotingDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleVoteConfirm}
-                  disabled={isLoading}
-                >
-                  Confirm Vote
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       )}
 
@@ -620,6 +631,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             disabled={isLoading}
             variant="default"
             size="sm"
+            className="text-xs sm:text-sm"
           >
             Execute
           </Button>
@@ -630,11 +642,49 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             disabled={isLoading}
             variant="ghost"
             size="sm"
+            className="text-xs sm:text-sm"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         )}
       </div>
+
+      {/* Voting Power Confirmation Dialog */}
+      <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Your Vote</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600 mb-4">
+              You are about to vote <span className="font-medium">{selectedVote}</span> on this proposal.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Your voting power:</p>
+              <p className="text-2xl font-bold text-gray-900">{votingPower}</p>
+              {isQuadratic && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Using quadratic voting (square root of staked tokens)
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsVotingDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleVoteConfirm}
+              disabled={isLoading}
+            >
+              Confirm Vote
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { IntentStatus } from "@account.tech/dao";
 import { Intent } from "@account.tech/core";
 import { ProposalCard } from "./components/ProposalCard";
+import { ProposalFilters } from "./components/ProposalFilters";
+import { ProposalStatus } from "./helpers/types";
 
 export default function ProposalsPage() {
   const currentAccount = useCurrentAccount();
@@ -17,10 +19,11 @@ export default function ProposalsPage() {
   const { getIntents, getIntentStatus } = useDaoClient();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
 
-
   const [intents, setIntents] = useState<Record<string, Intent> | undefined>(undefined);
   const [intentStatuses, setIntentStatuses] = useState<Record<string, IntentStatus>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<ProposalStatus>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const fetchIntents = async () => {
     if (!currentAccount) {
@@ -71,6 +74,16 @@ export default function ProposalsPage() {
     fetchIntents();
   }, [currentAccount?.address, daoId, refreshCounter]);
 
+  const filteredIntents = intents ? Object.entries(intents).filter(([key, intent]) => {
+    const status = intentStatuses[key]?.stage;
+    const intentType = (intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
+
+    const matchesStatus = statusFilter === 'all' || status === statusFilter;
+    const matchesType = typeFilter === 'all' || intentType === typeFilter;
+
+    return matchesStatus && matchesType;
+  }) : [];
+
   if (!currentAccount) {
     return <div className="flex justify-center items-center h-screen">Please connect your wallet</div>;
   }
@@ -91,14 +104,21 @@ export default function ProposalsPage() {
         <h1 className="text-2xl font-bold">Proposals</h1>
       </div>
 
+      <ProposalFilters
+        status={statusFilter}
+        type={typeFilter}
+        onStatusChange={setStatusFilter}
+        onTypeChange={setTypeFilter}
+      />
+
       <div className="space-y-6">
-        {intents && Object.entries(intents).length === 0 ? (
+        {intents && filteredIntents.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No proposals found
           </div>
         ) : (
           <div className="space-y-2">
-            {intents && Object.entries(intents).map(([key, intent]) => (
+            {filteredIntents.map(([key, intent]) => (
               <ProposalCard
                 key={key}
                 intentKey={key}
