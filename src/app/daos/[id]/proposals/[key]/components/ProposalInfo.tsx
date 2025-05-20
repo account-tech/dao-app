@@ -6,12 +6,13 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import { Intent } from "@account.tech/core";
 import { IntentStatus } from "@account.tech/dao";
 import { Button } from "@/components/ui/button";
-import { Check, Minus, X } from "lucide-react";
+import { Check, Minus, X, Info } from "lucide-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { toast } from "sonner";
 import { handleTxResult, signAndExecute } from "@/utils/tx/Tx";
 import { useDaoStore } from "@/store/useDaoStore";
 import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProposalInfoProps {
   daoId: string;
@@ -50,6 +51,9 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
     total: 0
   });
   const [isQuadratic, setIsQuadratic] = useState(false);
+  const [votingQuorum, setVotingQuorum] = useState<number>(0);
+  const [minimumVotes, setMinimumVotes] = useState<string>("0");
+  const [executionTime, setExecutionTime] = useState<Date | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,6 +71,14 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
         setStatus(intentStatus);
         setVotingPower(powerInfo.votingPower);
         setIsQuadratic(powerInfo.isQuadratic);
+        setVotingQuorum(powerInfo.votingQuorum);
+        setMinimumVotes(powerInfo.minimumVotes);
+
+        // Set execution time if available
+        if (fetchedIntent) {
+          const execTime = (fetchedIntent as any).fields?.executionTimes?.[0];
+          setExecutionTime(execTime ? new Date(Number(execTime)) : null);
+        }
 
         // Format vote results if intent exists
         if (fetchedIntent) {
@@ -138,6 +150,119 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
   const yesPercentage = formattedResults.total > 0 ? (Number(formattedResults.yes) / formattedResults.total) * 100 : 0;
   const noPercentage = formattedResults.total > 0 ? (Number(formattedResults.no) / formattedResults.total) * 100 : 0;
   const abstainPercentage = formattedResults.total > 0 ? (Number(formattedResults.abstain) / formattedResults.total) * 100 : 0;
+
+  // Calculate execution requirements
+  const getExecutionRequirements = () => {
+    if (status.stage !== 'closed') return null;
+
+    const totalVotesPower = Number(formattedResults.yes) + Number(formattedResults.no);
+    const yesRatio = totalVotesPower > 0 ? Number(formattedResults.yes) / totalVotesPower : 0;
+    const hasMetQuorum = yesRatio >= votingQuorum;
+    const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
+
+    // If all conditions are met but waiting for execution time
+    if (hasMetQuorum && hasMetMinimumVotes && executionTime) {
+      const now = new Date();
+      if (now < executionTime) {
+        return (
+          <div className="mt-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+            <h3 className="text-teal-700 font-medium mb-2">All conditions met!</h3>
+            <p className="text-teal-600 text-sm">
+              This proposal will be executable on: {executionTime.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          </div>
+        );
+      }
+      return null;
+    }
+
+    // If conditions are not met, show requirements
+    if (!hasMetQuorum || !hasMetMinimumVotes) {
+      // Generate the summary message
+      const failureReasons = [];
+      if (!hasMetQuorum) {
+        failureReasons.push("quorum requirement was not met");
+      }
+      if (!hasMetMinimumVotes) {
+        failureReasons.push("minimum votes requirement was not met");
+      }
+      const summaryMessage = `The proposal was not accepted because the ${failureReasons.join(" and the ")}.`;
+
+      return (
+        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <Info className="h-4 w-4 text-gray-500" />
+            <h3 className="text-gray-700 font-medium">Execution Requirements</h3>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Quorum Required</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3.5 w-3.5 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">The quorum is the ratio of YES votes over the total of YES + NO votes (excluding ABSTAIN votes).</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-gray-900">{(votingQuorum * 100).toFixed(0)}%</span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all ${hasMetQuorum ? 'bg-teal-500' : 'bg-gray-400'}`}
+                  style={{ width: `${Math.min((yesRatio / votingQuorum) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Current: {(yesRatio * 100).toFixed(0)}%</p>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-600">Minimum Votes Required</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3.5 w-3.5 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-sm">The minimum total voting power needed (YES + NO + ABSTAIN votes combined) for a proposal to be valid.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-gray-900">{minimumVotes}</span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all ${hasMetMinimumVotes ? 'bg-teal-500' : 'bg-gray-400'}`}
+                  style={{ width: `${Math.min((totalVotesPower / Number(minimumVotes)) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-500 mt-1">Current: {totalVotesPower.toFixed(2)}</p>
+            </div>
+
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              {summaryMessage}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -225,6 +350,9 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
           </div>
         </div>
       </div>
+
+      {/* Execution Requirements */}
+      {getExecutionRequirements()}
     </div>
   );
 } 
