@@ -3,7 +3,7 @@ import { IntentStatus } from "@account.tech/dao";
 import { Intent } from "@account.tech/core";
 import { Button } from "@/components/ui/button";
 import { Trash2, Clock, Check, Minus, X, Info } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
@@ -46,6 +46,7 @@ interface FormattedVoteResults {
 
 export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const params = useParams();
+  const router = useRouter();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
@@ -446,7 +447,10 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg border p-4 sm:p-6 space-y-3 sm:space-y-4">
+    <div 
+      className="bg-white rounded-lg border p-4 sm:p-6 space-y-3 sm:space-y-4 cursor-pointer hover:border-teal-200 transition-colors"
+      onClick={() => router.push(`/daos/${daoId}/proposals/${intentKey}`)}
+    >
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded bg-gray-100">
