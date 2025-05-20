@@ -246,16 +246,14 @@ export default function DaoPage() {
                       intent={intent}
                     />
                   ))}
-                  <div className="p-4 border-t border-gray-100">
-                    <Button
-                      onClick={() => router.push(`/daos/${daoId}/proposals`)}
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      View All Proposals
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => router.push(`/daos/${daoId}/proposals`)}
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-teal-600 hover:text-teal-700 border-teal-200 hover:border-teal-300"
+                  >
+                    View All Proposals
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </>
               ) : (
                 <div className="relative">
