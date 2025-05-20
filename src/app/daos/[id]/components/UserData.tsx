@@ -504,23 +504,29 @@ export default function UserData({ daoId }: { daoId: string }) {
                         <Input
                           id="unstake-amount"
                           type="number"
-                          step="any"
+                          step={`0.${"0".repeat(decimals - 1)}1`}
                           value={unstakeAmount}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value === "" || Number(value) <= Number(totalStaked)) {
+                            // Ensure we don't exceed available amount with decimal precision
+                            const maxAmount = Math.floor(Number(totalStaked) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+                            if (value === "" || Number(value) <= maxAmount) {
                               setUnstakeAmount(value);
                             }
                           }}
                           placeholder="Enter amount"
-                          max={totalStaked}
+                          max={Math.floor(Number(totalStaked) * Math.pow(10, decimals)) / Math.pow(10, decimals)}
                           className="pr-16"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-teal-600 hover:text-teal-700"
-                          onClick={() => setUnstakeAmount(totalStaked)}
+                          onClick={() => {
+                            // Set max amount with proper decimal precision
+                            const maxAmount = Math.floor(Number(totalStaked) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+                            setUnstakeAmount(maxAmount.toString());
+                          }}
                         >
                           MAX
                         </Button>

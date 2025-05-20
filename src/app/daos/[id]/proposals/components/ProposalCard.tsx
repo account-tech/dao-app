@@ -25,7 +25,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ProposalCardProps {
   intentKey: string;
@@ -61,8 +60,6 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const [isVotingDialogOpen, setIsVotingDialogOpen] = useState(false);
   const [selectedVote, setSelectedVote] = useState<"yes" | "no" | "abstain" | null>(null);
   const [isQuadratic, setIsQuadratic] = useState(false);
-  const [minimumVotingPower, setMinimumVotingPower] = useState<string>("0");
-  const [hasEnoughPower, setHasEnoughPower] = useState(false);
   const [formattedResults, setFormattedResults] = useState<FormattedVoteResults>({
     yes: "0",
     no: "0",
@@ -258,9 +255,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
         const powerInfo = await getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient);
         
         setVotingPower(powerInfo.votingPower);
-        setMinimumVotingPower(powerInfo.minimumVotes);
         setIsQuadratic(powerInfo.isQuadratic);
-        setHasEnoughPower(Number(powerInfo.votingPower) >= Number(powerInfo.minimumVotes));
 
       } catch (error) {
         console.error("Error fetching voting power:", error);
@@ -449,15 +444,15 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                       onClick={() => handleVoteClick("yes")}
                       variant="outline"
                       className="w-full bg-green-50 hover:bg-green-100 border-green-200"
-                      disabled={isLoading || !hasEnoughPower}
+                      disabled={isLoading || Number(votingPower) === 0}
                     >
                       Yes
                     </Button>
                   </div>
                 </TooltipTrigger>
-                {!hasEnoughPower && (
+                {Number(votingPower) === 0 && (
                   <TooltipContent>
-                    <p>You need atleast {minimumVotingPower} voting power to participate (Current: {votingPower})</p>
+                    <p>You need to stake tokens to participate in voting</p>
                   </TooltipContent>
                 )}
               </Tooltip>
@@ -471,15 +466,15 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                       onClick={() => handleVoteClick("abstain")}
                       variant="outline"
                       className="w-full bg-gray-50 hover:bg-gray-100 border-gray-200"
-                      disabled={isLoading || !hasEnoughPower}
+                      disabled={isLoading || Number(votingPower) === 0}
                     >
                       Abstain
                     </Button>
                   </div>
                 </TooltipTrigger>
-                {!hasEnoughPower && (
+                {Number(votingPower) === 0 && (
                   <TooltipContent>
-                    <p>You need atleast {minimumVotingPower} voting power to participate (Current: {votingPower})</p>
+                    <p>You need to stake tokens to participate in voting</p>
                   </TooltipContent>
                 )}
               </Tooltip>
@@ -493,15 +488,15 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                       onClick={() => handleVoteClick("no")}
                       variant="outline"
                       className="w-full bg-red-50 hover:bg-red-100 border-red-200"
-                      disabled={isLoading || !hasEnoughPower}
+                      disabled={isLoading || Number(votingPower) === 0}
                     >
                       No
                     </Button>
                   </div>
                 </TooltipTrigger>
-                {!hasEnoughPower && (
+                {Number(votingPower) === 0 && (
                   <TooltipContent>
-                    <p>You need atleast {minimumVotingPower} voting power to participate (Current: {votingPower})</p>
+                    <p>You need to stake tokens to participate in voting</p>
                   </TooltipContent>
                 )}
               </Tooltip>
