@@ -14,6 +14,8 @@ interface DaoState {
   daoId: string | null;
   /** Counter to trigger UI refreshes */
   refreshCounter: number;
+  /** Counter to trigger UI refreshes for proposals page */
+  refreshCounterProposals: number;
 }
 
 /**
@@ -30,9 +32,11 @@ interface DaoActions {
   refresh: () => void;
   /** Refresh the client data and trigger UI refresh */
   refreshClient: () => Promise<void>;
+  /** Refresh the proposals page */
+  refreshProposals: () => void;
 }
 
-const initialState: Omit<DaoState, 'refreshCounter'> = {
+const initialState: Omit<DaoState, 'refreshCounter' | 'refreshCounterProposals'> = {
   client: null,
   address: null,
   daoId: null,
@@ -41,6 +45,7 @@ const initialState: Omit<DaoState, 'refreshCounter'> = {
 export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
   ...initialState,
   refreshCounter: 0,
+  refreshCounterProposals: 0,
 
   initClient: async (address: string, daoId?: string) => {
     const state = get();
@@ -92,15 +97,24 @@ export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
     refreshCounter: state.refreshCounter + 1
   })),
 
+  refreshProposals: async () => {
+    const state = get();
+    if (state.client) {
+      try {
+        await state.client.refresh();
+        set(state => ({ refreshCounterProposals: state.refreshCounterProposals + 1 })); // refresh proposals page without refreshing the proposal page
+      } catch (error) {
+        console.error("Error refreshing client:", error);
+        throw error;
+      }
+    }
+  },
+
   refreshClient: async () => {
     const state = get();
     if (state.client) {
       try {
-        //normally we would just call state.client.refresh() bit its not triggering a loading state
         await state.client.refresh();
-        // Reset the client and address
-        //set({...initialState})
-        // Trigger UI refresh after client refresh
         set(state => ({ refreshCounter: state.refreshCounter + 1 }));
       } catch (error) {
         console.error("Error refreshing client:", error);

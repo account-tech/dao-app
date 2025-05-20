@@ -6,13 +6,14 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import { Intent } from "@account.tech/core";
 import { IntentStatus } from "@account.tech/dao";
 import { Button } from "@/components/ui/button";
-import { Check, Minus, X, Info } from "lucide-react";
+import { Check, Minus, X, Info, Clock, Trash2, PlayCircle } from "lucide-react";
 import { Transaction } from "@mysten/sui/transactions";
 import { toast } from "sonner";
 import { handleTxResult, signAndExecute } from "@/utils/tx/Tx";
 import { useDaoStore } from "@/store/useDaoStore";
 import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
 
 interface ProposalInfoProps {
   daoId: string;
@@ -33,11 +34,12 @@ interface FormattedVoteResults {
 }
 
 export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
+  const router = useRouter();
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { getIntent, getIntentStatus, vote, getDaoVotingPowerInfo, getParticipant, getDao } = useDaoClient();
-  const { refreshClient } = useDaoStore();
+  const { getIntent, getIntentStatus, vote, getDaoVotingPowerInfo, getParticipant, deleteIntent, execute } = useDaoClient();
+  const { refreshClient, refreshProposals } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -54,6 +56,31 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
   const [votingQuorum, setVotingQuorum] = useState<number>(0);
   const [minimumVotes, setMinimumVotes] = useState<string>("0");
   const [executionTime, setExecutionTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [expirationTime, setExpirationTime] = useState<Date | null>(null);
+
+  // Calculate remaining time
+  const now = new Date();
+  const remainingTime = endTime ? endTime.getTime() - now.getTime() : 0;
+  const remainingDays = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+  const remainingHours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const remainingMinutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+  const remainingSeconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+  const formatRemainingTime = () => {
+    if (remainingTime <= 0) return "Time expired";
+    
+    if (remainingTime < 60000) { // less than 1 minute
+      return `${remainingSeconds}s`;
+    }
+    
+    const parts = [];
+    if (remainingDays > 0) parts.push(`${remainingDays}d`);
+    if (remainingHours > 0) parts.push(`${remainingHours}h`);
+    if (remainingMinutes > 0) parts.push(`${remainingMinutes}m`);
+    
+    return parts.join(" ");
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,10 +101,14 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
         setVotingQuorum(powerInfo.votingQuorum);
         setMinimumVotes(powerInfo.minimumVotes);
 
-        // Set execution time if available
+        // Set execution time and end time if available
         if (fetchedIntent) {
           const execTime = (fetchedIntent as any).fields?.executionTimes?.[0];
+          const voteEndTime = (fetchedIntent as any).outcome?.endTime;
+          const expTime = (fetchedIntent as any).fields?.expirationTime;
           setExecutionTime(execTime ? new Date(Number(execTime)) : null);
+          setEndTime(voteEndTime ? new Date(Number(voteEndTime)) : null);
+          setExpirationTime(expTime ? new Date(Number(expTime)) : null);
         }
 
         // Format vote results if intent exists
@@ -123,7 +154,6 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
     }
 
     try {
-      setIsLoading(true);
       const tx = new Transaction();
       await vote(currentAccount.address, daoId, tx, intentKey, answer);
 
@@ -141,8 +171,89 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
     } catch (error) {
       console.error("Error voting:", error);
       toast.error(error instanceof Error ? error.message : "Failed to vote");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!currentAccount?.address) {
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const tx = new Transaction();
+      await deleteIntent(
+        currentAccount.address,
+        daoId,
+        tx,
+        intentKey
+      );
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+
+      // refresh proposals page without refreshing the proposal page
+      refreshProposals();
+      
+      // Set the previous route to the current proposal page
+      
+      // Use a small timeout to ensure state updates are processed
+      setTimeout(() => {
+        router.push(`/daos/${daoId}/proposals`);
+      }, 0);
+    } catch (error) {
+      console.error('Error deleting proposal:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete proposal");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleExecute = async () => {
+    if (!currentAccount?.address) {
+      toast.error("Please connect your wallet");
+      return;
+    }
+
+    try {
+      const tx = new Transaction();
+      await execute(
+        currentAccount.address,
+        daoId,
+        tx,
+        intentKey
+      );
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+
+      // refresh proposals page without refreshing the proposal page
+      refreshProposals();
+      
+      // Use a small timeout to ensure state updates are processed
+      setTimeout(() => {
+        router.push(`/daos/${daoId}/proposals`);
+      }, 0);
+    } catch (error) {
+      console.error('Error executing proposal:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to execute proposal");
     }
   };
 
@@ -272,13 +383,36 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
       {status.stage === 'open' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Your vote</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Your vote</h2>
+            <div className="text-sm text-gray-500">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger className="cursor-help">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{formatRemainingTime()}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Will close on: {endTime?.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
           <div className="grid grid-cols-1 gap-2">
             <Button
               onClick={() => handleVote("yes")}
               variant="outline"
               className="w-full py-6 text-base bg-teal-50 hover:bg-teal-100 border-teal-200"
-              disabled={isLoading || Number(votingPower) === 0}
+              disabled={Number(votingPower) === 0}
             >
               Yes
             </Button>
@@ -286,7 +420,7 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
               onClick={() => handleVote("abstain")}
               variant="outline"
               className="w-full py-6 text-base bg-gray-50 hover:bg-gray-100 border-gray-200"
-              disabled={isLoading || Number(votingPower) === 0}
+              disabled={Number(votingPower) === 0}
             >
               Abstain
             </Button>
@@ -294,7 +428,7 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
               onClick={() => handleVote("no")}
               variant="outline"
               className="w-full py-6 text-base bg-red-50 hover:bg-red-100 border-red-200"
-              disabled={isLoading || Number(votingPower) === 0}
+              disabled={Number(votingPower) === 0}
             >
               No
             </Button>
@@ -307,52 +441,123 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
         </div>
       )}
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Results</h2>
-        <div className="space-y-6">
-          <div className="flex flex-wrap gap-6">
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-teal-500" />
-              <span className="text-gray-600">Yes</span>
-              <span className="font-medium">{formattedResults.yes}</span>
+      {status.stage === 'pending' && intent && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Voting not started</h2>
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <Clock className="h-4 w-4" />
+              <span>
+                Votes opening on:{' '}
+                {new Date(Number((intent as any).outcome?.startTime)).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Minus className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-600">Abstain</span>
-              <span className="font-medium">{formattedResults.abstain}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <X className="h-4 w-4 text-red-600" />
-              <span className="text-gray-600">No</span>
-              <span className="font-medium">{formattedResults.no}</span>
-            </div>
-          </div>
-
-          <div className="flex h-2 overflow-hidden rounded-full">
-            {formattedResults.total === 0 ? (
-              <div className="w-full bg-gray-100/50" />
-            ) : (
-              <>
-                <div 
-                  className="bg-teal-500 mr-1" 
-                  style={{ width: `${yesPercentage}%` }} 
-                />
-                <div 
-                  className="bg-gray-300 mr-1" 
-                  style={{ width: `${abstainPercentage}%` }} 
-                />
-                <div 
-                  className="bg-red-600" 
-                  style={{ width: `${noPercentage}%` }} 
-                />
-              </>
-            )}
           </div>
         </div>
-      </div>
+      )}
+
+      {status.stage !== 'pending' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Results</h2>
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-teal-500" />
+                <span className="text-gray-600">Yes</span>
+                <span className="font-medium">{formattedResults.yes}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Minus className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600">Abstain</span>
+                <span className="font-medium">{formattedResults.abstain}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <X className="h-4 w-4 text-red-600" />
+                <span className="text-gray-600">No</span>
+                <span className="font-medium">{formattedResults.no}</span>
+              </div>
+            </div>
+
+            <div className="flex h-2 overflow-hidden rounded-full">
+              {formattedResults.total === 0 ? (
+                <div className="w-full bg-gray-100/50" />
+              ) : (
+                <>
+                  <div 
+                    className="bg-teal-500 mr-1" 
+                    style={{ width: `${yesPercentage}%` }} 
+                  />
+                  <div 
+                    className="bg-gray-300 mr-1" 
+                    style={{ width: `${abstainPercentage}%` }} 
+                  />
+                  <div 
+                    className="bg-red-600" 
+                    style={{ width: `${noPercentage}%` }} 
+                  />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Execution Requirements */}
       {getExecutionRequirements()}
+
+      {/* Execute Button for Executable Proposals */}
+      {status.stage === 'executable' && (
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={handleExecute}
+            variant="default"
+            className="bg-teal-500 hover:bg-teal-600 text-white"
+          >
+            <PlayCircle className="h-4 w-4 mr-2" />
+            Execute Proposal
+          </Button>
+        </div>
+      )}
+
+      {/* Delete Button for Closed Proposals */}
+      {status.stage === 'closed' && expirationTime && (
+        <div className="mt-6 flex justify-end">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    onClick={handleDelete}
+                    disabled={isLoading || (now < expirationTime)}
+                    variant="ghost"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Proposal
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {now < expirationTime && (
+                <TooltipContent>
+                  <p>Will be deleteable once it expires on: {expirationTime.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
     </div>
   );
 } 

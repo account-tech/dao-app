@@ -51,7 +51,7 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
     };
 
     fetchData();
-  }, [currentAccount?.address, daoId, intentKey, refreshCounter]);
+  }, [currentAccount?.address, daoId, refreshCounter]);
 
   if (isLoading) {
     return <div className="animate-pulse bg-gray-100 h-32 rounded-lg"></div>;
@@ -116,15 +116,27 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
         const remainingDays = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
         const remainingHours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const remainingMinutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+        const remainingSeconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+        
+        let timeDisplay;
+        if (remainingTime <= 0) {
+          timeDisplay = 'Ending soon';
+        } else if (remainingTime < 60000) { // less than 1 minute
+          timeDisplay = `${remainingSeconds}s remaining`;
+        } else {
+          const parts = [];
+          if (remainingDays > 0) parts.push(`${remainingDays}d`);
+          if (remainingHours > 0) parts.push(`${remainingHours}h`);
+          if (remainingMinutes > 0) parts.push(`${remainingMinutes}m`);
+          timeDisplay = `${parts.join(' ')} remaining`;
+        }
         
         return (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger className="flex items-center gap-2 text-gray-600">
                 <Clock className="h-4 w-4" />
-                <span>
-                  {remainingTime > 0 ? `${remainingDays}d ${remainingHours}h ${remainingMinutes}m remaining` : 'Ending soon'}
-                </span>
+                <span>{timeDisplay}</span>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Started: {formatDate(startTime)}</p>
@@ -198,6 +210,28 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
       <div>
         <p className="text-sm text-gray-600 mb-2">Timing</p>
         {getTimeDisplay()}
+        {/* Expiration Time */}
+        {(intent as any).fields?.expirationTime && (
+          <div className="mt-2">
+            {(() => {
+              const expirationTime = new Date(Number((intent as any).fields.expirationTime));
+              const now = new Date();
+              const hasExpired = now > expirationTime;
+              
+              return (
+                <div className={`flex items-center gap-2 ${hasExpired ? 'text-red-600' : 'text-gray-600'}`}>
+                  <Clock className="h-4 w-4" />
+                  <span>
+                    {hasExpired 
+                      ? `Expired on: ${formatDate(expirationTime)}`
+                      : `Will expire on: ${formatDate(expirationTime)}`
+                    }
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
     </div>
   );

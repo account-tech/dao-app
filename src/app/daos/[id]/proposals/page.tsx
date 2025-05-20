@@ -18,6 +18,7 @@ export default function ProposalsPage() {
   const daoId = params.id as string;
   const { getIntents, getIntentStatus } = useDaoClient();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
+  const refreshCounterProposals = useDaoStore(state => state.refreshCounterProposals);
 
   const [intents, setIntents] = useState<Record<string, Intent> | undefined>(undefined);
   const [intentStatuses, setIntentStatuses] = useState<Record<string, IntentStatus>>({});
@@ -72,7 +73,7 @@ export default function ProposalsPage() {
   useEffect(() => {
     setIsLoading(true);
     fetchIntents();
-  }, [currentAccount?.address, daoId, refreshCounter]);
+  }, [currentAccount?.address, daoId, refreshCounter, refreshCounterProposals]);
 
   const filteredIntents = intents ? Object.entries(intents)
     // First filter the intents

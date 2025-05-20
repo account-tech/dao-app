@@ -14,16 +14,10 @@ const Navbar = () => {
   const { mutate: disconnect } = useDisconnectWallet();
   const pathname = usePathname();
   const router = useRouter();
-  const { setPreviousRoute } = useNavigationStore();
 
   const isDaoPage = pathname.startsWith('/daos/');
   const isConfigPage = pathname.includes('/settings/requestConfigDao');
   const isToggleUnverifiedDepsPage = pathname.includes('/settings/requestToggleUnverifiedDeps');
-
-  // Store the current path when it changes
-  useEffect(() => {
-    setPreviousRoute(pathname);
-  }, [pathname, setPreviousRoute]);
 
   const handleDisconnect = () => {
     disconnect(undefined, {
@@ -32,7 +26,18 @@ const Navbar = () => {
   };
 
   const handleBack = () => {
-    router.back();
+    // Split the current path into segments
+    const segments = pathname.split('/').filter(Boolean);
+    
+    // If we're at root or have no segments, go home
+    if (segments.length <= 1) {
+      return router.push('/');
+    }
+
+    // Remove the last segment and reconstruct the path
+    const previousPath = '/' + segments.slice(0, -1).join('/');
+    console.log("Going back to:", previousPath);
+    router.push(previousPath);
   };
 
   const isHomePage = pathname === "/";

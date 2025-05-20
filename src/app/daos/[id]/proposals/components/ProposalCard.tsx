@@ -51,9 +51,10 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { deleteIntent, execute, getIntentStatus, vote, getDaoVotingPowerInfo, getParticipant, getDao } = useDaoClient();
+  const { deleteIntent, getIntentStatus, vote, getDaoVotingPowerInfo, getParticipant, getDao } = useDaoClient();
   const { refreshClient } = useDaoStore();
   const refreshCounter = useDaoStore(state => state.refreshCounter);
+  const refreshCounterProposals = useDaoStore(state => state.refreshCounterProposals);
   
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<IntentStatus>({ stage: 'pending', deletable: false });
@@ -132,9 +133,14 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const remainingDays = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
   const remainingHours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const remainingMinutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+  const remainingSeconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
 
   const formatRemainingTime = () => {
     if (remainingTime <= 0) return "Time expired";
+    
+    if (remainingTime < 60000) { // less than 1 minute
+      return `${remainingSeconds}s`;
+    }
     
     const parts = [];
     if (remainingDays > 0) parts.push(`${remainingDays}d`);
@@ -270,7 +276,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     };
 
     fetchVotingPower();
-  }, [currentAccount?.address, daoId, refreshCounter]);
+  }, [currentAccount?.address, daoId, refreshCounter, refreshCounterProposals]);
 
   const handleVoteClick = (answer: "yes" | "no" | "abstain") => {
     setSelectedVote(answer);
@@ -283,41 +289,6 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     setIsVotingDialogOpen(false);
     await handleVote(selectedVote);
     setSelectedVote(null);
-  };
-
-  const handleExecute = async () => {
-    if (!currentAccount || !daoId) {
-      toast.error("No account or DAO selected");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const tx = new Transaction();
-      await execute(
-        currentAccount.address,
-        daoId,
-        tx,
-        intentKey
-      );
-
-      const result = await signAndExecute({
-        suiClient,
-        currentAccount,
-        tx,
-        signTransaction,
-        options: { showEffects: true },
-        toast,
-      });
-
-      handleTxResult(result, toast);
-
-      refreshClient();
-    } catch (error) {
-      console.error('Error executing proposal:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to execute proposal");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleDelete = async () => {
@@ -545,7 +516,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
 
       {/* Voting Buttons and Timer for open proposals */}
       {status.stage === 'open' && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4" onClick={(e) => e.stopPropagation()}>
           <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex-1">
             <TooltipProvider>
               <Tooltip>
@@ -634,18 +605,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
-        {status.stage === 'executable' && (
-          <Button 
-            onClick={handleExecute}
-            disabled={isLoading}
-            variant="default"
-            size="sm"
-            className="text-xs sm:text-sm bg-teal-500 hover:bg-teal-600"
-          >
-            Execute
-          </Button>
-        )}
+      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
         {status.deletable && (
           <Button
             onClick={handleDelete}
@@ -661,7 +621,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
 
       {/* Voting Power Confirmation Dialog */}
       <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
-        <DialogContent>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Confirm Your Vote</DialogTitle>
           </DialogHeader>
