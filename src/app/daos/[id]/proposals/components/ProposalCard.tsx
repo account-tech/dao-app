@@ -372,7 +372,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       case 'closed':
         return 'text-red-600';
       case 'executable':
-        return 'text-green-600';
+        return 'text-teal-500';
       default:
         return 'text-yellow-600';
     }
@@ -483,7 +483,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
         <>
           <div className="flex flex-wrap gap-3 sm:gap-5 text-xs sm:text-sm">
             <div className="flex items-center gap-1">
-              <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+              <Check className="h-3 w-3 sm:h-4 sm:w-4 text-teal-500" />
               <span className="text-gray-600">Yes</span>
               <span className="font-medium">{formattedResults.yes}</span>
             </div>
@@ -502,7 +502,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
           {/* Voting Progress Bar */}
           <div className="flex h-1.5 sm:h-2 overflow-hidden rounded-full">
             <div 
-              className="bg-green-600 mr-0.5 sm:mr-1" 
+              className="bg-teal-500 mr-0.5 sm:mr-1" 
               style={{ width: `${yesPercentage}%` }} 
             />
             <div 
@@ -544,7 +544,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
                     <Button
                       onClick={() => handleVoteClick("yes")}
                       variant="outline"
-                      className="w-full text-xs sm:text-sm bg-green-50 hover:bg-green-100 border-green-200"
+                      className="w-full text-xs sm:text-sm bg-teal-50 hover:bg-teal-100 border-teal-200"
                       disabled={isLoading || Number(votingPower) === 0}
                     >
                       Yes
@@ -631,7 +631,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             disabled={isLoading}
             variant="default"
             size="sm"
-            className="text-xs sm:text-sm"
+            className="text-xs sm:text-sm bg-teal-500 hover:bg-teal-600"
           >
             Execute
           </Button>

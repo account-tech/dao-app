@@ -74,15 +74,23 @@ export default function ProposalsPage() {
     fetchIntents();
   }, [currentAccount?.address, daoId, refreshCounter]);
 
-  const filteredIntents = intents ? Object.entries(intents).filter(([key, intent]) => {
-    const status = intentStatuses[key]?.stage;
-    const intentType = (intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
+  const filteredIntents = intents ? Object.entries(intents)
+    // First filter the intents
+    .filter(([key, intent]) => {
+      const status = intentStatuses[key]?.stage;
+      const intentType = (intent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
 
-    const matchesStatus = statusFilter === 'all' || status === statusFilter;
-    const matchesType = typeFilter === 'all' || intentType === typeFilter;
+      const matchesStatus = statusFilter === 'all' || status === statusFilter;
+      const matchesType = typeFilter === 'all' || intentType === typeFilter;
 
-    return matchesStatus && matchesType;
-  }) : [];
+      return matchesStatus && matchesType;
+    })
+    // Then sort by creationTime in descending order
+    .sort(([, a], [, b]) => {
+      const timeA = (a as any).fields?.creationTime ? Number((a as any).fields.creationTime) : 0;
+      const timeB = (b as any).fields?.creationTime ? Number((b as any).fields.creationTime) : 0;
+      return timeB - timeA; // Descending order (newest first)
+    }) : [];
 
   if (!currentAccount) {
     return <div className="flex justify-center items-center h-screen">Please connect your wallet</div>;
