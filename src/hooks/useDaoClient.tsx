@@ -17,6 +17,11 @@ interface VotingPowerInfo {
   votingQuorum: number;
 }
 
+interface VoteStakeInfo {
+  lockedInVotes: string;
+  retrievableVotes: string;
+}
+
 export function useDaoClient() {
   const { initClient } = useDaoStore();
 
@@ -264,6 +269,59 @@ export function useDaoClient() {
         hasAuthPower: false,
         isQuadratic: false,
         votingQuorum: 0
+      };
+    }
+  };
+
+  const getVoteStakeInfo = async (
+    userAddr: string,
+    daoId: string,
+    suiClient: SuiClient
+  ): Promise<VoteStakeInfo> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      const participant = await client.participant;
+
+      if (!participant) {
+        throw new Error("Failed to fetch participant data");
+      }
+
+      // Get coin decimals
+      const simplifiedAssetType = getSimplifiedAssetType(participant.assetType);
+      const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+      const divisor = BigInt(10) ** BigInt(decimals);
+
+      let lockedInVotesValue = BigInt(0);
+      let retrievableVotesValue = BigInt(0);
+
+      // Process votes array if it exists
+      if (participant.votes && Array.isArray(participant.votes)) {
+        const now = Date.now();
+        participant.votes.forEach((vote: any) => {
+          if (vote.daoAddr === daoId && vote.staked?.value) {
+            const voteEndTime = Number(vote.voteEnd || 0);
+            if (now > voteEndTime) {
+              retrievableVotesValue += BigInt(vote.staked.value);
+            } else {
+              lockedInVotesValue += BigInt(vote.staked.value);
+            }
+          }
+        });
+      }
+
+      // Format values with decimals
+      const lockedInVotes = Number(lockedInVotesValue) / Number(divisor);
+      const retrievableVotes = Number(retrievableVotesValue) / Number(divisor);
+
+      return {
+        lockedInVotes: lockedInVotes.toFixed(2),
+        retrievableVotes: retrievableVotes.toFixed(2)
+      };
+    } catch (error) {
+      console.error("Error getting vote stake info:", error);
+      return {
+        lockedInVotes: "0.00",
+        retrievableVotes: "0.00"
       };
     }
   };
@@ -525,5 +583,6 @@ export function useDaoClient() {
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
     getDaoVotingPowerInfo,
+    getVoteStakeInfo,
   };
 }
