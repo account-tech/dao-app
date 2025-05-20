@@ -336,6 +336,20 @@ export function useDaoClient() {
     }
   };
 
+  const getunverifiedDepsAllowedBool = async (
+    userAddr: string,
+    multisigId: string,
+  ): Promise<boolean> => {
+    try {
+      const client = await initClient(userAddr, multisigId);
+      const result = client.account.unverifiedDepsAllowed;
+      return result;
+    } catch (error) {
+      console.error("Error getting boolean:", error);
+      throw error;
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -595,5 +609,6 @@ export function useDaoClient() {
     requestToggleUnverifiedDepsAllowed,
     getDaoVotingPowerInfo,
     getVoteStakeInfo,
+    getunverifiedDepsAllowedBool,
   };
 }
