@@ -6,6 +6,7 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import { getCoinDecimals, formatCoinAmount, getCoinMeta, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
+import { Transaction } from "@mysten/sui/transactions";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +50,7 @@ export default function UserData({ daoId }: { daoId: string }) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { getParticipant, getDao, stake, unstake, claim, getDaoVotingPowerInfo } = useDaoClient();
+  const { getParticipant, getDao, stake, unstake, claim, getDaoVotingPowerInfo, getVoteStakeInfo, retrieveVotes } = useDaoClient();
   const [votingPower, setVotingPower] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [stakeAmount, setStakeAmount] = useState("");
@@ -72,6 +73,9 @@ export default function UserData({ daoId }: { daoId: string }) {
   const [maxVotingPower, setMaxVotingPower] = useState<string>("0");
   const [hasAuthPower, setHasAuthPower] = useState(false);
   const [coinSymbol, setCoinSymbol] = useState<string>("");
+  const [lockedInVotes, setLockedInVotes] = useState<string>("0");
+  const [retrievableVotes, setRetrievableVotes] = useState<string>("0");
+  const [isRetrieving, setIsRetrieving] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,13 +118,20 @@ export default function UserData({ daoId }: { daoId: string }) {
         }
         setTotalStaked(formatCoinAmount(totalStakedValue, fetchedDecimals));
 
-        // Get voting power info using the new helper function
-        const votingPowerInfo = await getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient);
+        // Get voting power info and vote stake info in parallel
+        const [votingPowerInfo, voteStakeInfo] = await Promise.all([
+          getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient),
+          getVoteStakeInfo(currentAccount.address, daoId, suiClient)
+        ]);
+
         setVotingPower(votingPowerInfo.votingPower);
         setAuthVotingPower(votingPowerInfo.authVotingPower);
         setMaxVotingPower(votingPowerInfo.maxVotingPower);
         setHasAuthPower(votingPowerInfo.hasAuthPower);
         setIsQuadratic(votingPowerInfo.isQuadratic);
+
+        setLockedInVotes(voteStakeInfo.lockedInVotes);
+        setRetrievableVotes(voteStakeInfo.retrievableVotes);
 
         // Calculate total unstaking amount and store positions
         let totalUnstakingValue = BigInt(0);
@@ -161,6 +172,8 @@ export default function UserData({ daoId }: { daoId: string }) {
         setHasAuthPower(false);
         setIsQuadratic(false);
         setCoinSymbol("");
+        setLockedInVotes("0");
+        setRetrievableVotes("0");
       } finally {
         setLoading(false);
       }
@@ -275,6 +288,33 @@ export default function UserData({ daoId }: { daoId: string }) {
     }
   };
 
+  const handleRetrieveVotes = async () => {
+    if (!currentAccount?.address) return;
+
+    try {
+      setIsRetrieving(true);
+      const tx = new Transaction();
+      const modifiedTx = await retrieveVotes(currentAccount.address, daoId, tx);
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx: modifiedTx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+      refreshClient();
+    } catch (error) {
+      console.error("Error retrieving votes:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to retrieve votes");
+    } finally {
+      setIsRetrieving(false);
+    }
+  };
+
   // Helper function to format amount with symbol
   const formatWithSymbol = (amount: string) => {
     return `${amount} ${coinSymbol}`;
@@ -377,6 +417,25 @@ export default function UserData({ daoId }: { daoId: string }) {
                 <span className="text-sm text-gray-500">Available to Claim</span>
                 <span className={`text-lg font-semibold ${Number(totalClaimable) > 0 ? 'text-green-600' : ''}`}>
                   {formatWithSymbol(totalClaimable)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Votes Stats */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Locked in Votes</span>
+                <span className="text-lg font-semibold">{formatWithSymbol(lockedInVotes)}</span>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Retrievable from Votes</span>
+                <span className={`text-lg font-semibold ${Number(retrievableVotes) > 0 ? 'text-green-600' : ''}`}>
+                  {formatWithSymbol(retrievableVotes)}
                 </span>
               </div>
             </div>
@@ -551,23 +610,42 @@ export default function UserData({ daoId }: { daoId: string }) {
             </Dialog>
           </div>
 
-          {/* Claim Button - Only show if there's something to claim */}
-          {Number(totalClaimable) > 0 && (
-            <Button
-              onClick={handleClaim}
-              disabled={isClaiming}
-              className="w-full bg-teal-500 hover:bg-teal-600 text-white"
-            >
-              {isClaiming ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Claiming...</span>
-                </div>
-              ) : (
-                "Claim Available Tokens"
-              )}
-            </Button>
-          )}
+          {/* Claim and Retrieve Buttons - Only show if there's something to claim/retrieve */}
+          <div className="space-y-2 mt-4">
+            {Number(totalClaimable) > 0 && (
+              <Button
+                onClick={handleClaim}
+                disabled={isClaiming}
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isClaiming ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Claiming...</span>
+                  </div>
+                ) : (
+                  "Claim Available Tokens"
+                )}
+              </Button>
+            )}
+
+            {Number(retrievableVotes) > 0 && (
+              <Button
+                onClick={handleRetrieveVotes}
+                disabled={isRetrieving}
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isRetrieving ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Retrieving...</span>
+                  </div>
+                ) : (
+                  "Retrieve from votes"
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
