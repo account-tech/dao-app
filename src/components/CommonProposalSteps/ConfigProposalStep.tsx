@@ -10,6 +10,7 @@ import { format, addDays, isBefore, isAfter } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Generic interface for any form data that includes proposal configuration
 interface BaseFormData {
@@ -187,12 +188,64 @@ export function ConfigProposalStep<T extends BaseFormData>({
     updateFormData({ executionDate: newDate } as Partial<T>);
   };
 
-  // Generate time options for select
-  const timeOptions = Array.from({ length: 24 * 4 }, (_, i) => {
-    const hours = Math.floor(i / 4);
-    const minutes = (i % 4) * 15;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  });
+  // Generate time options
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+
+  const TimeSelect = ({ 
+    date, 
+    onTimeChange 
+  }: { 
+    date: Date | null | undefined, 
+    onTimeChange: (time: string) => void 
+  }) => {
+    if (!date) return null;
+
+    const currentHour = date.getHours().toString().padStart(2, '0');
+    const currentMinute = date.getMinutes().toString().padStart(2, '0');
+
+    return (
+      <div className="flex gap-1">
+        <Select
+          value={currentHour}
+          onValueChange={(hour) => onTimeChange(`${hour}:${currentMinute}`)}
+        >
+          <SelectTrigger className="w-[70px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <ScrollArea className="h-[200px]">
+              {hours.map((hour) => (
+                <SelectItem key={hour} value={hour}>
+                  {hour}
+                </SelectItem>
+              ))}
+            </ScrollArea>
+          </SelectContent>
+        </Select>
+
+        <span className="flex items-center">:</span>
+
+        <Select
+          value={currentMinute}
+          onValueChange={(minute) => onTimeChange(`${currentHour}:${minute}`)}
+        >
+          <SelectTrigger className="w-[70px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <ScrollArea className="h-[200px]">
+              {minutes.map((minute) => (
+                <SelectItem key={minute} value={minute}>
+                  {minute}
+                </SelectItem>
+              ))}
+            </ScrollArea>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  };
 
   return (
     <div className="w-full mx-auto">
@@ -249,7 +302,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal h-12",
                       !formData.votingStartDate && "text-muted-foreground"
                     )}
                   >
@@ -267,30 +320,13 @@ export function ConfigProposalStep<T extends BaseFormData>({
                 </PopoverContent>
               </Popover>
 
-              <Select
-                value={formData.votingStartDate ? 
-                  `${formData.votingStartDate.getHours().toString().padStart(2, '0')}:${formData.votingStartDate.getMinutes().toString().padStart(2, '0')}` : 
-                  ""}
-                onValueChange={handleVotingStartTimeChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select time">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      {formData.votingStartDate ? 
-                        `${formData.votingStartDate.getHours().toString().padStart(2, '0')}:${formData.votingStartDate.getMinutes().toString().padStart(2, '0')}` : 
-                        "Select time"}
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 h-12 px-3 border rounded-md">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <TimeSelect
+                  date={formData.votingStartDate} 
+                  onTimeChange={handleVotingStartTimeChange}
+                />
+              </div>
             </div>
           </div>
 
@@ -303,7 +339,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal h-12",
                       !formData.votingEndDate && "text-muted-foreground"
                     )}
                   >
@@ -321,30 +357,13 @@ export function ConfigProposalStep<T extends BaseFormData>({
                 </PopoverContent>
               </Popover>
 
-              <Select
-                value={formData.votingEndDate ? 
-                  `${formData.votingEndDate.getHours().toString().padStart(2, '0')}:${formData.votingEndDate.getMinutes().toString().padStart(2, '0')}` : 
-                  ""}
-                onValueChange={handleVotingEndTimeChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select time">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      {formData.votingEndDate ? 
-                        `${formData.votingEndDate.getHours().toString().padStart(2, '0')}:${formData.votingEndDate.getMinutes().toString().padStart(2, '0')}` : 
-                        "Select time"}
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 h-12 px-3 border rounded-md">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <TimeSelect 
+                  date={formData.votingEndDate} 
+                  onTimeChange={handleVotingEndTimeChange}
+                />
+              </div>
             </div>
           </div>
 
@@ -357,7 +376,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal h-12",
                       !formData.executionDate && "text-muted-foreground"
                     )}
                   >
@@ -375,30 +394,13 @@ export function ConfigProposalStep<T extends BaseFormData>({
                 </PopoverContent>
               </Popover>
 
-              <Select
-                value={formData.executionDate ? 
-                  `${formData.executionDate.getHours().toString().padStart(2, '0')}:${formData.executionDate.getMinutes().toString().padStart(2, '0')}` : 
-                  ""}
-                onValueChange={handleExecutionTimeChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select time">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      {formData.executionDate ? 
-                        `${formData.executionDate.getHours().toString().padStart(2, '0')}:${formData.executionDate.getMinutes().toString().padStart(2, '0')}` : 
-                        "Select time"}
-                    </div>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2 h-12 px-3 border rounded-md">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <TimeSelect 
+                  date={formData.executionDate} 
+                  onTimeChange={handleExecutionTimeChange}
+                />
+              </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
               The proposal will expire {formData.votingEndDate ? format(addDays(formData.votingEndDate, 7), "PPP") : "7 days after voting ends"} if not executed.
