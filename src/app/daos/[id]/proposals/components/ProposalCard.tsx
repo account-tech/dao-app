@@ -2,7 +2,7 @@ import { getIntentDisplay } from "../helpers/types";
 import { IntentStatus } from "@account.tech/dao";
 import { Intent } from "@account.tech/core";
 import { Button } from "@/components/ui/button";
-import { Trash2, ChevronRight, Clock, AlertCircle, Check, Minus, X } from "lucide-react";
+import { Trash2, Clock, Check, Minus, X, Info } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ProposalCardProps {
   intentKey: string;
@@ -66,6 +67,8 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     abstain: "0",
     total: 0
   });
+  const [votingQuorum, setVotingQuorum] = useState<number>(0);
+  const [minimumVotes, setMinimumVotes] = useState<string>("0");
 
   // Get voting information from intent
   const voteOutcome = (intent as any).outcome;
@@ -256,6 +259,8 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
         
         setVotingPower(powerInfo.votingPower);
         setIsQuadratic(powerInfo.isQuadratic);
+        setVotingQuorum(powerInfo.votingQuorum);
+        setMinimumVotes(powerInfo.minimumVotes);
 
       } catch (error) {
         console.error("Error fetching voting power:", error);
@@ -373,6 +378,38 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     }
   };
 
+  // Calculate if proposal meets requirements
+  const getExecutionRequirements = () => {
+    if (status.stage !== 'closed') return null;
+
+    const totalVotesPower = Number(formattedResults.yes) + Number(formattedResults.no);
+    const yesRatio = totalVotesPower > 0 ? Number(formattedResults.yes) / totalVotesPower : 0;
+    const hasMetQuorum = yesRatio >= votingQuorum;
+    const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
+
+    if (!hasMetQuorum || !hasMetMinimumVotes) {
+      return (
+        <div className="space-y-2 max-w-xs">
+          <p className="font-medium mb-2">This proposal cannot be executed because:</p>
+          <ul className="list-disc ml-4 space-y-1">
+            {!hasMetQuorum && (
+              <li>
+                Quorum not met: {(yesRatio * 100).toFixed(0)}% / {(votingQuorum * 100).toFixed(0)}%
+              </li>
+            )}
+            {!hasMetMinimumVotes && (
+              <li>
+                Minimum votes not met: {totalVotesPower.toFixed(2)} / {minimumVotes}
+              </li>
+            )}
+          </ul>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="bg-white rounded-lg border p-6 space-y-4">
       <div className="flex justify-between items-start">
@@ -385,8 +422,24 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             <h3 className="font-medium">{intentKey}</h3>
           </div>
         </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle()}`}>
-          {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
+        <div className="flex items-center gap-2">
+          <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle()}`}>
+            {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
+          </div>
+          {status.stage === 'closed' && getExecutionRequirements() && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help">
+                    <Info className="h-4 w-4 text-gray-400" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {getExecutionRequirements()}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
 

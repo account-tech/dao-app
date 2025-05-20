@@ -14,6 +14,7 @@ interface VotingPowerInfo {
   minimumVotes: string;
   hasAuthPower: boolean;
   isQuadratic: boolean;
+  votingQuorum: number;
 }
 
 export function useDaoClient() {
@@ -241,13 +242,17 @@ export function useDaoClient() {
         ? Math.sqrt(stakedAmount)
         : stakedAmount;
 
+      // Convert voting quorum from [0, 1_000_000_000] to [0, 1]
+      const votingQuorum = Number(dao.votingQuorum) / 1_000_000_000;
+
       return {
         votingPower: votingPower.toFixed(2),
         authVotingPower: formattedAuthVotingPower.toString(),
         maxVotingPower: formattedMaxVotingPower.toString(),
         minimumVotes: formattedMinimumVotes.toString(),
         hasAuthPower: votingPower >= formattedAuthVotingPower,
-        isQuadratic
+        isQuadratic,
+        votingQuorum
       };
     } catch (error) {
       console.error("Error getting voting power info:", error);
@@ -257,7 +262,8 @@ export function useDaoClient() {
         maxVotingPower: "0",
         minimumVotes: "0",
         hasAuthPower: false,
-        isQuadratic: false
+        isQuadratic: false,
+        votingQuorum: 0
       };
     }
   };
