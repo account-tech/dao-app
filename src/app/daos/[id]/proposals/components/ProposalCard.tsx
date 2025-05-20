@@ -505,18 +505,24 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
 
           {/* Voting Progress Bar */}
           <div className="flex h-1.5 sm:h-2 overflow-hidden rounded-full">
-            <div 
-              className="bg-teal-500 mr-0.5 sm:mr-1" 
-              style={{ width: `${yesPercentage}%` }} 
-            />
-            <div 
-              className="bg-gray-300 mr-0.5 sm:mr-1" 
-              style={{ width: `${abstainPercentage}%` }} 
-            />
-            <div 
-              className="bg-red-600" 
-              style={{ width: `${noPercentage}%` }} 
-            />
+            {formattedResults.total === 0 ? (
+              <div className="w-full bg-gray-100/50" />
+            ) : (
+              <>
+                <div 
+                  className="bg-teal-500 mr-0.5 sm:mr-1" 
+                  style={{ width: `${yesPercentage}%` }} 
+                />
+                <div 
+                  className="bg-gray-300 mr-0.5 sm:mr-1" 
+                  style={{ width: `${abstainPercentage}%` }} 
+                />
+                <div 
+                  className="bg-red-600" 
+                  style={{ width: `${noPercentage}%` }} 
+                />
+              </>
+            )}
           </div>
         </>
       )}
