@@ -118,6 +118,16 @@ export function useDaoClient() {
     }
   };
 
+  const getIntent = async (userAddr: string, daoId: string, key: string) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.getIntent(key);
+    } catch (error) {
+      console.error("Error getting intent:", error);
+      throw error;
+    }
+  };
+
   const getDaoMetadata = async (userAddr: string, daoId: string) => {
     try {
       const client = await initClient(userAddr, daoId);
@@ -559,6 +569,7 @@ export function useDaoClient() {
     getAllDaos,
     getDao,
     getIntents,
+    getIntent,
     getDaoMetadata,
     getParticipant,
     getOwnedObjects,
