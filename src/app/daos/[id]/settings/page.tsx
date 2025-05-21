@@ -130,7 +130,13 @@ export default function DaoSettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Section - Basic Information & Social Links */}
-        <BasicInformationSection dao={dao} />
+        <BasicInformationSection 
+          dao={dao} 
+          hasAuthPower={votingPowerInfo.hasAuthPower}
+          authVotingPower={votingPowerInfo.authVotingPower}
+          userAddr={currentAccount.address}
+          daoId={daoId}
+        />
 
         {/* Right Section - DAO Parameters */}
         <div className="bg-white rounded-lg shadow p-6 relative">
