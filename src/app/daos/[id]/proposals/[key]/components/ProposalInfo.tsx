@@ -264,34 +264,12 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
 
   // Calculate execution requirements
   const getExecutionRequirements = () => {
-    if (status.stage !== 'closed') return null;
+    if (status.stage !== 'failed') return null;
 
     const totalVotesPower = Number(formattedResults.yes) + Number(formattedResults.no);
     const yesRatio = totalVotesPower > 0 ? Number(formattedResults.yes) / totalVotesPower : 0;
     const hasMetQuorum = yesRatio >= votingQuorum;
     const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
-
-    // If all conditions are met but waiting for execution time
-    if (hasMetQuorum && hasMetMinimumVotes && executionTime) {
-      const now = new Date();
-      if (now < executionTime) {
-        return (
-          <div className="mt-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
-            <h3 className="text-teal-700 font-medium mb-2">All conditions met!</h3>
-            <p className="text-teal-600 text-sm">
-              This proposal will be executable on: {executionTime.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </p>
-          </div>
-        );
-      }
-      return null;
-    }
 
     // If conditions are not met, show requirements
     if (!hasMetQuorum || !hasMetMinimumVotes) {
@@ -381,7 +359,7 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-      {status.stage === 'open' && (
+      {status.stage === 'active' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Your vote</h2>
@@ -508,8 +486,24 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
         </div>
       )}
 
-      {/* Execution Requirements */}
-      {getExecutionRequirements()}
+      {/* Execution Requirements for Failed Proposals */}
+      {status.stage === 'failed' && getExecutionRequirements()}
+
+      {/* Success State with Execution Time */}
+      {status.stage === 'success' && executionTime && (
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="text-green-700 font-medium mb-2">Proposal Succeeded!</h3>
+          <p className="text-green-600 text-sm">
+            This proposal will be executable on: {executionTime.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
+        </div>
+      )}
 
       {/* Execute Button for Executable Proposals */}
       {status.stage === 'executable' && (
@@ -525,8 +519,8 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
         </div>
       )}
 
-      {/* Delete Button for Closed Proposals */}
-      {status.stage === 'closed' && expirationTime && (
+      {/* Delete Button for Failed/Success Proposals */}
+      {(status.stage === 'failed' || status.stage === 'success') && expirationTime && (
         <div className="mt-6 flex justify-end">
           <TooltipProvider>
             <Tooltip>

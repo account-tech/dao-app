@@ -172,7 +172,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             <span>Starting: {formatDate(startTime)}</span>
           </div>
         );
-      case 'open':
+      case 'active':
         return (
           <div className="text-sm text-gray-500 text-center">
             <TooltipProvider>
@@ -190,7 +190,8 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
             </TooltipProvider>
           </div>
         );
-      case 'closed':
+      case 'failed':
+      case 'success':
       case 'executable':
         return (
           <div className="text-sm text-gray-500">
@@ -339,10 +340,12 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
     switch (status.stage) {
       case 'pending':
         return 'text-yellow-600';
-      case 'open':
+      case 'active':
         return 'text-blue-600';
-      case 'closed':
+      case 'failed':
         return 'text-red-600';
+      case 'success':
+        return 'text-green-600';
       case 'executable':
         return 'text-teal-500';
       default:
@@ -352,26 +355,12 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
 
   // Calculate if proposal meets requirements
   const getExecutionRequirements = () => {
-    if (status.stage !== 'closed') return null;
+    if (status.stage !== 'failed') return null;
 
     const totalVotesPower = Number(formattedResults.yes) + Number(formattedResults.no);
     const yesRatio = totalVotesPower > 0 ? Number(formattedResults.yes) / totalVotesPower : 0;
     const hasMetQuorum = yesRatio >= votingQuorum;
     const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
-
-    // If all conditions are met but waiting for execution time
-    if (hasMetQuorum && hasMetMinimumVotes && executionTime) {
-      const now = new Date();
-      if (now < executionTime) {
-        return (
-          <div className="space-y-2 max-w-xs">
-            <p className="font-medium mb-2">All conditions met!</p>
-            <p>Executable on: {formatDate(executionTime)}</p>
-          </div>
-        );
-      }
-      return null;
-    }
 
     // If conditions are not met, show requirements
     if (!hasMetQuorum || !hasMetMinimumVotes) {
@@ -400,17 +389,10 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
   const getStatusDisplay = () => {
     const baseStatus = status.stage.charAt(0).toUpperCase() + status.stage.slice(1);
     
-    if (status.stage === 'closed') {
-      const totalVotesPower = Number(formattedResults.yes) + Number(formattedResults.no);
-      const yesRatio = totalVotesPower > 0 ? Number(formattedResults.yes) / totalVotesPower : 0;
-      const hasMetQuorum = yesRatio >= votingQuorum;
-      const hasMetMinimumVotes = totalVotesPower >= Number(minimumVotes);
-
-      if (hasMetQuorum && hasMetMinimumVotes && executionTime) {
-        const now = new Date();
-        if (now < executionTime) {
-          return "Awaiting Execution Time";
-        }
+    if (status.stage === 'success' && executionTime) {
+      const now = new Date();
+      if (now < executionTime) {
+        return "Awaiting Execution Time";
       }
     }
 
@@ -436,7 +418,7 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
           <div className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getStatusStyle()}`}>
             {getStatusDisplay()}
           </div>
-          {status.stage === 'closed' && getExecutionRequirements() && (
+          {status.stage === 'failed' && getExecutionRequirements() && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -499,11 +481,15 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
       )}
 
       {/* Timer */}
-      {status.stage !== 'open' && (
+      {status.stage !== 'active' && (
         <div className="text-xs sm:text-sm text-gray-500">
           {status.stage === 'pending' ? (
             <div>
               <span>Starting: {formatDate(startTime)}</span>
+            </div>
+          ) : status.stage === 'success' && executionTime ? (
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4">
+              <span>Execution Time: {formatDate(executionTime)}</span>
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4">
@@ -514,8 +500,8 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
         </div>
       )}
 
-      {/* Voting Buttons and Timer for open proposals */}
-      {status.stage === 'open' && (
+      {/* Voting Buttons and Timer for active proposals */}
+      {status.stage === 'active' && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4" onClick={(e) => e.stopPropagation()}>
           <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex-1">
             <TooltipProvider>
@@ -601,6 +587,25 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
               </Tooltip>
             </TooltipProvider>
           </div>
+        </div>
+      )}
+
+      {/* Success state with execution time */}
+      {status.stage === 'success' && executionTime && (
+        <div className="text-sm text-green-600">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger className="cursor-help">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>Awaiting execution time</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Will be executable on: {formatDate(executionTime)}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
 

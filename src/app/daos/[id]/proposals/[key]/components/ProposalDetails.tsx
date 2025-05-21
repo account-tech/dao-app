@@ -88,10 +88,12 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
     switch (status.stage) {
       case 'pending':
         return 'text-yellow-600 bg-yellow-50';
-      case 'open':
+      case 'active':
         return 'text-blue-600 bg-blue-50';
-      case 'closed':
+      case 'failed':
         return 'text-red-600 bg-red-50';
+      case 'success':
+        return 'text-green-600 bg-green-50';
       case 'executable':
         return 'text-teal-500 bg-teal-50';
       default:
@@ -110,7 +112,7 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
             <span>Starting: {formatDate(startTime)}</span>
           </div>
         );
-      case 'open':
+      case 'active':
         const now = new Date();
         const remainingTime = endTime.getTime() - now.getTime();
         const remainingDays = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
@@ -145,7 +147,38 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
             </Tooltip>
           </TooltipProvider>
         );
-      case 'closed':
+      case 'failed':
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Clock className="h-4 w-4" />
+              <span>Started: {formatDate(startTime)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Clock className="h-4 w-4" />
+              <span>Failed on: {formatDate(endTime)}</span>
+            </div>
+          </div>
+        );
+      case 'success':
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Clock className="h-4 w-4" />
+              <span>Started: {formatDate(startTime)}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <Clock className="h-4 w-4" />
+              <span>Succeeded on: {formatDate(endTime)}</span>
+            </div>
+            {executionTime && (
+              <div className="flex items-center gap-2 text-green-600">
+                <Info className="h-4 w-4" />
+                <span>Will be executable on: {formatDate(executionTime)}</span>
+              </div>
+            )}
+          </div>
+        );
       case 'executable':
         return (
           <div className="space-y-2">
@@ -157,10 +190,10 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
               <Clock className="h-4 w-4" />
               <span>Ended: {formatDate(endTime)}</span>
             </div>
-            {executionTime && status.stage === 'executable' && (
+            {executionTime && (
               <div className="flex items-center gap-2 text-teal-600">
                 <Info className="h-4 w-4" />
-                <span>Executable from: {formatDate(executionTime)}</span>
+                <span>Ready to execute since: {formatDate(executionTime)}</span>
               </div>
             )}
           </div>
