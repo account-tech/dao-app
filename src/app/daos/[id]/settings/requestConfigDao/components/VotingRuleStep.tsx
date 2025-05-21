@@ -57,9 +57,17 @@ export const VotingRuleStep: React.FC<StepProps> = ({ formData, updateFormData }
             "flex items-start space-x-3 p-4 rounded-lg",
             isQuadratic && "bg-gray-50/50"
           )}>
-            <RadioGroupItem value="quadratic" id="quadratic" className="mt-1" />
+            <RadioGroupItem 
+              value="quadratic" 
+              id="quadratic" 
+              className="mt-1" 
+              disabled={true}
+            />
             <div>
-              <Label htmlFor="quadratic" className="font-medium">Quadratic Voting</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="quadratic" className="font-medium">Quadratic Voting</Label>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Coming Soon</span>
+              </div>
               <p className="text-sm text-gray-500">
                 Voting power is the square root of tokens held.
                 If you have 100 tokens, you get 10 votes.
