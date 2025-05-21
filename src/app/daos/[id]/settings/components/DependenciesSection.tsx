@@ -174,28 +174,6 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Dependencies</h2>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1 border-teal-200 text-teal-700 hover:bg-teal-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200"
-                  onClick={() => router.push(`/daos/${daoId}/settings/requestDependencyConfig`)}
-                  disabled={!hasAuthPower}
-                >
-                  <span className="text-lg leading-none">+</span> Add
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!hasAuthPower && (
-              <TooltipContent className="bg-gray-900 text-white">
-                <p>You need at least {authVotingPower.toString()} voting power to add dependencies. Current: {votingPower}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
       </div>
       
       <Tabs defaultValue="core" className="w-full">
@@ -259,28 +237,51 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
                 <h4 className="text-sm font-medium text-gray-900">External Dependencies</h4>
                 <p className="text-xs text-gray-500">Third-party dependencies</p>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button
-                        variant={unverifiedDepsAllowed ? "destructive" : "default"}
-                        size="sm"
-                        onClick={() => router.push(`/daos/${daoId}/settings/requestToggleUnverifiedDeps`)}
-                        className={`${!hasAuthPower ? 'bg-gray-100 text-gray-400' : unverifiedDepsAllowed ? 'bg-red-600 hover:bg-red-700' : 'bg-teal-600 hover:bg-teal-700'}`}
-                        disabled={!hasAuthPower}
-                      >
-                        {unverifiedDepsAllowed ? 'Disable unverified dependencies' : 'Enable unverified dependencies'}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!hasAuthPower && (
+              <div className="flex gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 border-gray-200 text-gray-400 hover:bg-gray-50 cursor-not-allowed"
+                          disabled={true}
+                        >
+                          <span className="text-lg leading-none">+</span> Add
+                          <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-500 text-[10px] px-1 py-0">Coming Soon</Badge>
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
                     <TooltipContent className="bg-gray-900 text-white">
-                      <p>You need at least {authVotingPower.toString()} voting power to manage unverified dependencies. Current: {votingPower}</p>
+                      <p>Adding external dependencies will be available soon</p>
                     </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          variant={unverifiedDepsAllowed ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => router.push(`/daos/${daoId}/settings/requestToggleUnverifiedDeps`)}
+                          className={`${!hasAuthPower ? 'bg-gray-100 text-gray-400' : unverifiedDepsAllowed ? 'bg-red-600 hover:bg-red-700' : 'bg-teal-600 hover:bg-teal-700'}`}
+                          disabled={!hasAuthPower}
+                        >
+                          {unverifiedDepsAllowed ? 'Disable unverified dependencies' : 'Enable unverified dependencies'}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!hasAuthPower && (
+                      <TooltipContent className="bg-gray-900 text-white">
+                        <p>You need at least {authVotingPower.toString()} voting power to manage unverified dependencies. Current: {votingPower}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
             {unverifiedDepsAllowed ? (
               renderDependencyList(externalDeps)
