@@ -13,25 +13,74 @@ interface WalletAssetsProps {
   };
 }
 
+const BasePlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+    <div className="space-y-2">
+      <div className="h-5 w-20 bg-gray-200 rounded"></div>
+      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+    </div>
+    <div className="text-right space-y-2">
+      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+      <div className="h-5 w-20 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const CoinPlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+    <div className="space-y-2">
+      <div className="h-5 w-20 bg-gray-200 rounded"></div>
+      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+    </div>
+    <div className="text-right space-y-2">
+      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+      <div className="h-5 w-20 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const NFTPlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-4">
+    <div className="grid sm:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="w-full">
+          <div className="h-72 w-full bg-gray-200 rounded-lg mb-2"></div>
+          <div className="h-5 w-3/4 bg-gray-200 rounded mb-1"></div>
+          <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const ObjectPlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+    <div className="space-y-2">
+      <div className="h-5 w-48 bg-gray-200 rounded"></div>
+      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
 export function WalletAssets({ ownedData, coinDecimals, tokenPrices }: WalletAssetsProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <Tabs defaultValue="coins" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="coins" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
-            Coins
-          </TabsTrigger>
-          <TabsTrigger value="nfts" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
-            NFTs
-          </TabsTrigger>
-          <TabsTrigger value="objects" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
-            Objects
-          </TabsTrigger>
-        </TabsList>
+    <Tabs defaultValue="coins" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="coins" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
+          Coins
+        </TabsTrigger>
+        <TabsTrigger value="nfts" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
+          NFTs
+        </TabsTrigger>
+        <TabsTrigger value="objects" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
+          Objects
+        </TabsTrigger>
+      </TabsList>
 
-        {/* Coins Tab */}
-        <TabsContent value="coins" className="mt-6 space-y-4">
-          {ownedData?.coins?.map((coin, index) => {
+      {/* Coins Tab */}
+      <TabsContent value="coins" className="mt-6 space-y-4">
+        {ownedData?.coins?.length ? (
+          ownedData.coins.map((coin, index) => {
             const decimals = coinDecimals.get(coin.type) || 9;
             const formattedAmount = formatCoinAmount(coin.totalAmount || BigInt(0), decimals, 4);
             const symbol = coin.type.split("::").pop() || "Unknown";
@@ -55,15 +104,30 @@ export function WalletAssets({ ownedData, coinDecimals, tokenPrices }: WalletAss
                 </div>
               </div>
             );
-          })}
-          {!ownedData?.coins?.length && (
-            <div className="text-center text-gray-500 py-8">No coins found</div>
-          )}
-        </TabsContent>
+          })
+        ) : (
+          <div className="relative">
+            <div className="opacity-30 space-y-4">
+              <CoinPlaceholder />
+              <CoinPlaceholder />
+              <CoinPlaceholder />
+              <CoinPlaceholder />
+              <CoinPlaceholder />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center bg-white px-8 py-5 rounded-xl border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                <p className="text-xl font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No coins yet</p>
+                <p className="text-sm text-gray-600 mt-2">Deposit some coins to your wallet</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </TabsContent>
 
-        {/* NFTs Tab */}
-        <TabsContent value="nfts" className="mt-6 space-y-4">
-          {ownedData?.nfts?.map((nft, index) => (
+      {/* NFTs Tab */}
+      <TabsContent value="nfts" className="mt-6 space-y-4">
+        {ownedData?.nfts?.length ? (
+          ownedData.nfts.map((nft, index) => (
             <div 
               key={index} 
               className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
@@ -71,15 +135,26 @@ export function WalletAssets({ ownedData, coinDecimals, tokenPrices }: WalletAss
               <div className="font-medium truncate">{nft.name}</div>
               <div className="text-sm text-gray-500 truncate">{nft.type.split("::").pop()}</div>
             </div>
-          ))}
-          {!ownedData?.nfts?.length && (
-            <div className="text-center text-gray-500 py-8">No NFTs found</div>
-          )}
-        </TabsContent>
+          ))
+        ) : (
+          <div className="relative">
+            <div className="opacity-30 space-y-4">
+              <NFTPlaceholder />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center bg-white px-8 py-5 rounded-xl border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                <p className="text-xl font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No NFTs yet</p>
+                <p className="text-sm text-gray-600 mt-2">Deposit some NFTs to your wallet</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </TabsContent>
 
-        {/* Objects Tab */}
-        <TabsContent value="objects" className="mt-6 space-y-4">
-          {ownedData?.objects?.map((object, index) => (
+      {/* Objects Tab */}
+      <TabsContent value="objects" className="mt-6 space-y-4">
+        {ownedData?.objects?.length ? (
+          ownedData.objects.map((object, index) => (
             <div 
               key={index} 
               className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
@@ -87,12 +162,25 @@ export function WalletAssets({ ownedData, coinDecimals, tokenPrices }: WalletAss
               <div className="font-medium truncate">{object.type.split("::").pop()}</div>
               <div className="text-sm text-gray-500 truncate">ID: {object.ref.objectId}</div>
             </div>
-          ))}
-          {!ownedData?.objects?.length && (
-            <div className="text-center text-gray-500 py-8">No objects found</div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+          ))
+        ) : (
+          <div className="relative">
+            <div className="opacity-30 space-y-4">
+              <ObjectPlaceholder />
+              <ObjectPlaceholder />
+              <ObjectPlaceholder />
+              <ObjectPlaceholder />
+              <ObjectPlaceholder />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center bg-white px-8 py-5 rounded-xl border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                <p className="text-xl font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No objects yet</p>
+                <p className="text-sm text-gray-600 mt-2">Deposit some objects to your wallet</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
