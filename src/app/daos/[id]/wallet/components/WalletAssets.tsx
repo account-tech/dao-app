@@ -67,13 +67,13 @@ export function WalletAssets({ ownedData, coinDecimals, tokenPrices }: WalletAss
     <Tabs defaultValue="coins" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="coins" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
-          Coins
+          Coins ({ownedData?.coins?.length || 0})
         </TabsTrigger>
         <TabsTrigger value="nfts" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
-          NFTs
+          NFTs ({ownedData?.nfts?.length || 0})
         </TabsTrigger>
         <TabsTrigger value="objects" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700">
-          Objects
+          Objects ({ownedData?.objects?.length || 0})
         </TabsTrigger>
       </TabsList>
 
