@@ -12,8 +12,8 @@ importers:
         specifier: 0.1.21
         version: 0.1.21(typescript@5.8.3)
       '@account.tech/dao':
-        specifier: 0.1.13
-        version: 0.1.13(typescript@5.8.3)
+        specifier: 0.1.14
+        version: 0.1.14(typescript@5.8.3)
       '@mysten/dapp-kit':
         specifier: ^0.16.0
         version: 0.16.4(@tanstack/react-query@5.76.1(react@19.1.0))(@types/react-dom@19.1.5(@types/react@19.1.5))(@types/react@19.1.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)
@@ -158,8 +158,8 @@ packages:
   '@account.tech/core@0.1.21':
     resolution: {integrity: sha512-dwobAfq+xnAm+nYHHQQeEJTe9U6nW504AdL243+fqf1GkYRVx8aSc54nDmEIJINmXGC0JrTQyN7T6ZcIvzTdhw==}
 
-  '@account.tech/dao@0.1.13':
-    resolution: {integrity: sha512-tu1PVZd4ToUPYA1Xq454T1Gbld3EmvjKAe2G6r5GfaNhARHhuk/656v0r9vlCRQAuWY4NcA6QMQP3wNOjZzkgw==}
+  '@account.tech/dao@0.1.14':
+    resolution: {integrity: sha512-OwTvMkh3twGcfv2BvqiYAVQ6nmpJRy5vVWG0+DYFXjM4Y3ogwpPTc5cyGD6rQKlLjDT1853CHl4hhclpTlcJlQ==}
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -2810,7 +2810,7 @@ snapshots:
       - debug
       - typescript
 
-  '@account.tech/dao@0.1.13(typescript@5.8.3)':
+  '@account.tech/dao@0.1.14(typescript@5.8.3)':
     dependencies:
       '@account.tech/core': 0.1.21(typescript@5.8.3)
       '@mysten/sui': 1.30.0(typescript@5.8.3)
