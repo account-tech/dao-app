@@ -4,11 +4,11 @@ export const validateStep = (step: number, formData: DaoFormData): boolean => {
   switch (step) {
     case 0: // SelectTypeOfDaoStep
       // Ensure daoType is 'coin' and coinType is defined and not empty
-      return formData.daoType === 'coin' && !!formData.coinType;
+      return formData.daoType === 'coin' && !!formData.coinType?.trim();
 
     case 1: // BasicInfoStep
-      // Ensure name and description are present
-      return !!formData.name.trim() && !!formData.description.trim();
+      // Ensure name is present
+      return !!formData.name.trim()
 
     case 2: // VotingPowerStep
       // Ensure authVotingPower is greater than 0
@@ -37,9 +37,8 @@ export const validateStep = (step: number, formData: DaoFormData): boolean => {
       return (
         // Basic validation
         !!formData.name.trim() &&
-        !!formData.description.trim() &&
         formData.daoType === 'coin' &&
-        !!formData.coinType &&
+        !!formData.coinType?.trim() &&
         // Voting power validation
         formData.authVotingPower > BigInt(0) &&
         formData.maxVotingPower > BigInt(0) &&

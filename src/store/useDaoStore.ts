@@ -2,73 +2,124 @@ import { create } from 'zustand'
 import { DaoClient } from "@account.tech/dao";
 import { NETWORK_TYPE } from "@/constants/network";
 
+/**
+ * State interface for the DAO store
+ */
 interface DaoState {
-  currentDaoId: string | null;
+  /** Current active DAO client instance */
   client: DaoClient | null;
-  refreshTrigger: number;
-  currentAddress: string | null;
-  setClient: (client: DaoClient) => void;
-  resetClient: () => void;
-  setCurrentAddress: (address: string | null) => void;
-  getOrInitClient: (userAddr: string, daoId?: string) => Promise<DaoClient>;
-  triggerRefresh: () => void;
+  /** Currently connected wallet address */
+  address: string | null;
+  /** Currently selected DAO ID */
+  daoId: string | null;
+  /** Counter to trigger UI refreshes */
+  refreshCounter: number;
+  /** Counter to trigger UI refreshes for proposals page */
+  refreshCounterProposals: number;
 }
 
-export const useDaoStore = create<DaoState>((set, get) => ({
-  currentDaoId: null,
+/**
+ * Actions interface for the DAO store
+ */
+interface DaoActions {
+  /** Initialize or retrieve a DAO client */
+  initClient: (address: string, daoId?: string) => Promise<DaoClient>;
+  /** Reset the store state */
+  reset: () => void;
+  /** Update the connected wallet address */
+  setAddress: (address: string | null) => void;
+  /** Trigger a UI refresh */
+  refresh: () => void;
+  /** Refresh the client data and trigger UI refresh */
+  refreshClient: () => Promise<void>;
+  /** Refresh the proposals page */
+  refreshProposals: () => void;
+}
+
+const initialState: Omit<DaoState, 'refreshCounter' | 'refreshCounterProposals'> = {
   client: null,
-  refreshTrigger: 0,
-  currentAddress: null,
-  setClient: (client) => set({ client }),
-  resetClient: () => {
-    set({ client: null, currentDaoId: null });
-  },
-  setCurrentAddress: (address) => {
-    const currentAddress = get().currentAddress
-    // If address changed, reset the client
-    if (currentAddress !== address) {
-      set({ client: null, currentAddress: address, currentDaoId: null })
-    }
-  },
-  getOrInitClient: async (userAddr: string, daoId?: string) => {
-    const { client, currentAddress, currentDaoId } = get()
+  address: null,
+  daoId: null,
+};
 
-    // If address changed, daoId changed, or no client exists, create new one
-    if (
-      currentAddress !== userAddr || 
-      !client || 
-      (daoId && currentDaoId !== daoId)
-    ) {
-      try {
-        console.log("Creating new client for:", userAddr, "daoId:", daoId);
-        const newClient = await DaoClient.init(NETWORK_TYPE, userAddr, daoId)
+export const useDaoStore = create<DaoState & DaoActions>((set, get) => ({
+  ...initialState,
+  refreshCounter: 0,
+  refreshCounterProposals: 0,
+
+  initClient: async (address: string, daoId?: string) => {
+    const state = get();
+    
+    try {
+      // Case 1: No client exists or address changed - need full initialization
+      if (!state.client || state.address !== address) {
+        console.log("initializing client", address, daoId);
+        const client = await DaoClient.init(NETWORK_TYPE, address, daoId);
         set({ 
-          client: newClient, 
-          currentAddress: userAddr,
-          currentDaoId: daoId || null
-        })
-        return newClient
-      } catch (error) {
-        console.error("Error initializing DaoClient:", error)
-        throw error
+          client,
+          address,
+          daoId: daoId || null
+        });
+        return client;
       }
+      
+      // Case 2: Client exists, same address, but daoId changed - use switchDao
+      if (daoId && state.daoId !== daoId) {
+        console.log("switching dao", daoId);
+        await state.client.switchDao(daoId);
+        set({ daoId });
+      }
+      
+      // Return existing client
+      return state.client;
+    } catch (error) {
+      // Reset state on error but keep refreshCounter
+      const { refreshCounter } = get();
+      set({ ...initialState, refreshCounter });
+      throw error;
     }
+  },
 
-    // If daoId is provided but different from current, switch to it
-    if (daoId && client && client.dao?.id !== daoId) {
+  reset: () => {
+    // Keep the current refreshCounter when resetting
+    const { refreshCounter } = get();
+    set({ ...initialState, refreshCounter });
+  },
+
+  setAddress: (address) => {
+    const { address: currentAddress, refreshCounter } = get();
+    if (currentAddress !== address) {
+      set({ ...initialState, address, refreshCounter });
+    }
+  },
+
+  refresh: () => set(state => ({ 
+    refreshCounter: state.refreshCounter + 1
+  })),
+
+  refreshProposals: async () => {
+    const state = get();
+    if (state.client) {
       try {
-        console.log("Switching client to daoId:", daoId);
-        await client.switchDao(daoId);
-        set({ currentDaoId: daoId });
+        await state.client.refresh();
+        set(state => ({ refreshCounterProposals: state.refreshCounterProposals + 1 })); // refresh proposals page without refreshing the proposal page
       } catch (error) {
-        console.error("Error switching dao:", error);
+        console.error("Error refreshing client:", error);
         throw error;
       }
     }
-
-    return client
   },
-  triggerRefresh: () => {
-    set(state => ({ refreshTrigger: state.refreshTrigger + 1 }));
+
+  refreshClient: async () => {
+    const state = get();
+    if (state.client) {
+      try {
+        await state.client.refresh();
+        set(state => ({ refreshCounter: state.refreshCounter + 1 }));
+      } catch (error) {
+        console.error("Error refreshing client:", error);
+        throw error;
+      }
+    }
   }
-}))
+}));

@@ -6,6 +6,7 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import { getCoinDecimals, formatCoinAmount, getCoinMeta, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
+import { Transaction } from "@mysten/sui/transactions";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,11 @@ import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { useDaoStore } from "@/store/useDaoStore";
 import UserDataSkeleton from "./UserDataSkeleton";
 
+interface StakePosition {
+  daoAddr: string;
+  value: bigint;
+}
+
 interface UnstakingPosition {
   assetType: string;
   daoAddr: string;
@@ -35,11 +41,16 @@ interface UnstakingPosition {
   value: bigint;
 }
 
+interface ClaimPosition {
+  daoAddr: string;
+  value: bigint;
+}
+
 export default function UserData({ daoId }: { daoId: string }) {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
-  const { getParticipant, getDao, stake, unstake, claim } = useDaoClient();
+  const { getParticipant, getDao, stake, unstake, claim, getDaoVotingPowerInfo, getVoteStakeInfo, retrieveVotes } = useDaoClient();
   const [votingPower, setVotingPower] = useState<string>("0");
   const [loading, setLoading] = useState(true);
   const [stakeAmount, setStakeAmount] = useState("");
@@ -54,15 +65,17 @@ export default function UserData({ daoId }: { daoId: string }) {
   const [totalUnstaking, setTotalUnstaking] = useState<string>("0");
   const [unstakingPositions, setUnstakingPositions] = useState<UnstakingPosition[]>([]);
   const [totalClaimable, setTotalClaimable] = useState<string>("0");
-  const resetClient = useDaoStore(state => state.resetClient);
-  const triggerRefresh = useDaoStore(state => state.triggerRefresh);
+  const { refreshClient} = useDaoStore();
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
   const [isClaiming, setIsClaiming] = useState(false);
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
   const [isQuadratic, setIsQuadratic] = useState(false);
   const [authVotingPower, setAuthVotingPower] = useState<string>("0");
   const [maxVotingPower, setMaxVotingPower] = useState<string>("0");
   const [hasAuthPower, setHasAuthPower] = useState(false);
   const [coinSymbol, setCoinSymbol] = useState<string>("");
+  const [lockedInVotes, setLockedInVotes] = useState<string>("0");
+  const [retrievableVotes, setRetrievableVotes] = useState<string>("0");
+  const [isRetrieving, setIsRetrieving] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,50 +109,38 @@ export default function UserData({ daoId }: { daoId: string }) {
         // Calculate total staked amount
         let totalStakedValue = BigInt(0);
         if (participant.staked && Array.isArray(participant.staked)) {
-          totalStakedValue = participant.staked.reduce((acc, stake) => {
+          totalStakedValue = participant.staked.reduce((acc: bigint, stake: StakePosition) => {
             if (stake.daoAddr === daoId) {
-              return acc + BigInt(stake.value);
+              return acc + stake.value;
             }
             return acc;
           }, BigInt(0));
         }
         setTotalStaked(formatCoinAmount(totalStakedValue, fetchedDecimals));
 
-        // Store DAO parameters - direct voting power values
-        setAuthVotingPower(dao.authVotingPower.toString());
-        setMaxVotingPower(dao.maxVotingPower.toString());
+        // Get voting power info and vote stake info in parallel
+        const [votingPowerInfo, voteStakeInfo] = await Promise.all([
+          getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient),
+          getVoteStakeInfo(currentAccount.address, daoId, suiClient)
+        ]);
 
-        // Determine voting rule first
-        const isQuadraticVoting = dao.votingRule === 1;
-        setIsQuadratic(isQuadraticVoting);
+        setVotingPower(votingPowerInfo.votingPower);
+        setAuthVotingPower(votingPowerInfo.authVotingPower);
+        setMaxVotingPower(votingPowerInfo.maxVotingPower);
+        setHasAuthPower(votingPowerInfo.hasAuthPower);
+        setIsQuadratic(votingPowerInfo.isQuadratic);
 
-        // Calculate voting power based on the determined rule
-        let power: string | number;
-        const stakedAmount = Number(formatCoinAmount(totalStakedValue, fetchedDecimals));
-        
-        if (isQuadraticVoting) {
-          // For quadratic voting: sqrt(stakedAmount)
-          power = Math.sqrt(stakedAmount);
-        } else {
-          // For linear voting: just the staked amount
-          power = stakedAmount;
-        }
-        
-        // Format to 2 decimal places
-        const formattedPower = Number(power).toFixed(2);
-        setVotingPower(formattedPower);
-        
-        // Check if user has enough voting power for auth actions
-        setHasAuthPower(Number(formattedPower) >= Number(dao.authVotingPower));
+        setLockedInVotes(voteStakeInfo.lockedInVotes);
+        setRetrievableVotes(voteStakeInfo.retrievableVotes);
 
         // Calculate total unstaking amount and store positions
         let totalUnstakingValue = BigInt(0);
         const currentPositions: UnstakingPosition[] = [];
         
         if (participant.unstaked && Array.isArray(participant.unstaked)) {
-          participant.unstaked.forEach(unstakePos => {
+          participant.unstaked.forEach((unstakePos: UnstakingPosition) => {
             if (unstakePos.daoAddr === daoId) {
-              totalUnstakingValue += BigInt(unstakePos.value);
+              totalUnstakingValue += unstakePos.value;
               currentPositions.push(unstakePos);
             }
           });
@@ -151,9 +152,9 @@ export default function UserData({ daoId }: { daoId: string }) {
         // Calculate total claimable amount
         let totalClaimableValue = BigInt(0);
         if (participant.claimable && Array.isArray(participant.claimable)) {
-          participant.claimable.forEach(claim => {
+          participant.claimable.forEach((claim: ClaimPosition) => {
             if (claim.daoAddr === daoId) {
-              totalClaimableValue += BigInt(claim.value);
+              totalClaimableValue += claim.value;
             }
           });
         }
@@ -169,14 +170,17 @@ export default function UserData({ daoId }: { daoId: string }) {
         setAuthVotingPower("0");
         setMaxVotingPower("0");
         setHasAuthPower(false);
+        setIsQuadratic(false);
         setCoinSymbol("");
+        setLockedInVotes("0");
+        setRetrievableVotes("0");
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [currentAccount?.address, refreshTrigger]);
+  }, [currentAccount?.address, refreshCounter, daoId]);
 
   // Format date to mm/dd/yyyy hour:minutes
   const formatUnstakeDate = (timestamp: bigint | null) => {
@@ -203,14 +207,9 @@ export default function UserData({ daoId }: { daoId: string }) {
 
     try {
       setIsStaking(true);
-      // Convert amount to bigint considering decimals
       const bigintAmount = BigInt(Math.floor(Number(stakeAmount) * Math.pow(10, decimals)));
-      console.log("Bigint amount:", bigintAmount);
-      
-      // Get transaction from stake function
       const tx = await stake(currentAccount.address, bigintAmount);
 
-      // Sign and execute transaction
       const result = await signAndExecute({
         suiClient,
         currentAccount,
@@ -221,12 +220,8 @@ export default function UserData({ daoId }: { daoId: string }) {
       });
 
       handleTxResult(result, toast);
+      refreshClient();
 
-      // Reset client and trigger refresh
-      resetClient();
-      triggerRefresh();
-      
-      // Clear input and close dialog
       setStakeAmount("");
       setStakeDialogOpen(false);
     } catch (error) {
@@ -242,14 +237,9 @@ export default function UserData({ daoId }: { daoId: string }) {
 
     try {
       setIsUnstaking(true);
-      // Convert amount to bigint considering decimals
       const bigintAmount = BigInt(Math.floor(Number(unstakeAmount) * Math.pow(10, decimals)));
-      console.log("Bigint amount to unstake:", bigintAmount);
-      
-      // Get transaction from unstake function
       const tx = await unstake(currentAccount.address, bigintAmount);
 
-      // Sign and execute transaction
       const result = await signAndExecute({
         suiClient,
         currentAccount,
@@ -260,12 +250,8 @@ export default function UserData({ daoId }: { daoId: string }) {
       });
 
       handleTxResult(result, toast);
-
-      // Reset client and trigger refresh
-      resetClient();
-      triggerRefresh();
+      refreshClient();
       
-      // Clear input and close dialog
       setUnstakeAmount("");
       setUnstakeDialogOpen(false);
     } catch (error) {
@@ -281,11 +267,8 @@ export default function UserData({ daoId }: { daoId: string }) {
 
     try {
       setIsClaiming(true);
-      
-      // Get transaction from claim function
       const tx = await claim(currentAccount.address);
 
-      // Sign and execute transaction
       const result = await signAndExecute({
         suiClient,
         currentAccount,
@@ -296,15 +279,39 @@ export default function UserData({ daoId }: { daoId: string }) {
       });
 
       handleTxResult(result, toast);
-
-      // Reset client and trigger refresh
-      resetClient();
-      triggerRefresh();
+      refreshClient();
     } catch (error) {
       console.error("Error claiming tokens:", error);
       toast.error(error instanceof Error ? error.message : "Failed to claim tokens");
     } finally {
       setIsClaiming(false);
+    }
+  };
+
+  const handleRetrieveVotes = async () => {
+    if (!currentAccount?.address) return;
+
+    try {
+      setIsRetrieving(true);
+      const tx = new Transaction();
+      const modifiedTx = await retrieveVotes(currentAccount.address, daoId, tx);
+
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx: modifiedTx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
+      refreshClient();
+    } catch (error) {
+      console.error("Error retrieving votes:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to retrieve votes");
+    } finally {
+      setIsRetrieving(false);
     }
   };
 
@@ -410,6 +417,25 @@ export default function UserData({ daoId }: { daoId: string }) {
                 <span className="text-sm text-gray-500">Available to Claim</span>
                 <span className={`text-lg font-semibold ${Number(totalClaimable) > 0 ? 'text-green-600' : ''}`}>
                   {formatWithSymbol(totalClaimable)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Votes Stats */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Locked in Votes</span>
+                <span className="text-lg font-semibold">{formatWithSymbol(lockedInVotes)}</span>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">Retrievable from Votes</span>
+                <span className={`text-lg font-semibold ${Number(retrievableVotes) > 0 ? 'text-green-600' : ''}`}>
+                  {formatWithSymbol(retrievableVotes)}
                 </span>
               </div>
             </div>
@@ -537,23 +563,29 @@ export default function UserData({ daoId }: { daoId: string }) {
                         <Input
                           id="unstake-amount"
                           type="number"
-                          step="any"
+                          step={`0.${"0".repeat(decimals - 1)}1`}
                           value={unstakeAmount}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value === "" || Number(value) <= Number(totalStaked)) {
+                            // Ensure we don't exceed available amount with decimal precision
+                            const maxAmount = Math.floor(Number(totalStaked) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+                            if (value === "" || Number(value) <= maxAmount) {
                               setUnstakeAmount(value);
                             }
                           }}
                           placeholder="Enter amount"
-                          max={totalStaked}
+                          max={Math.floor(Number(totalStaked) * Math.pow(10, decimals)) / Math.pow(10, decimals)}
                           className="pr-16"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           className="absolute right-0 top-0 h-full px-3 text-xs font-medium text-teal-600 hover:text-teal-700"
-                          onClick={() => setUnstakeAmount(totalStaked)}
+                          onClick={() => {
+                            // Set max amount with proper decimal precision
+                            const maxAmount = Math.floor(Number(totalStaked) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+                            setUnstakeAmount(maxAmount.toString());
+                          }}
                         >
                           MAX
                         </Button>
@@ -578,23 +610,42 @@ export default function UserData({ daoId }: { daoId: string }) {
             </Dialog>
           </div>
 
-          {/* Claim Button - Only show if there's something to claim */}
-          {Number(totalClaimable) > 0 && (
-            <Button
-              onClick={handleClaim}
-              disabled={isClaiming}
-              className="w-full bg-teal-500 hover:bg-teal-600 text-white"
-            >
-              {isClaiming ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Claiming...</span>
-                </div>
-              ) : (
-                "Claim Available Tokens"
-              )}
-            </Button>
-          )}
+          {/* Claim and Retrieve Buttons - Only show if there's something to claim/retrieve */}
+          <div className="space-y-2 mt-4">
+            {Number(totalClaimable) > 0 && (
+              <Button
+                onClick={handleClaim}
+                disabled={isClaiming}
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isClaiming ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Claiming...</span>
+                  </div>
+                ) : (
+                  "Claim Available Tokens"
+                )}
+              </Button>
+            )}
+
+            {Number(retrievableVotes) > 0 && (
+              <Button
+                onClick={handleRetrieveVotes}
+                disabled={isRetrieving}
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isRetrieving ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Retrieving...</span>
+                  </div>
+                ) : (
+                  "Retrieve from votes"
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

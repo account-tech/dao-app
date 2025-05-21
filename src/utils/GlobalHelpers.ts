@@ -314,3 +314,12 @@ export function getSimplifiedAssetType(fullCoinType: string): string {
   return fullCoinType;
 }
 
+/**
+ * Formats a BigInt value to a human-readable string with thousands separators
+ * @param value The BigInt value to format
+ * @returns A formatted string representation of the BigInt
+ */
+export const formatBigInt = (value: BigInt): string => {
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+

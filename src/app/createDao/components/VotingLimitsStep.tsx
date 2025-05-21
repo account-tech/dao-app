@@ -3,18 +3,47 @@ import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
+  const [displayMaxVotingPower, setDisplayMaxVotingPower] = useState("0");
+  const [displayMinimumVotes, setDisplayMinimumVotes] = useState("0");
+
+  useEffect(() => {
+    // When formData changes, update display values
+    if (formData.coinDecimals !== undefined) {
+      const divisor = BigInt(10) ** BigInt(formData.coinDecimals);
+      const maxVotingDisplay = formData.maxVotingPower / divisor;
+      const minVotesDisplay = formData.minimumVotes / divisor;
+      setDisplayMaxVotingPower(maxVotingDisplay.toString());
+      setDisplayMinimumVotes(minVotesDisplay.toString());
+    }
+  }, [formData.maxVotingPower, formData.minimumVotes, formData.coinDecimals]);
+
   const handleMaxVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
-    updateFormData({ maxVotingPower: bigIntValue });
+    const numValue = Math.max(0, parseInt(value) || 0);
+    setDisplayMaxVotingPower(numValue.toString());
+
+    // Convert to actual value with decimals
+    if (formData.coinDecimals !== undefined) {
+      const multiplier = BigInt(10) ** BigInt(formData.coinDecimals);
+      const actualValue = BigInt(numValue) * multiplier;
+      updateFormData({ maxVotingPower: actualValue });
+    }
   };
 
   const handleMinimumVotesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const bigIntValue = BigInt(Math.max(0, parseInt(value) || 0));
-    updateFormData({ minimumVotes: bigIntValue });
+    const numValue = Math.max(0, parseInt(value) || 0);
+    setDisplayMinimumVotes(numValue.toString());
+
+    // Convert to actual value with decimals
+    if (formData.coinDecimals !== undefined) {
+      const multiplier = BigInt(10) ** BigInt(formData.coinDecimals);
+      const actualValue = BigInt(numValue) * multiplier;
+      updateFormData({ minimumVotes: actualValue });
+    }
   };
 
   return (
@@ -26,7 +55,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           type="number"
           min="0"
           placeholder="Enter maximum voting power..."
-          value={formData.maxVotingPower.toString()}
+          value={displayMaxVotingPower}
           onChange={handleMaxVotingPowerChange}
         />
         <Alert>
@@ -49,7 +78,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           type="number"
           min="0"
           placeholder="Enter minimum votes required..."
-          value={formData.minimumVotes.toString()}
+          value={displayMinimumVotes}
           onChange={handleMinimumVotesChange}
         />
         <Alert>

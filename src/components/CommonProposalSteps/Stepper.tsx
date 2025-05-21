@@ -1,9 +1,6 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { validateStep } from '../helpers/validation';
-import { DaoFormData } from "../helpers/types";
-import { toast } from "sonner"
 
 interface Step {
   title: string;
@@ -11,52 +8,39 @@ interface Step {
   component: React.ReactNode;
 }
 
-interface StepperProps {
+interface BaseFormData {
+  proposalName?: string;
+  proposalDescription?: string;
+  executionDate?: Date | null;
+  expirationDate?: Date | null;
+  [key: string]: any; // Allow for additional properties
+}
+
+interface StepperProps<T extends BaseFormData> {
   steps: Step[];
   onComplete: () => void;
   isLoading?: boolean;
   isCompleted?: boolean;
-  formData: DaoFormData;
+  formData: T;
+  validateStep: (step: number, formData: T) => boolean;
 }
 
-const SteppedProgress: React.FC<StepperProps> = ({ 
+const SteppedProgress = <T extends BaseFormData>({ 
   steps, 
   onComplete, 
   isLoading,
   isCompleted,
-  formData 
-}) => {
+  formData,
+  validateStep
+}: StepperProps<T>) => {
   const [currentStep, setCurrentStep] = useState(0);
 
+  const isStepValid = () => {
+    return validateStep(currentStep, formData);
+  };
+
   const handleNext = () => {
-    if (!validateStep(currentStep, formData)) {
-      // Show validation error messages based on the step
-      switch (currentStep) {
-        case 0:
-          toast.error("Please select a type of DAO and its respective coin type.");
-          break;
-        case 1:
-          toast.error("Please provide both a name and description for your DAO.");
-          break;
-        case 2:
-          toast.error("Please set a minimum voting power greater than 0.");
-          break;
-        case 3:
-          // No validation needed for unstaking cooldown
-          break;
-        case 4:
-          toast.error("Please select a voting rule type.");
-          break;
-        case 5:
-          toast.error("Please ensure the voting quorum is between 0 and the maximum voting power.");
-          break;
-        case 6:
-          toast.error("Please ensure maximum voting power is greater than 0 and minimum votes don't exceed it.");
-          break;
-        case 7:
-          toast.error("Please review and ensure all required fields are properly set.");
-          break;
-      }
+    if (!isStepValid()) {
       return;
     }
 
@@ -75,59 +59,61 @@ const SteppedProgress: React.FC<StepperProps> = ({
   const completedSteps = (isLoading || isCompleted) ? steps.length : currentStep;
 
   // Calculate if the next button should be disabled
-  const isNextDisabled = isLoading || !validateStep(currentStep, formData);
+  const isNextDisabled = isLoading || !isStepValid();
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto space-y-8">
       <Steps numSteps={steps.length} stepsComplete={completedSteps} />
       
-      <div className="mt-8 text-center">
-        <h2 className="text-2xl font-bold text-teal-600">{steps[currentStep].title}</h2>
+      <div className="text-center">
+        <h2 className="text-2xl font-bold">{steps[currentStep].title}</h2>
         <p className="text-gray-600 mt-2">{steps[currentStep].description}</p>
       </div>
 
-      <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {steps[currentStep].component}
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="flex justify-end gap-4 mt-6">
-          {currentStep > 0 && (
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={isLoading}
-              className="px-6"
+      <div className="bg-white rounded-lg shadow-lg">
+        <div className="p-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
             >
-              Back
-            </Button>
-          )}
-          <Button
-            onClick={handleNext}
-            disabled={isNextDisabled}
-            className="px-6 bg-teal-500 text-white hover:bg-teal-600"
-          >
-            {(isLoading || isCompleted) && currentStep === steps.length - 1 ? (
-              <div className="flex items-center">
-                <motion.div
-                  className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"
-                />
-                Processing...
-              </div>
-            ) : currentStep === steps.length - 1 ? (
-              "Create DAO"
-            ) : (
-              "Next"
+              {steps[currentStep].component}
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex justify-end gap-4 mt-6">
+            {currentStep > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={isLoading}
+                className="px-6"
+              >
+                Back
+              </Button>
             )}
-          </Button>
+            <Button
+              onClick={handleNext}
+              disabled={isNextDisabled}
+              className="px-6 bg-teal-500 text-white hover:bg-teal-600"
+            >
+              {(isLoading || isCompleted) && currentStep === steps.length - 1 ? (
+                <div className="flex items-center">
+                  <motion.div
+                    className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"
+                  />
+                  Processing...
+                </div>
+              ) : currentStep === steps.length - 1 ? (
+                "Confirm Configuration"
+              ) : (
+                "Next"
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

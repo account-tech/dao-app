@@ -1,0 +1,101 @@
+"use client";
+
+import { useState, useEffect, ReactNode } from "react";
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useDaoClient } from "@/hooks/useDaoClient";
+import { Intent } from "@account.tech/core";
+import { intentHandlers } from "../helpers/intentHandlers";
+import { Loader2 } from "lucide-react";
+
+interface ProposalChangesProps {
+  daoId: string;
+  intentKey: string;
+}
+
+interface Changes {
+  title: string;
+  description: ReactNode;
+}
+
+export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
+  const currentAccount = useCurrentAccount();
+  const { getIntent, getunverifiedDepsAllowedBool } = useDaoClient();
+  const [intent, setIntent] = useState<Intent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [changes, setChanges] = useState<Changes | null>(null);
+  const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!currentAccount?.address) return;
+
+      try {
+        setIsLoading(true);
+        const fetchedIntent = await getIntent(currentAccount.address, daoId, intentKey);
+        setIntent(fetchedIntent);
+
+        // Get the intent type
+        const intentType = (fetchedIntent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
+        
+        // Fetch additional data based on intent type
+        if (intentType === 'ToggleUnverifiedAllowed') {
+          const isAllowed = await getunverifiedDepsAllowedBool(currentAccount.address, daoId);
+          setUnverifiedDepsAllowed(isAllowed);
+        }
+
+        // Find the appropriate handler
+        const handler = intentHandlers[intentType];
+        if (handler) {
+          const result = handler({
+            intent: fetchedIntent,
+            daoId,
+            unverifiedDepsAllowed
+          });
+          setChanges(result);
+        } else {
+          setError(`No handler found for intent type: ${intentType}`);
+        }
+      } catch (error) {
+        console.error("Error fetching intent:", error);
+        setError("Failed to fetch proposal details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [currentAccount?.address, daoId, intentKey, unverifiedDepsAllowed]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="text-red-600 text-sm">{error}</div>
+      </div>
+    );
+  }
+
+  if (!changes) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+      <h2 className="text-lg font-semibold">Proposed Changes</h2>
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-gray-900">{changes.title}</h3>
+        <div className="text-sm text-gray-600">{changes.description}</div>
+      </div>
+    </div>
+  );
+}

@@ -33,7 +33,7 @@ export default function WalletPage() {
 
       try {
         setLoading(true);
-        const data = await getOwnedObjects(currentAccount.address);
+        const data = await getOwnedObjects(currentAccount.address, daoId);
         setOwnedData(data);
 
         if (data.coins && data.coins.length > 0) {

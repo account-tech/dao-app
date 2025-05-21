@@ -80,7 +80,7 @@ export function DaosView() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const refreshTrigger = useDaoStore(state => state.refreshTrigger)
+  const refreshCounter = useDaoStore(state => state.refreshCounter)
 
   const getCardWidth = () => {
     if (isMobile) return "100%"
@@ -120,7 +120,7 @@ export function DaosView() {
     return () => {
       mounted = false;
     };
-  }, [currentAccount?.address, refreshTrigger]);
+  }, [currentAccount?.address, refreshCounter]);
 
   if (!currentAccount?.address) {
     return (

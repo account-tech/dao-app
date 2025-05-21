@@ -11,6 +11,7 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { getMultipleCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
 import { getTokenPrices } from "@/utils/Aftermath";
+import { useDaoStore } from "@/store/useDaoStore";
 
 interface TokenPrices {
   [key: string]: {
@@ -30,6 +31,7 @@ export default function WalletPreview() {
   const [coinDecimals, setCoinDecimals] = useState<Map<string, number>>(new Map());
   const [tokenPrices, setTokenPrices] = useState<TokenPrices>({});
   const suiClient = useSuiClient();
+  const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   useEffect(() => {
     const fetchOwnedObjects = async () => {
@@ -37,7 +39,7 @@ export default function WalletPreview() {
 
       try {
         setLoading(true);
-        const data = await getOwnedObjects(currentAccount.address);
+        const data = await getOwnedObjects(currentAccount.address, daoId);
         setOwnedData(data);
 
         if (data.coins && data.coins.length > 0) {
@@ -63,7 +65,7 @@ export default function WalletPreview() {
     };
 
     fetchOwnedObjects();
-  }, [currentAccount?.address]);
+  }, [currentAccount?.address, daoId, refreshCounter]);
 
   const handleViewWallet = () => {
     router.push(`/daos/${daoId}/wallet`);

@@ -44,11 +44,11 @@ export function SkeletonLoader() {
             <DaoCardSkeleton key={i} className="w-[265px]" />
           ))}
         </div>
-        <Skeleton className="h-10 w-[265px] mt-4 rounded-lg" /> {/* Explore all button */}
+        <Skeleton className="h-10 w-[265px] mt-4 rounded-lg bg-teal-500/20" /> {/* Explore all button */}
       </div>
 
-      {/* Pink Separator */}
-      <div className="hidden md:block w-[4px] bg-pink-200 ml-8" />
+      {/* Teal Separator */}
+      <div className="hidden md:block w-[4px] bg-teal-200 ml-8" />
 
       {/* Main Content Skeleton */}
       <div className="flex-1 px-4 md:px-8 lg:px-12 py-8 pt-24 max-w-full">
@@ -56,7 +56,7 @@ export function SkeletonLoader() {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold px-2 text-center">Manage</h2>
-            <Skeleton className="h-10 w-28" /> {/* New DAO button */}
+            <Skeleton className="h-10 w-28 bg-teal-500/20" /> {/* New DAO button */}
           </div>
 
           <Skeleton className="h-7 w-24 mb-4" /> {/* Your DAOs subtitle */}
