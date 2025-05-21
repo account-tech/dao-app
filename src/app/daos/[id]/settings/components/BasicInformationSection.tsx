@@ -132,20 +132,22 @@ export function BasicInformationSection({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`${!hasAuthPower ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-100'}`}
-                onClick={() => hasAuthPower && setIsEditMode(!isEditMode)}
-                disabled={!hasAuthPower}
-              >
-                <Pencil className={`h-4 w-4 ${isEditMode ? 'text-teal-600' : 'text-gray-400'}`} />
-              </Button>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`${!hasAuthPower ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-100'}`}
+                  onClick={() => hasAuthPower && setIsEditMode(!isEditMode)}
+                  disabled={!hasAuthPower}
+                >
+                  <Pencil className={`h-4 w-4 ${isEditMode ? 'text-teal-600' : 'text-gray-400'}`} />
+                </Button>
+              </div>
             </TooltipTrigger>
             <TooltipContent>
               {hasAuthPower 
                 ? (isEditMode ? 'Disable edit mode' : 'Enable edit mode')
-                : `Need ${authVotingPower} voting power to edit`}
+                : `You need ${authVotingPower} voting power to edit DAO metadata. Stake more tokens to gain editing rights.`}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
