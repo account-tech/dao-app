@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDownToLine, ArrowUpFromLine, Gift, Clock } from "lucide-react";
+import { ArrowUpFromLine, QrCode, Gift, Clock } from "lucide-react";
 
 interface WalletOverviewProps {
   totalValue: string;
@@ -26,9 +26,9 @@ export function WalletOverview({
     },
     {
       label: "Deposit",
-      icon: ArrowDownToLine,
+      icon: QrCode,
       onClick: onDeposit,
-      className: "bg-teal-500 hover:bg-teal-600 text-white"
+      className: "bg-teal-100 hover:bg-teal-200 text-teal-700"
     },
     {
       label: "Airdrop",
@@ -48,7 +48,7 @@ export function WalletOverview({
     <Card className="bg-white shadow-md border border-gray-100">
       <CardContent className="p-6">
         {/* Total Value Display */}
-        <div className="mb-6">
+        <div className="mb-6 text-center">
           <h3 className="text-sm font-medium text-gray-500 mb-1">Total wallet</h3>
           <div className="text-3xl font-bold tracking-tight bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
             ${totalValue}
@@ -65,8 +65,8 @@ export function WalletOverview({
                 onClick={action.onClick}
                 className={`h-20 relative group ${action.className} shadow-sm transition-all duration-200 hover:scale-[1.02]`}
               >
-                <div className="flex flex-col items-center gap-2">
-                  <Icon className="w-5 h-5" />
+                <div className="flex flex-col items-center gap-1.5">
+                  <Icon className="w-12 h-12" />
                   <span className="text-sm font-medium">{action.label}</span>
                 </div>
               </Button>

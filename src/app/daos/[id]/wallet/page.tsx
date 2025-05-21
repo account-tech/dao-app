@@ -9,6 +9,8 @@ import { getMultipleCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers
 import { getTokenPrices } from "@/utils/Aftermath";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WalletOverview } from "./components/WalletOverview";
+import { WalletAssets } from "./components/WalletAssets";
+
 
 interface TokenPrices {
   [key: string]: {
@@ -81,76 +83,34 @@ export default function WalletPage() {
     );
   }
 
+  const calculateTotalValue = () => {
+    return ownedData?.coins?.reduce((total, coin) => {
+      const decimals = coinDecimals.get(coin.type) || 9;
+      const formattedAmount = formatCoinAmount(coin.totalAmount || BigInt(0), decimals, 4);
+      const price = tokenPrices[coin.type]?.price;
+      const displayPrice = price === -1 ? 0 : price || 0;
+      const numericAmount = parseFloat(formattedAmount);
+      return total + (numericAmount * displayPrice);
+    }, 0).toFixed(2) || "0.00";
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Main Content Layout */}
       <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
-        {/* Left Column (Coins & NFTs) */}
+        {/* Left Column (Assets) */}
         <div className="flex-1 order-2 md:order-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Coins Section */}
-            <div className="col-span-full lg:col-span-2">
-              <h2 className="text-xl font-semibold mb-4">Coins</h2>
-              <div className="space-y-4">
-                {ownedData?.coins?.map((coin, index) => {
-                  const decimals = coinDecimals.get(coin.type) || 9;
-                  const formattedAmount = formatCoinAmount(coin.totalAmount || BigInt(0), decimals, 4);
-                  const symbol = coin.type.split("::").pop() || "Unknown";
-                  const price = tokenPrices[coin.type]?.price;
-                  const displayPrice = price === -1 ? 0 : price || 0;
-                  const numericAmount = parseFloat(formattedAmount);
-                  const totalValue = numericAmount * displayPrice;
-
-                  return (
-                    <div key={index} className="bg-white rounded-lg shadow p-4 flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{symbol}</div>
-                        <div className="text-sm text-gray-500">{formattedAmount}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500">$ {displayPrice.toFixed(4)}</div>
-                        <div className="font-medium">$ {totalValue.toFixed(2)}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!ownedData?.coins?.length && (
-                  <div className="text-center text-gray-500 py-8">No coins found</div>
-                )}
-              </div>
-            </div>
-
-            {/* NFTs Section */}
-            <div className="col-span-full lg:col-span-1">
-              <h2 className="text-xl font-semibold mb-4">NFTs</h2>
-              <div className="space-y-4">
-                {ownedData?.nfts?.map((nft, index) => (
-                  <div key={index} className="bg-white rounded-lg shadow p-4">
-                    <div className="font-medium truncate">{nft.name}</div>
-                    <div className="text-sm text-gray-500 truncate">{nft.type.split("::").pop()}</div>
-                  </div>
-                ))}
-                {!ownedData?.nfts?.length && (
-                  <div className="text-center text-gray-500 py-8">No NFTs found</div>
-                )}
-              </div>
-            </div>
-          </div>
+          <WalletAssets
+            ownedData={ownedData}
+            coinDecimals={coinDecimals}
+            tokenPrices={tokenPrices}
+          />
         </div>
 
         {/* Right Column (WalletOverview) */}
         <div className="w-full md:w-[350px] lg:w-[400px] order-1 md:order-2">
           <WalletOverview
-            totalValue={
-              ownedData?.coins?.reduce((total, coin) => {
-                const decimals = coinDecimals.get(coin.type) || 9;
-                const formattedAmount = formatCoinAmount(coin.totalAmount || BigInt(0), decimals, 4);
-                const price = tokenPrices[coin.type]?.price;
-                const displayPrice = price === -1 ? 0 : price || 0;
-                const numericAmount = parseFloat(formattedAmount);
-                return total + (numericAmount * displayPrice);
-              }, 0).toFixed(2) || "0.00"
-            }
+            totalValue={calculateTotalValue()}
             onWithdraw={() => console.log("Withdraw clicked")}
             onDeposit={() => console.log("Deposit clicked")}
             onAirdrop={() => console.log("Airdrop clicked")}
