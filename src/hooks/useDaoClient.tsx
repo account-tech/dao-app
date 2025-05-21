@@ -510,13 +510,25 @@ export function useDaoClient() {
     }
   };
 
-  const modifyName = async (tx: Transaction, userAddr: string, daoId: string, newName: string) => {
+  const modifyMetadata = async (
+    tx: Transaction,
+    userAddr: string,
+    daoId: string,
+    name: string,
+    description: string,
+    image: string,
+    twitter: string,
+    telegram: string,
+    discord: string,
+    github: string,
+    website: string
+  ) => {
     try {
       const client = await initClient(userAddr, daoId);
-      client.modifyName(tx, newName);
+      client.modifyMetadata(tx, name, description, image, twitter, telegram, discord, github, website);
       return tx;
     } catch (error) {
-      console.error("Error modifying name:", error);
+      console.error("Error modifying metadata:", error);
       throw error;
     }
   };
@@ -603,7 +615,7 @@ export function useDaoClient() {
     deleteIntent,
     vote,
     changeVote,
-    modifyName,
+    modifyMetadata,
     updateVerifiedDeps,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
