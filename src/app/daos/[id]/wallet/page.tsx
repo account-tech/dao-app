@@ -97,9 +97,9 @@ export default function WalletPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Main Content Layout */}
-      <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
+      <div className="flex flex-col gap-8 lg:flex-row lg:gap-6 xl:gap-8">
         {/* Left Column (Assets) */}
-        <div className="flex-1 order-2 md:order-1">
+        <div className="flex-1 order-2 lg:order-1">
           <WalletAssets
             ownedData={ownedData}
             coinDecimals={coinDecimals}
@@ -108,7 +108,7 @@ export default function WalletPage() {
         </div>
 
         {/* Right Column (WalletOverview) */}
-        <div className="w-full md:w-[350px] lg:w-[400px] order-1 md:order-2">
+        <div className="w-full lg:w-[350px] xl:w-[400px] order-1 lg:order-2">
           <WalletOverview
             totalValue={calculateTotalValue()}
             onWithdraw={() => console.log("Withdraw clicked")}
