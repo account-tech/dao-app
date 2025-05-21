@@ -7,7 +7,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter } from "lucide-react";
-import { ProposalStatus, getIntentDisplay } from "../helpers/types";
+import { getIntentDisplay } from "../helpers/types";
+import { IntentStatus } from "@account.tech/dao";
+
+type ProposalStatus = 'all' | IntentStatus['stage'] | 'deletable';
 
 interface ProposalFiltersProps {
   status: ProposalStatus;
@@ -37,8 +40,9 @@ export function ProposalFilters({
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="success">Success</SelectItem>
             <SelectItem value="executable">Executable</SelectItem>
             <SelectItem value="deletable">Deletable</SelectItem>
           </SelectContent>
