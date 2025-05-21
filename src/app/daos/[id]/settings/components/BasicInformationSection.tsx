@@ -286,7 +286,7 @@ export function BasicInformationSection({
         {isEditMode && (
           <div className="pt-6 border-t">
             <Button
-              className="w-full"
+              className="w-full bg-teal-600 hover:bg-teal-700"
               disabled={!hasChanges || isLoading}
               onClick={handleSave}
             >
