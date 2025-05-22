@@ -1,5 +1,5 @@
 import { IntentStatus } from "@account.tech/dao";
-import { LucideIcon, Bolt, HelpCircle, ToggleLeft } from "lucide-react";
+import { LucideIcon, Bolt, HelpCircle, ToggleLeft, ArrowUpRight } from "lucide-react";
 
 export interface IntentDisplay {
   title: string;
@@ -24,6 +24,10 @@ export const getIntentDisplay = (intentType: string): IntentDisplay => {
       title: 'Config Dao',
       icon: Bolt
     },
+    'WithdrawAndTransfer': {
+      title: 'Withdraw and Transfer',
+      icon: ArrowUpRight
+    }
   };
 
   return intentMap[intentType] || {

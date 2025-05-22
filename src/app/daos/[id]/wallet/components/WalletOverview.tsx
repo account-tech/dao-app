@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowUpFromLine, QrCode, Gift, Clock } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
 
 interface WalletOverviewProps {
   totalValue: string;
@@ -17,30 +18,40 @@ export function WalletOverview({
   onAirdrop,
   onVest
 }: WalletOverviewProps) {
+  const router = useRouter();
+  const params = useParams();
+  const daoId = params.id as string;
+
   const actions = [
     {
       label: "Withdraw",
       icon: ArrowUpFromLine,
-      onClick: onWithdraw,
-      className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+      onClick: () => router.push(`/daos/${daoId}/wallet/requestWithdrawAndTransfer`),
+      className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200",
+      disabled: false
     },
     {
       label: "Deposit",
       icon: QrCode,
       onClick: onDeposit,
-      className: "bg-teal-100 hover:bg-teal-200 text-teal-700"
+      className: "bg-teal-100 hover:bg-teal-200 text-teal-700",
+      disabled: false
     },
     {
       label: "Airdrop",
       icon: Gift,
       onClick: onAirdrop,
-      className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+      className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
+      disabled: true,
+      comingSoon: true
     },
     {
       label: "Vest",
       icon: Clock,
       onClick: onVest,
-      className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+      className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
+      disabled: true,
+      comingSoon: true
     }
   ];
 
@@ -63,11 +74,15 @@ export function WalletOverview({
               <Button
                 key={action.label}
                 onClick={action.onClick}
-                className={`h-20 relative group ${action.className} shadow-sm transition-all duration-200 hover:scale-[1.02]`}
+                disabled={action.disabled}
+                className={`h-20 relative group ${action.className} shadow-sm transition-all duration-200 ${!action.disabled && 'hover:scale-[1.02]'} ${action.disabled && 'cursor-not-allowed opacity-60'}`}
               >
                 <div className="flex flex-col items-center gap-1.5">
                   <Icon className="w-12 h-12" />
                   <span className="text-sm font-medium">{action.label}</span>
+                  {action.comingSoon && (
+                    <span className="text-[10px] text-gray-500 absolute bottom-2">coming soon</span>
+                  )}
                 </div>
               </Button>
             );

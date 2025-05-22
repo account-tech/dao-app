@@ -212,7 +212,7 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
             <intentDisplay.icon className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="font-medium">{intentDisplay.title}</h2>
+            <h2 className="font-medium">{intentKey}</h2>
             <p className="text-sm text-gray-600">Type: {intentType}</p>
           </div>
         </div>
@@ -220,13 +220,7 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
           {status.stage.charAt(0).toUpperCase() + status.stage.slice(1)}
         </div>
       </div>
-
-      {/* Intent Key */}
-      <div>
-        <p className="text-sm text-gray-600 mb-1">Intent Key</p>
-        <p className="font-mono text-sm break-all bg-gray-50 p-2 rounded">{intentKey}</p>
-      </div>
-
+      
       {/* Creator */}
       <div>
         <p className="text-sm text-gray-600 mb-1">Created by</p>

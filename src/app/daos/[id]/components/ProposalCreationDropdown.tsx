@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useEffect, useState, useRef } from "react";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { Bolt, ToggleLeft } from "lucide-react";
+import { ArrowUpRight, Bolt, ToggleLeft } from "lucide-react";
 
 interface TruncatedTextProps {
   text: string;
@@ -105,6 +105,11 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
       label: "Toggle Unverified Dependencies",
       path: `/daos/${daoId}/settings/requestToggleUnverifiedDeps`,
       icon: ToggleLeft,
+    },
+    {
+      label: "Withdraw and Transfer",
+      path: `/daos/${daoId}/wallet/requestWithdrawAndTransfer`,
+      icon: ArrowUpRight,
     },
   ];
 

@@ -72,8 +72,9 @@ export default function DaoLayout({
   // Check if we're in the requestConfigDao route
   const isConfigPage = pathname.includes('/settings/requestConfigDao');
   const isToggleUnverifiedDepsPage = pathname.includes('/settings/requestToggleUnverifiedDeps');
+  const isWithdrawAndTransferPage = pathname.includes('/wallet/requestWithdrawAndTransfer');
 
-  if (isConfigPage || isToggleUnverifiedDepsPage) {
+  if (isConfigPage || isToggleUnverifiedDepsPage || isWithdrawAndTransferPage) {
     return (
       <div className="min-h-screen">
         {children}
