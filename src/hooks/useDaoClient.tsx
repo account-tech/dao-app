@@ -45,6 +45,12 @@ interface ConfigDaoChanges {
   };
 }
 
+interface WithdrawAmount {
+  amount: string;
+  coinType: string;
+  recipient: string;
+}
+
 export function useDaoClient() {
   const { initClient } = useDaoStore();
 
@@ -452,6 +458,60 @@ export function useDaoClient() {
     }
   };
 
+  const getAmountsFromWithdrawIntent = async (
+    userAddr: string,
+    daoId: string,
+    intentKey: string
+  ): Promise<WithdrawAmount[]> => {
+    try {
+      // Get both the intent and owned objects in parallel
+      const [intent, ownedData] = await Promise.all([
+        getIntent(userAddr, daoId, intentKey),
+        getOwnedObjects(userAddr, daoId)
+      ]);
+
+      if (!intent) {
+        throw new Error("Failed to fetch intent");
+      }
+
+      const transfers = (intent as any).args?.transfers || [];
+      const amounts: WithdrawAmount[] = [];
+
+      // Process each transfer
+      for (const transfer of transfers) {
+        const objectId = transfer.objectId;
+        const recipient = transfer.recipient;
+
+        // Look through coins to find matching object ID
+        for (const coin of ownedData.coins) {
+          for (const instance of coin.instances) {
+            if (instance.ref.objectId === objectId) {
+              // Get coin decimals for proper formatting
+              const simplifiedAssetType = getSimplifiedAssetType(coin.type);
+              const decimals = await getCoinDecimals(simplifiedAssetType, (intent as any).client?.provider);
+              const divisor = BigInt(10) ** BigInt(decimals);
+
+              // Format amount with correct decimals
+              const rawAmount = BigInt(instance.amount);
+              const formattedAmount = (Number(rawAmount) / Number(divisor)).toString();
+
+              amounts.push({
+                amount: formattedAmount,
+                coinType: coin.type,
+                recipient
+              });
+            }
+          }
+        }
+      }
+
+      return amounts;
+    } catch (error) {
+      console.error("Error getting withdraw amounts:", error);
+      return [];
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -740,6 +800,7 @@ export function useDaoClient() {
     getunverifiedDepsAllowedBool,
     getLockedObjects,
     getConfigDaoIntentChanges,
+    getAmountsFromWithdrawIntent,
     // ACTIONS
     authenticate,
     followDao,
