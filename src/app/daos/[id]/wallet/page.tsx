@@ -8,6 +8,10 @@ import { OwnedData } from "@account.tech/core";
 import { getMultipleCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
 import { getTokenPrices } from "@/utils/Aftermath";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WalletOverview } from "./components/WalletOverview";
+import { WalletAssets } from "./components/WalletAssets";
+import { QrCode } from "./components/QrCode";
+
 
 interface TokenPrices {
   [key: string]: {
@@ -26,6 +30,7 @@ export default function WalletPage() {
   const [coinDecimals, setCoinDecimals] = useState<Map<string, number>>(new Map());
   const [tokenPrices, setTokenPrices] = useState<TokenPrices>({});
   const suiClient = useSuiClient();
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
   useEffect(() => {
     const fetchOwnedObjects = async () => {
@@ -80,59 +85,49 @@ export default function WalletPage() {
     );
   }
 
+  const calculateTotalValue = () => {
+    return ownedData?.coins?.reduce((total, coin) => {
+      const decimals = coinDecimals.get(coin.type) || 9;
+      const formattedAmount = formatCoinAmount(coin.totalAmount || BigInt(0), decimals, 4);
+      const price = tokenPrices[coin.type]?.price;
+      const displayPrice = price === -1 ? 0 : price || 0;
+      const numericAmount = parseFloat(formattedAmount);
+      return total + (numericAmount * displayPrice);
+    }, 0).toFixed(2) || "0.00";
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Wallet</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Coins Section */}
-        <div className="col-span-full lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4">Coins</h2>
-          <div className="space-y-4">
-            {ownedData?.coins?.map((coin, index) => {
-              const decimals = coinDecimals.get(coin.type) || 9;
-              const formattedAmount = formatCoinAmount(coin.totalAmount || BigInt(0), decimals, 4);
-              const symbol = coin.type.split("::").pop() || "Unknown";
-              const price = tokenPrices[coin.type]?.price;
-              const displayPrice = price === -1 ? 0 : price || 0;
-              const numericAmount = parseFloat(formattedAmount);
-              const totalValue = numericAmount * displayPrice;
-
-              return (
-                <div key={index} className="bg-white rounded-lg shadow p-4 flex justify-between items-center">
-                  <div>
-                    <div className="font-medium">{symbol}</div>
-                    <div className="text-sm text-gray-500">{formattedAmount}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">$ {displayPrice.toFixed(4)}</div>
-                    <div className="font-medium">$ {totalValue.toFixed(2)}</div>
-                  </div>
-                </div>
-              );
-            })}
-            {!ownedData?.coins?.length && (
-              <div className="text-center text-gray-500 py-8">No coins found</div>
-            )}
-          </div>
+      {/* Main Content Layout */}
+      <div className="flex flex-col gap-8 lg:flex-row lg:gap-6 xl:gap-8">
+        {/* Left Column (Assets) */}
+        <div className="flex-1 order-2 lg:order-1">
+          <WalletAssets
+            ownedData={ownedData}
+            coinDecimals={coinDecimals}
+            tokenPrices={tokenPrices}
+          />
         </div>
 
-        {/* NFTs Section */}
-        <div className="col-span-full lg:col-span-1">
-          <h2 className="text-xl font-semibold mb-4">NFTs</h2>
-          <div className="space-y-4">
-            {ownedData?.nfts?.map((nft, index) => (
-              <div key={index} className="bg-white rounded-lg shadow p-4">
-                <div className="font-medium truncate">{nft.name}</div>
-                <div className="text-sm text-gray-500 truncate">{nft.type.split("::").pop()}</div>
-              </div>
-            ))}
-            {!ownedData?.nfts?.length && (
-              <div className="text-center text-gray-500 py-8">No NFTs found</div>
-            )}
-          </div>
+        {/* Right Column (WalletOverview) */}
+        <div className="w-full lg:w-[350px] xl:w-[400px] order-1 lg:order-2">
+          <WalletOverview
+            totalValue={calculateTotalValue()}
+            onWithdraw={() => console.log("Withdraw clicked")}
+            onDeposit={() => setQrCodeOpen(true)}
+            onAirdrop={() => console.log("Airdrop clicked")}
+            onVest={() => console.log("Vest clicked")}
+          />
         </div>
       </div>
+
+      {currentAccount?.address && (
+        <QrCode
+          open={qrCodeOpen}
+          onOpenChange={setQrCodeOpen}
+          accountId={daoId}
+        />
+      )}
     </div>
   );
 }

@@ -20,6 +20,38 @@ interface TokenPrices {
   };
 }
 
+const CoinPlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+    <div className="space-y-1.5">
+      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+      <div className="h-3 w-20 bg-gray-200 rounded"></div>
+    </div>
+    <div className="text-right space-y-1.5">
+      <div className="h-3 w-12 bg-gray-200 rounded"></div>
+      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const NFTPlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-3">
+    <div className="aspect-square w-full bg-gray-200 rounded-lg mb-2"></div>
+    <div className="space-y-1.5">
+      <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+      <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
+const ObjectPlaceholder = () => (
+  <div className="bg-gray-50 rounded-lg p-3">
+    <div className="space-y-1.5">
+      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+      <div className="h-3 w-24 bg-gray-200 rounded"></div>
+    </div>
+  </div>
+);
+
 export default function WalletPreview() {
   const params = useParams();
   const router = useRouter();
@@ -92,13 +124,22 @@ export default function WalletPreview() {
     <div className="space-y-4">
       <Tabs defaultValue="coins" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="coins">
+          <TabsTrigger 
+            value="coins"
+            className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700"
+          >
             Coins ({ownedData.coins?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="nfts">
+          <TabsTrigger 
+            value="nfts"
+            className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700"
+          >
             NFTs ({ownedData.nfts?.length || 0})
           </TabsTrigger>
-          <TabsTrigger value="objects">
+          <TabsTrigger 
+            value="objects"
+            className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-700"
+          >
             Objects ({ownedData.objects?.length || 0})
           </TabsTrigger>
         </TabsList>
@@ -131,7 +172,17 @@ export default function WalletPreview() {
               );
             })}
             {!ownedData.coins?.length && (
-              <div className="text-center text-gray-500 py-4">No coins found</div>
+              <div className="relative">
+                <div className="opacity-30 space-y-3">
+                  <CoinPlaceholder />
+                  <CoinPlaceholder />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center bg-white px-6 py-3 rounded-lg border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                    <p className="text-sm font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No coins yet</p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </TabsContent>
@@ -157,8 +208,16 @@ export default function WalletPreview() {
               </div>
             ))}
             {!ownedData.nfts?.length && (
-              <div className="col-span-2 text-center text-gray-500 py-4">
-                No NFTs found
+              <div className="col-span-2 relative">
+                <div className="opacity-30 grid grid-cols-2 gap-3">
+                  <NFTPlaceholder />
+                  <NFTPlaceholder />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center bg-white px-6 py-3 rounded-lg border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                    <p className="text-sm font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No NFTs yet</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -177,8 +236,16 @@ export default function WalletPreview() {
               </div>
             ))}
             {!ownedData.objects?.length && (
-              <div className="text-center text-gray-500 py-4">
-                No objects found
+              <div className="relative">
+                <div className="opacity-30 space-y-3">
+                  <ObjectPlaceholder />
+                  <ObjectPlaceholder />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center bg-white px-6 py-3 rounded-lg border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                    <p className="text-sm font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No objects yet</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>

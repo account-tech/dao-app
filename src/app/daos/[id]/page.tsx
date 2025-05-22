@@ -16,6 +16,7 @@ import { ArrowRight } from "lucide-react";
 import { ProposalCard } from "./proposals/components/ProposalCard";
 import { Intent } from "@account.tech/core";
 import { IntentStatus } from "@account.tech/dao";
+import { ProposalCreationDropdown } from "./components/ProposalCreationDropdown";
 
 // Custom hook for height-based media queries
 const useScreenHeight = () => {
@@ -234,7 +235,10 @@ export default function DaoPage() {
       <div className="flex flex-col md:flex-row md:gap-6 lg:gap-8">
         {/* Left Column (Proposals) */}
         <div className="flex-1 order-2 mt-8 md:mt-0 md:order-1">
-          <h2 className="text-xl font-semibold mb-4">Recent Proposals</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Proposals</h2>
+            <ProposalCreationDropdown daoId={daoId} />
+          </div>
           <div className="rounded-lg">
             <div className="space-y-2">
               {recentProposals.length > 0 ? (

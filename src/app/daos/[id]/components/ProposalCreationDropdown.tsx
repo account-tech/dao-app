@@ -1,0 +1,148 @@
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
+import { useDaoClient } from "@/hooks/useDaoClient";
+import { useEffect, useState, useRef } from "react";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
+import { Bolt, ToggleLeft } from "lucide-react";
+
+interface TruncatedTextProps {
+  text: string;
+  className?: string;
+}
+
+function TruncatedText({ text, className = "" }: TruncatedTextProps) {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const checkTruncation = () => {
+      if (textRef.current) {
+        setIsTruncated(
+          textRef.current.scrollWidth > textRef.current.clientWidth
+        );
+      }
+    };
+
+    checkTruncation();
+    window.addEventListener('resize', checkTruncation);
+    return () => window.removeEventListener('resize', checkTruncation);
+  }, [text]);
+
+  if (!isTruncated) {
+    return (
+      <span ref={textRef} className={`truncate ${className}`}>
+        {text}
+      </span>
+    );
+  }
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span ref={textRef} className={`truncate ${className}`}>
+            {text}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="left" className="bg-gray-800 text-white">
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+interface ProposalCreationDropdownProps {
+  daoId: string;
+}
+
+export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProps) {
+  const router = useRouter();
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const { getDaoVotingPowerInfo } = useDaoClient();
+  const [hasAuthPower, setHasAuthPower] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkVotingPower = async () => {
+      if (!currentAccount?.address) return;
+      
+      try {
+        setIsLoading(true);
+        const votingInfo = await getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient);
+        setHasAuthPower(votingInfo.hasAuthPower);
+      } catch (error) {
+        console.error("Error checking voting power:", error);
+        setHasAuthPower(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkVotingPower();
+  }, [currentAccount?.address, daoId]);
+
+  const proposalOptions = [
+    {
+      label: "Configure DAO",
+      path: `/daos/${daoId}/settings/requestConfigDao`,
+      icon: Bolt,
+    },
+    {
+      label: "Toggle Unverified Dependencies",
+      path: `/daos/${daoId}/settings/requestToggleUnverifiedDeps`,
+      icon: ToggleLeft,
+    },
+  ];
+
+  const buttonTooltip = !hasAuthPower 
+    ? "You don't have enough voting power to create proposals"
+    : "Create a new proposal";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
+          disabled={!hasAuthPower || isLoading}
+          title={buttonTooltip}
+        >
+          + New Proposal
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72 p-1">
+        {proposalOptions.map((option) => {
+          const Icon = option.icon;
+          return (
+            <DropdownMenuItem
+              key={option.path}
+              className="flex items-center gap-3 px-3 h-11 cursor-pointer hover:bg-gray-50 rounded-md"
+              onClick={() => router.push(option.path)}
+            >
+              <div className="flex-shrink-0 p-1.5 rounded-md bg-gray-100/80">
+                <Icon className="w-4 h-4 text-gray-600" />
+              </div>
+              <TruncatedText 
+                text={option.label}
+                className="font-medium text-sm text-gray-700"
+              />
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+} 

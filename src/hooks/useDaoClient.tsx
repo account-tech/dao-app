@@ -35,7 +35,7 @@ export function useDaoClient() {
   const createDao = async (
     userAddr: string,
     params: CreateDaoParams
-  ): Promise<TransactionResult> => {
+  ): Promise<void> => {
     try {
       const client = await initClient(userAddr);
       const result = client.createDao(
