@@ -350,6 +350,16 @@ export function useDaoClient() {
     }
   };
 
+  const getLockedObjects = async (userAddr: string, daoId: string): Promise<string[]> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.account.lockedObjects;
+    } catch (error) {
+      console.error("Error getting locked objects:", error);
+      throw error;
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -587,9 +597,38 @@ export function useDaoClient() {
     }
   };
 
+  const requestWithdrawAndTransfer = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coins: {
+      coinType: string;
+      coinAmount: bigint;
+    }[],
+    objectIds: string[],
+    recipient: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return (await client.requestWithdrawAndTransfer(
+        tx,
+        intentArgs,
+        coins,
+        objectIds,
+        recipient
+      )) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and transfer:", error);
+      throw error;
+    }
+  };
+
   return {
+    // CORE
     initDaoClient,
     createDao,
+    // GETTERS
     getUser,
     getUserDaos,
     getAllDaos,
@@ -604,6 +643,11 @@ export function useDaoClient() {
     getUnverifiedDeps,
     getDepsStatus,
     getIntentStatus,
+    getDaoVotingPowerInfo,
+    getVoteStakeInfo,
+    getunverifiedDepsAllowedBool,
+    getLockedObjects,
+    // ACTIONS
     authenticate,
     followDao,
     unfollowDao,
@@ -617,10 +661,9 @@ export function useDaoClient() {
     changeVote,
     modifyMetadata,
     updateVerifiedDeps,
+    // DAO INTENTS
+    requestWithdrawAndTransfer,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
-    getDaoVotingPowerInfo,
-    getVoteStakeInfo,
-    getunverifiedDepsAllowedBool,
   };
 }
