@@ -31,6 +31,11 @@ const Section = ({ title, children, icon }: { title: string, children: React.Rea
   </div>
 );
 
+const truncateAddress = (address: string) => {
+  if (!address) return "Not set";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
 const InfoRow = ({ label, value, isDescription = false }: { 
   label: string, 
   value: any,
@@ -43,7 +48,9 @@ const InfoRow = ({ label, value, isDescription = false }: {
         {value}
       </div>
     ) : (
-      <span className="text-gray-900">{value}</span>
+      <span className="text-gray-900">
+        {label === "Recipient Address" ? truncateAddress(value) : value}
+      </span>
     )}
   </div>
 );
@@ -149,19 +156,19 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
         >
           <InfoRow 
             label="Voting Start"
-            value={formatDate(formData.votingStartDate)}
+            value={formData.votingStartDate ? formatDate(formData.votingStartDate) : "Not set"}
           />
           <InfoRow 
             label="Voting End"
-            value={formatDate(formData.votingEndDate)}
+            value={formData.votingEndDate ? formatDate(formData.votingEndDate) : "Not set"}
           />
           <InfoRow 
             label="Execution Date"
-            value={formatDate(formData.executionDate)}
+            value={formData.executionDate ? formatDate(formData.executionDate) : "Not set"}
           />
           <InfoRow 
             label="Expiration Date"
-            value={formatDate(formData.expirationDate)}
+            value={formData.expirationDate ? formatDate(formData.expirationDate) : "Not set"}
           />
         </Section>
       </div>
@@ -196,9 +203,9 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
                 the DAO's governance process before the assets can be transferred.
               </p>
               <p className="text-sm text-gray-600 mt-2">
-                • Voting period: {formatDate(formData.votingStartDate)} → {formatDate(formData.votingEndDate)}<br />
-                • If approved, executes at: {formatDate(formData.executionDate)}<br />
-                • Expires if not executed by: {formatDate(formData.expirationDate)}
+                • Voting period: {formData.votingStartDate ? formatDate(formData.votingStartDate) : "Not set"} → {formData.votingEndDate ? formatDate(formData.votingEndDate) : "Not set"}<br />
+                • If approved, executes at: {formData.executionDate ? formatDate(formData.executionDate) : "Not set"}<br />
+                • Expires if not executed by: {formData.expirationDate ? formatDate(formData.expirationDate) : "Not set"}
               </p>
             </div>
           </div>
