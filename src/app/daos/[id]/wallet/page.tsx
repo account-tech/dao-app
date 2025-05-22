@@ -10,6 +10,7 @@ import { getTokenPrices } from "@/utils/Aftermath";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WalletOverview } from "./components/WalletOverview";
 import { WalletAssets } from "./components/WalletAssets";
+import { QrCode } from "./components/QrCode";
 
 
 interface TokenPrices {
@@ -29,6 +30,7 @@ export default function WalletPage() {
   const [coinDecimals, setCoinDecimals] = useState<Map<string, number>>(new Map());
   const [tokenPrices, setTokenPrices] = useState<TokenPrices>({});
   const suiClient = useSuiClient();
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
   useEffect(() => {
     const fetchOwnedObjects = async () => {
@@ -112,12 +114,20 @@ export default function WalletPage() {
           <WalletOverview
             totalValue={calculateTotalValue()}
             onWithdraw={() => console.log("Withdraw clicked")}
-            onDeposit={() => console.log("Deposit clicked")}
+            onDeposit={() => setQrCodeOpen(true)}
             onAirdrop={() => console.log("Airdrop clicked")}
             onVest={() => console.log("Vest clicked")}
           />
         </div>
       </div>
+
+      {currentAccount?.address && (
+        <QrCode
+          open={qrCodeOpen}
+          onOpenChange={setQrCodeOpen}
+          accountId={daoId}
+        />
+      )}
     </div>
   );
 }
