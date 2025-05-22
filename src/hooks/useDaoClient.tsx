@@ -408,25 +408,37 @@ export function useDaoClient() {
         throw new Error("Intent args not found");
       }
 
+      // Get coin decimals for proper value formatting
+      const simplifiedAssetType = getSimplifiedAssetType(dao.assetType);
+      const decimals = await getCoinDecimals(simplifiedAssetType, (intent as any).client?.provider);
+      const divisor = BigInt(10) ** BigInt(decimals);
+
+      // Helper function to format values with decimals
+      const formatWithDecimals = (value: string | number | bigint | undefined): string => {
+        if (value === undefined) return "0";
+        const bigIntValue = BigInt(value.toString());
+        return (Number(bigIntValue) / Number(divisor)).toString();
+      };
+
       // Format the requested changes from the intent
       const requested = {
         assetType: args.assetType || "",
-        authVotingPower: args.authVotingPower?.toString() || "0",
-        maxVotingPower: args.maxVotingPower?.toString() || "0",
-        minimumVotes: args.minimumVotes?.toString() || "0",
+        authVotingPower: formatWithDecimals(args.authVotingPower),
+        maxVotingPower: formatWithDecimals(args.maxVotingPower),
+        minimumVotes: formatWithDecimals(args.minimumVotes),
         unstakingCooldown: args.unstakingCooldown?.toString() || "0",
-        votingQuorum: args.votingQuorum?.toString() || "0",
+        votingQuorum: ((Number(args.votingQuorum || 0) / 1_000_000_000)).toString(),
         votingRule: Number(args.votingRule || 0)
       };
 
       // Format the current values from the DAO
       const current = {
         assetType: dao.assetType,
-        authVotingPower: dao.authVotingPower.toString(),
-        maxVotingPower: dao.maxVotingPower.toString(),
-        minimumVotes: dao.minimumVotes.toString(),
+        authVotingPower: formatWithDecimals(dao.authVotingPower),
+        maxVotingPower: formatWithDecimals(dao.maxVotingPower),
+        minimumVotes: formatWithDecimals(dao.minimumVotes),
         unstakingCooldown: dao.unstakingCooldown.toString(),
-        votingQuorum: dao.votingQuorum.toString(),
+        votingQuorum: (Number(dao.votingQuorum) / 1_000_000_000).toString(),
         votingRule: dao.votingRule
       };
 

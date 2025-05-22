@@ -58,29 +58,36 @@ export function handleConfigDao({ configChanges }: IntentHandlerProps): HandlerR
   const { requested, current } = configChanges;
 
   // Helper function to format values for display
-  const formatValue = (value: string | number, isAssetType = false) => {
-    if (typeof value === 'number') return value.toString();
-    if (isAssetType) {
+  const formatValue = (value: string | number, key: keyof typeof requested) => {
+    if (key === 'assetType') {
       // Extract just the coin type from the full asset type string
-      const match = value.match(/::([^:]+)$/);
+      const match = value.toString().match(/::([^:]+)$/);
       return match ? match[1] : value;
     }
-    return value;
+    if (key === 'votingQuorum') {
+      // Convert decimal to percentage
+      return `${(Number(value) * 100).toFixed(0)}%`;
+    }
+    if (key === 'votingRule') {
+      // Convert 0/1 to Linear/Quadratic
+      return Number(value) === 0 ? 'Linear' : 'Quadratic';
+    }
+    return value.toString();
   };
 
   // Helper function to check if a value has changed
   const hasChanged = (key: keyof typeof requested) => {
-    return formatValue(requested[key], key === 'assetType') !== formatValue(current[key], key === 'assetType');
+    if (key === 'votingQuorum') {
+      // Compare actual numbers for quorum
+      return Number(requested[key]) !== Number(current[key]);
+    }
+    return formatValue(requested[key], key) !== formatValue(current[key], key);
   };
 
-  // Create change descriptions
-  const changes = [];
-  
   // Helper function to create a change display
   const createChangeDisplay = (key: keyof typeof requested, label: string) => {
-    const isAssetType = key === 'assetType';
-    const currentValue = formatValue(current[key], isAssetType);
-    const requestedValue = formatValue(requested[key], isAssetType);
+    const currentValue = formatValue(current[key], key);
+    const requestedValue = formatValue(requested[key], key);
 
     if (hasChanged(key)) {
       return (
@@ -107,6 +114,7 @@ export function handleConfigDao({ configChanges }: IntentHandlerProps): HandlerR
   };
 
   // Add displays for each configuration value
+  const changes = [];
   changes.push(createChangeDisplay('assetType', 'Asset Type'));
   changes.push(createChangeDisplay('authVotingPower', 'Auth Voting Power'));
   changes.push(createChangeDisplay('maxVotingPower', 'Max Voting Power'));
