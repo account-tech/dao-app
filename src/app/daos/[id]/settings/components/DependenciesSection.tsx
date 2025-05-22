@@ -41,11 +41,25 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
   const currentAccount = useCurrentAccount();
-  const { getVerifiedDeps, getUnverifiedDeps, getDepsStatus, updateVerifiedDeps } = useDaoClient();
+  const { getVerifiedDeps, getUnverifiedDeps, getDepsStatus, updateVerifiedDeps, getunverifiedDepsAllowedBool } = useDaoClient();
   const { refreshClient } = useDaoStore();
   const suiClient = useSuiClient();
   const signTransaction = useSignTransaction();
 
+  useEffect(() => {
+    const fetchUnverifiedDepsStatus = async () => {
+      if (!currentAccount?.address || !daoId) return;
+      
+      try {
+        const status = await getunverifiedDepsAllowedBool(currentAccount.address, daoId);
+        setUnverifiedDepsAllowed(status);
+      } catch (error) {
+        console.error('Error fetching unverified deps status:', error);
+      }
+    };
+
+    fetchUnverifiedDepsStatus();
+  }, [currentAccount?.address, daoId, refreshCounter]);
 
   const fetchDependencies = async () => {
     if (!currentAccount?.address || !daoId) {

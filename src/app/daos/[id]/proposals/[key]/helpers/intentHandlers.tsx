@@ -42,6 +42,26 @@ const truncateAddress = (address: string) => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
+// Update formatDuration to handle milliseconds
+const formatDuration = (milliseconds: number): string => {
+  if (milliseconds === 0) return '0 seconds';
+
+  // Convert milliseconds to seconds first
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const days = Math.floor(totalSeconds / (24 * 60 * 60));
+  const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts = [];
+  if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+  if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+  if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+  if (seconds > 0) parts.push(`${seconds} second${seconds > 1 ? 's' : ''}`);
+
+  return parts.join(' ');
+};
+
 export function handleToggleUnverifiedAllowed({ unverifiedDepsAllowed }: IntentHandlerProps): HandlerResult {
   return {
     title: "Toggle Unverified Dependencies",
@@ -154,6 +174,10 @@ export function handleConfigDao({ configChanges }: IntentHandlerProps): HandlerR
       // Convert 0/1 to Linear/Quadratic
       return Number(value) === 0 ? 'Linear' : 'Quadratic';
     }
+    if (key === 'unstakingCooldown') {
+      // Convert milliseconds to human readable duration
+      return formatDuration(Number(value));
+    }
     return value.toString();
   };
 
@@ -161,6 +185,10 @@ export function handleConfigDao({ configChanges }: IntentHandlerProps): HandlerR
   const hasChanged = (key: keyof typeof requested) => {
     if (key === 'votingQuorum') {
       // Compare actual numbers for quorum
+      return Number(requested[key]) !== Number(current[key]);
+    }
+    if (key === 'unstakingCooldown') {
+      // Compare actual numbers for cooldown
       return Number(requested[key]) !== Number(current[key]);
     }
     return formatValue(requested[key], key) !== formatValue(current[key], key);
