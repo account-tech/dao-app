@@ -16,6 +16,7 @@ import { validateStep } from '../helpers/validation';
 import { useDaoClient } from '@/hooks/useDaoClient';
 import { signAndExecute, handleTxResult } from '@/utils/tx/Tx';
 import { useDaoStore } from '@/store/useDaoStore';
+import { getCoinDecimals, getSimplifiedAssetType } from '@/utils/GlobalHelpers';
 
 const WithdrawAndTransferView = () => {
   const router = useRouter();
@@ -60,10 +61,10 @@ const WithdrawAndTransferView = () => {
       setIsSubmitting(true);
       const tx = new Transaction();
 
-       // Validate all required dates are set
+      // Validate all required dates are set
       if (!formData.votingStartDate || !formData.votingEndDate || !formData.executionDate) {
-      toast.error("Please set all required dates");
-      return;
+        toast.error("Please set all required dates");
+        return;
       }
 
       // Convert dates to BigInt timestamps
@@ -73,21 +74,24 @@ const WithdrawAndTransferView = () => {
       const expirationTime = BigInt(formData.expirationDate?.getTime() || formData.votingEndDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const intentArgs = {
-        // IntentArgs fields
         key: formData.proposalName,
         description: formData.proposalDescription,
-        executionTimes: [proposalExecutionTime], // When proposal can be executed
-        expirationTime: expirationTime,    // When proposal expires if not executed
-        
-        // VoteIntentArgs fields
-        startTime: startTime,           // When voting starts
-        endTime: votingEndTime     // When voting ends
+        executionTimes: [proposalExecutionTime],
+        expirationTime: expirationTime,
+        startTime: startTime,
+        endTime: votingEndTime
       };
 
-      // Prepare coins array for the request
-      const coins = formData.selectedCoins.map(coin => ({
-        coinType: coin.coinType,
-        coinAmount: BigInt(Math.round(coin.amount * Math.pow(10, 9))) // Convert to base units with 9 decimals
+      // Prepare coins array with correct decimals for each coin type
+      const coins = await Promise.all(formData.selectedCoins.map(async coin => {
+        const simplifiedAssetType = getSimplifiedAssetType(coin.coinType);
+        const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+        const baseUnitAmount = BigInt(Math.round(Number(coin.amount) * Math.pow(10, decimals)));
+        
+        return {
+          coinType: coin.coinType,
+          coinAmount: baseUnitAmount
+        };
       }));
 
       // Get object IDs array

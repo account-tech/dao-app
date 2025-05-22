@@ -14,6 +14,12 @@ const formatDate = (date: Date): string => {
   });
 };
 
+const formatCoinType = (coinType: string) => {
+  if (!coinType) return "Not set";
+  const match = coinType.match(/::([^:]+)$/);
+  return match ? match[1] : coinType;
+};
+
 interface RecapStepProps {
   formData: WithdrawFormData;
   updateFormData: (updates: Partial<WithdrawFormData>) => void;
@@ -49,7 +55,9 @@ const InfoRow = ({ label, value, isDescription = false }: {
       </div>
     ) : (
       <span className="text-gray-900">
-        {label === "Recipient Address" ? truncateAddress(value) : value}
+        {label === "Recipient Address" ? truncateAddress(value) : 
+         label === "Type" ? formatCoinType(value) : 
+         value}
       </span>
     )}
   </div>
