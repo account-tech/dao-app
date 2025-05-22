@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import { CoinMeta } from '@polymedia/suitcase-core';
-import { useDaoStore } from '@/store/useDaoStore';
 import { useDaoClient } from '@/hooks/useDaoClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

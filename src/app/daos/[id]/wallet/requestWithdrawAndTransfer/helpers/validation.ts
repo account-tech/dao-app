@@ -62,7 +62,35 @@ export const validateStep = (step: number, formData: WithdrawFormData): boolean 
       return true;
 
     case 2: // ConfigProposalStep
-      return formData.proposalName.trim().length > 0;
+      // Basic validation
+      if (!formData.proposalName) {
+        return false;
+      }
+
+      // Date validations
+      const now = new Date();
+      
+      // Voting start time must be in the future
+      if (!formData.votingStartDate || formData.votingStartDate < now) {
+        return false;
+      }
+
+      // Voting end time must be after start time
+      if (!formData.votingEndDate || formData.votingEndDate <= formData.votingStartDate) {
+        return false;
+      }
+
+      // Execution time must be after voting end time
+      if (!formData.executionDate || formData.executionDate <= formData.votingEndDate) {
+        return false;
+      }
+
+      // Expiration time is auto-calculated, but let's validate it if it exists
+      if (formData.expirationDate && formData.expirationDate <= formData.executionDate) {
+        return false;
+      }
+
+      return true;
 
     case 3: // ReviewStep
       return (

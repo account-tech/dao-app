@@ -4,7 +4,6 @@ export interface CoinSelection {
     balance: number;
     baseBalance: bigint;
     availableBalance: number;
-    coinObjectId?: string;
 }
 
 export interface ObjectSelection {
@@ -22,8 +21,10 @@ export interface WithdrawFormData {
     recipientAddress: string;
     proposalName: string;
     proposalDescription: string;
-    executionDate?: Date;
-    expirationDate?: Date;
+    votingStartDate: Date;
+    votingEndDate: Date;
+    executionDate: Date;
+    expirationDate: Date;
 }
 
 export interface StepProps {
