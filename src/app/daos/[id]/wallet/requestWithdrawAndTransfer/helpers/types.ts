@@ -1,6 +1,6 @@
 export interface CoinSelection {
     coinType: string;
-    amount: number;
+    amount: number | undefined;
     balance: number;
     baseBalance: bigint;
     availableBalance: number;

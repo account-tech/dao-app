@@ -104,7 +104,7 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
                   />
                   <InfoRow 
                     label="Amount"
-                    value={coin.amount.toString()}
+                    value={coin.amount ? coin.amount.toString() : "Not set"}
                   />
                   <InfoRow 
                     label="Available Balance"

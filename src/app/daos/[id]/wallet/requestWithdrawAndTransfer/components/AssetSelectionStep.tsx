@@ -232,7 +232,7 @@ export function AssetSelectionStep({
       ...selectedCoins, 
       { 
         coinType: firstCoin.type, 
-        amount: 0,
+        amount: undefined,
         balance: Number(firstCoin.totalBalance),
         baseBalance: firstCoin.baseAmount,
         availableBalance: firstCoin.displayBalance
@@ -268,7 +268,9 @@ export function AssetSelectionStep({
       };
     } else if (field === 'amount') {
       // Parse the value to ensure we get a number with correct precision
-      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      const numValue = typeof value === 'string' ? 
+        value === '' ? 0 : parseFloat(value) : // Handle empty string case
+        value;
       const coin = availableCoins.find(c => c.type === newCoins[index].coinType);
       if (coin) {
         // Format the number to match the same precision as getMaxAmount

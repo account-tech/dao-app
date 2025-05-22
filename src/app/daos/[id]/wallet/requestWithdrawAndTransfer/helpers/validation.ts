@@ -20,7 +20,9 @@ export const validateStep = (step: number, formData: WithdrawFormData): boolean 
           coin.coinType && 
           typeof coin.availableBalance === 'number' &&
           coin.availableBalance > 0 &&
-          (typeof coin.amount !== 'number' || coin.amount <= coin.availableBalance)
+          typeof coin.amount === 'number' &&
+          coin.amount > 0 && // Ensure amount is positive
+          coin.amount <= coin.availableBalance
         );
         if (!coinsValid) return false;
       }
@@ -41,11 +43,12 @@ export const validateStep = (step: number, formData: WithdrawFormData): boolean 
         return false;
       }
 
-      // Coin amount validation (if coins selected) - needs refinement
+      // Coin amount validation (if coins selected)
       if (formData.selectedCoins && formData.selectedCoins.length > 0) {
         const coinsValid = formData.selectedCoins.every(coin => {
-          if (typeof coin.amount !== 'number' || coin.amount <= 0) {
-             return false; // Amount must be a positive number
+          // Amount must be a positive number and not zero
+          if (typeof coin.amount !== 'number' || coin.amount === 0 || coin.amount < 0) {
+             return false;
           }
           if (typeof coin.availableBalance !== 'number') {
              return false; // Need balance to compare
