@@ -21,10 +21,10 @@ export interface WithdrawFormData {
     recipientAddress: string;
     proposalName: string;
     proposalDescription: string;
-    votingStartDate: Date;
-    votingEndDate: Date;
-    executionDate: Date;
-    expirationDate: Date;
+    votingStartDate: Date | null;
+    votingEndDate: Date | null;
+    executionDate: Date | null;
+    expirationDate: Date | null;
 }
 
 export interface StepProps {

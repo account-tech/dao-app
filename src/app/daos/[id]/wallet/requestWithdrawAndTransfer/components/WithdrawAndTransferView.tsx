@@ -35,10 +35,10 @@ const WithdrawAndTransferView = () => {
     recipientAddress: '',
     proposalName: '',
     proposalDescription: '',
-    votingStartDate: new Date(),
-    votingEndDate: new Date(Date.now() + (3 * 24 * 60 * 60 * 1000)), // 3 days for voting
-    executionDate: new Date(Date.now() + (4 * 24 * 60 * 60 * 1000)), // 1 day after voting ends
-    expirationDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)) // 7 days total
+    votingStartDate: null,
+    votingEndDate: null,
+    executionDate: null,
+    expirationDate: null,
   });
 
   const updateFormData = (updates: Partial<WithdrawFormData>) => {
@@ -60,11 +60,17 @@ const WithdrawAndTransferView = () => {
       setIsSubmitting(true);
       const tx = new Transaction();
 
+       // Validate all required dates are set
+      if (!formData.votingStartDate || !formData.votingEndDate || !formData.executionDate) {
+      toast.error("Please set all required dates");
+      return;
+      }
+
       // Convert dates to BigInt timestamps
       const startTime = BigInt(formData.votingStartDate.getTime());
       const votingEndTime = BigInt(formData.votingEndDate.getTime());
       const proposalExecutionTime = BigInt(formData.executionDate.getTime());
-      const expirationTime = BigInt(formData.expirationDate.getTime());
+      const expirationTime = BigInt(formData.expirationDate?.getTime() || formData.votingEndDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       const intentArgs = {
         // IntentArgs fields
