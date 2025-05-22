@@ -15,11 +15,40 @@ interface VotingPowerInfo {
   hasAuthPower: boolean;
   isQuadratic: boolean;
   votingQuorum: number;
+  assetType: string;
+  unstakingCooldown: string;
 }
 
 interface VoteStakeInfo {
   lockedInVotes: string;
   retrievableVotes: string;
+}
+
+interface ConfigDaoChanges {
+  requested: {
+    assetType: string;
+    authVotingPower: string;
+    maxVotingPower: string;
+    minimumVotes: string;
+    unstakingCooldown: string;
+    votingQuorum: string;
+    votingRule: number;
+  };
+  current: {
+    assetType: string;
+    authVotingPower: string;
+    maxVotingPower: string;
+    minimumVotes: string;
+    unstakingCooldown: string;
+    votingQuorum: string;
+    votingRule: number;
+  };
+}
+
+interface WithdrawAmount {
+  amount: string;
+  coinType: string;
+  recipient: string;
 }
 
 export function useDaoClient() {
@@ -267,7 +296,9 @@ export function useDaoClient() {
         minimumVotes: formattedMinimumVotes.toString(),
         hasAuthPower: votingPower >= formattedAuthVotingPower,
         isQuadratic,
-        votingQuorum
+        votingQuorum,
+        assetType: dao.assetType,
+        unstakingCooldown: dao.unstakingCooldown.toString()
       };
     } catch (error) {
       console.error("Error getting voting power info:", error);
@@ -278,7 +309,9 @@ export function useDaoClient() {
         minimumVotes: "0",
         hasAuthPower: false,
         isQuadratic: false,
-        votingQuorum: 0
+        votingQuorum: 0,
+        assetType: "",
+        unstakingCooldown: "0"
       };
     }
   };
@@ -357,6 +390,125 @@ export function useDaoClient() {
     } catch (error) {
       console.error("Error getting locked objects:", error);
       throw error;
+    }
+  };
+
+  const getConfigDaoIntentChanges = async (
+    userAddr: string,
+    daoId: string,
+    intentKey: string
+  ): Promise<ConfigDaoChanges | null> => {
+    try {
+      // Get both the intent and current DAO data in parallel
+      const [intent, dao] = await Promise.all([
+        getIntent(userAddr, daoId, intentKey),
+        getDao(userAddr, daoId)
+      ]);
+
+      if (!intent || !dao) {
+        throw new Error("Failed to fetch intent or dao data");
+      }
+
+      const args = (intent as any).args;
+      if (!args) {
+        throw new Error("Intent args not found");
+      }
+
+      // Get coin decimals for proper value formatting
+      const simplifiedAssetType = getSimplifiedAssetType(dao.assetType);
+      const decimals = await getCoinDecimals(simplifiedAssetType, (intent as any).client?.provider);
+      const divisor = BigInt(10) ** BigInt(decimals);
+
+      // Helper function to format values with decimals
+      const formatWithDecimals = (value: string | number | bigint | undefined): string => {
+        if (value === undefined) return "0";
+        const bigIntValue = BigInt(value.toString());
+        return (Number(bigIntValue) / Number(divisor)).toString();
+      };
+
+      // Format the requested changes from the intent
+      const requested = {
+        assetType: args.assetType || "",
+        authVotingPower: formatWithDecimals(args.authVotingPower),
+        maxVotingPower: formatWithDecimals(args.maxVotingPower),
+        minimumVotes: formatWithDecimals(args.minimumVotes),
+        unstakingCooldown: args.unstakingCooldown?.toString() || "0",
+        votingQuorum: ((Number(args.votingQuorum || 0) / 1_000_000_000)).toString(),
+        votingRule: Number(args.votingRule || 0)
+      };
+
+      // Format the current values from the DAO
+      const current = {
+        assetType: dao.assetType,
+        authVotingPower: formatWithDecimals(dao.authVotingPower),
+        maxVotingPower: formatWithDecimals(dao.maxVotingPower),
+        minimumVotes: formatWithDecimals(dao.minimumVotes),
+        unstakingCooldown: dao.unstakingCooldown.toString(),
+        votingQuorum: (Number(dao.votingQuorum) / 1_000_000_000).toString(),
+        votingRule: dao.votingRule
+      };
+
+      return {
+        requested,
+        current
+      };
+    } catch (error) {
+      console.error("Error getting config dao changes:", error);
+      return null;
+    }
+  };
+
+  const getAmountsFromWithdrawIntent = async (
+    userAddr: string,
+    daoId: string,
+    intentKey: string
+  ): Promise<WithdrawAmount[]> => {
+    try {
+      // Get both the intent and owned objects in parallel
+      const [intent, ownedData] = await Promise.all([
+        getIntent(userAddr, daoId, intentKey),
+        getOwnedObjects(userAddr, daoId)
+      ]);
+
+      if (!intent) {
+        throw new Error("Failed to fetch intent");
+      }
+
+      const transfers = (intent as any).args?.transfers || [];
+      const amounts: WithdrawAmount[] = [];
+
+      // Process each transfer
+      for (const transfer of transfers) {
+        const objectId = transfer.objectId;
+        const recipient = transfer.recipient;
+
+        // Look through coins to find matching object ID
+        for (const coin of ownedData.coins) {
+          for (const instance of coin.instances) {
+            if (instance.ref.objectId === objectId) {
+              // Get coin decimals for proper formatting
+              const simplifiedAssetType = getSimplifiedAssetType(coin.type);
+              const decimals = await getCoinDecimals(simplifiedAssetType, (intent as any).client?.provider);
+              const divisor = BigInt(10) ** BigInt(decimals);
+
+              // Format amount with correct decimals
+              const rawAmount = BigInt(instance.amount);
+              const formattedAmount = (Number(rawAmount) / Number(divisor)).toString();
+
+              amounts.push({
+                amount: formattedAmount,
+                coinType: coin.type,
+                recipient
+              });
+            }
+          }
+        }
+      }
+
+      return amounts;
+    } catch (error) {
+      console.error("Error getting withdraw amounts:", error);
+      return [];
     }
   };
 
@@ -647,6 +799,8 @@ export function useDaoClient() {
     getVoteStakeInfo,
     getunverifiedDepsAllowedBool,
     getLockedObjects,
+    getConfigDaoIntentChanges,
+    getAmountsFromWithdrawIntent,
     // ACTIONS
     authenticate,
     followDao,

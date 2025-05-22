@@ -12,6 +12,51 @@ import { ProposalCard } from "./components/ProposalCard";
 import { ProposalFilters } from "./components/ProposalFilters";
 import { ProposalStatus } from "./helpers/types";
 
+const ProposalPlaceholder = () => (
+  <div className="bg-white/50 rounded-lg border border-gray-100 p-4 sm:p-6 space-y-3 sm:space-y-4">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded bg-gray-50">
+          <div className="w-5 h-5 bg-gray-100 rounded" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 w-24 bg-gray-100 rounded" />
+          <div className="h-5 w-48 bg-gray-100 rounded" />
+        </div>
+      </div>
+      <div className="flex items-center gap-0">
+        <div className="px-3 py-1 rounded-full bg-gray-100 w-20" />
+      </div>
+    </div>
+
+    <div className="flex flex-wrap gap-3 sm:gap-5">
+      <div className="flex items-center gap-1">
+        <div className="w-4 h-4 bg-gray-100 rounded" />
+        <div className="w-16 h-4 bg-gray-100 rounded" />
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-4 h-4 bg-gray-100 rounded" />
+        <div className="w-16 h-4 bg-gray-100 rounded" />
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-4 h-4 bg-gray-100 rounded" />
+        <div className="w-16 h-4 bg-gray-100 rounded" />
+      </div>
+    </div>
+
+    <div className="flex h-1.5 sm:h-2 overflow-hidden rounded-full bg-gray-50">
+      <div className="bg-gray-100 w-1/2" />
+    </div>
+
+    <div className="text-xs sm:text-sm text-gray-500">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-4">
+        <div className="w-32 h-4 bg-gray-100 rounded" />
+        <div className="w-32 h-4 bg-gray-100 rounded" />
+      </div>
+    </div>
+  </div>
+);
+
 export default function ProposalsPage() {
   const currentAccount = useCurrentAccount();
   const params = useParams();
@@ -103,6 +148,11 @@ export default function ProposalsPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Proposals</h1>
         </div>
+        <div className="space-y-6">
+          <ProposalPlaceholder />
+          <ProposalPlaceholder />
+          <ProposalPlaceholder />
+        </div>
       </div>
     );
   }
@@ -122,8 +172,18 @@ export default function ProposalsPage() {
 
       <div className="space-y-6">
         {intents && filteredIntents.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No proposals found
+          <div className="relative">
+            <div className="opacity-30 space-y-6">
+              <ProposalPlaceholder />
+              <ProposalPlaceholder />
+              <ProposalPlaceholder />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center bg-white px-8 py-5 rounded-xl border border-gray-200/50 shadow-sm backdrop-blur-sm">
+                <p className="text-xl font-semibold bg-gradient-to-r from-teal-500 to-teal-700 bg-clip-text text-transparent">No proposals yet</p>
+                <p className="text-sm text-gray-600 mt-2">Be the first to create a proposal for this DAO</p>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">

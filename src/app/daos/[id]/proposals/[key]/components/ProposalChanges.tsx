@@ -19,12 +19,14 @@ interface Changes {
 
 export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const currentAccount = useCurrentAccount();
-  const { getIntent, getunverifiedDepsAllowedBool } = useDaoClient();
+  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAmountsFromWithdrawIntent } = useDaoClient();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [changes, setChanges] = useState<Changes | null>(null);
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState<boolean | undefined>(undefined);
+  const [configChanges, setConfigChanges] = useState<any>(null);
+  const [withdrawAmounts, setWithdrawAmounts] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,25 +34,43 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
 
       try {
         setIsLoading(true);
+        setError(null);
+
+        // First fetch the intent
         const fetchedIntent = await getIntent(currentAccount.address, daoId, intentKey);
         setIntent(fetchedIntent);
 
-        // Get the intent type
-        const intentType = (fetchedIntent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
-        
-        // Fetch additional data based on intent type
-        if (intentType === 'ToggleUnverifiedAllowed') {
-          const isAllowed = await getunverifiedDepsAllowedBool(currentAccount.address, daoId);
-          setUnverifiedDepsAllowed(isAllowed);
+        if (!fetchedIntent) {
+          throw new Error("Failed to fetch intent");
         }
 
-        // Find the appropriate handler
+        // Get the intent type
+        const intentType = (fetchedIntent as any).fields?.type_?.split('::').pop()?.replace('Intent', '') || 'Unknown';
+
+        // Fetch additional data based on intent type
+        let additionalData = {};
+        
+        if (intentType === 'ToggleUnverifiedAllowed') {
+          const isAllowed = await getunverifiedDepsAllowedBool(currentAccount.address, daoId);
+          additionalData = { unverifiedDepsAllowed: isAllowed };
+          setUnverifiedDepsAllowed(isAllowed);
+        } else if (intentType === 'ConfigDao') {
+          const configChangesData = await getConfigDaoIntentChanges(currentAccount.address, daoId, intentKey);
+          additionalData = { configChanges: configChangesData };
+          setConfigChanges(configChangesData);
+        } else if (intentType === 'WithdrawAndTransfer') {
+          const amounts = await getAmountsFromWithdrawIntent(currentAccount.address, daoId, intentKey);
+          additionalData = { withdrawAmounts: amounts };
+          setWithdrawAmounts(amounts);
+        }
+
+        // Find and call the appropriate handler with all data
         const handler = intentHandlers[intentType];
         if (handler) {
           const result = handler({
             intent: fetchedIntent,
             daoId,
-            unverifiedDepsAllowed
+            ...additionalData
           });
           setChanges(result);
         } else {
@@ -65,7 +85,7 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
     };
 
     fetchData();
-  }, [currentAccount?.address, daoId, intentKey, unverifiedDepsAllowed]);
+  }, [currentAccount?.address, daoId, intentKey]);
 
   if (isLoading) {
     return (
