@@ -15,11 +15,34 @@ interface VotingPowerInfo {
   hasAuthPower: boolean;
   isQuadratic: boolean;
   votingQuorum: number;
+  assetType: string;
+  unstakingCooldown: string;
 }
 
 interface VoteStakeInfo {
   lockedInVotes: string;
   retrievableVotes: string;
+}
+
+interface ConfigDaoChanges {
+  requested: {
+    assetType: string;
+    authVotingPower: string;
+    maxVotingPower: string;
+    minimumVotes: string;
+    unstakingCooldown: string;
+    votingQuorum: string;
+    votingRule: number;
+  };
+  current: {
+    assetType: string;
+    authVotingPower: string;
+    maxVotingPower: string;
+    minimumVotes: string;
+    unstakingCooldown: string;
+    votingQuorum: string;
+    votingRule: number;
+  };
 }
 
 export function useDaoClient() {
@@ -267,7 +290,9 @@ export function useDaoClient() {
         minimumVotes: formattedMinimumVotes.toString(),
         hasAuthPower: votingPower >= formattedAuthVotingPower,
         isQuadratic,
-        votingQuorum
+        votingQuorum,
+        assetType: dao.assetType,
+        unstakingCooldown: dao.unstakingCooldown.toString()
       };
     } catch (error) {
       console.error("Error getting voting power info:", error);
@@ -278,7 +303,9 @@ export function useDaoClient() {
         minimumVotes: "0",
         hasAuthPower: false,
         isQuadratic: false,
-        votingQuorum: 0
+        votingQuorum: 0,
+        assetType: "",
+        unstakingCooldown: "0"
       };
     }
   };
@@ -357,6 +384,59 @@ export function useDaoClient() {
     } catch (error) {
       console.error("Error getting locked objects:", error);
       throw error;
+    }
+  };
+
+  const getConfigDaoIntentChanges = async (
+    userAddr: string,
+    daoId: string,
+    intentKey: string
+  ): Promise<ConfigDaoChanges | null> => {
+    try {
+      // Get both the intent and current DAO data in parallel
+      const [intent, dao] = await Promise.all([
+        getIntent(userAddr, daoId, intentKey),
+        getDao(userAddr, daoId)
+      ]);
+
+      if (!intent || !dao) {
+        throw new Error("Failed to fetch intent or dao data");
+      }
+
+      const args = (intent as any).args;
+      if (!args) {
+        throw new Error("Intent args not found");
+      }
+
+      // Format the requested changes from the intent
+      const requested = {
+        assetType: args.assetType || "",
+        authVotingPower: args.authVotingPower?.toString() || "0",
+        maxVotingPower: args.maxVotingPower?.toString() || "0",
+        minimumVotes: args.minimumVotes?.toString() || "0",
+        unstakingCooldown: args.unstakingCooldown?.toString() || "0",
+        votingQuorum: args.votingQuorum?.toString() || "0",
+        votingRule: Number(args.votingRule || 0)
+      };
+
+      // Format the current values from the DAO
+      const current = {
+        assetType: dao.assetType,
+        authVotingPower: dao.authVotingPower.toString(),
+        maxVotingPower: dao.maxVotingPower.toString(),
+        minimumVotes: dao.minimumVotes.toString(),
+        unstakingCooldown: dao.unstakingCooldown.toString(),
+        votingQuorum: dao.votingQuorum.toString(),
+        votingRule: dao.votingRule
+      };
+
+      return {
+        requested,
+        current
+      };
+    } catch (error) {
+      console.error("Error getting config dao changes:", error);
+      return null;
     }
   };
 
@@ -647,6 +727,7 @@ export function useDaoClient() {
     getVoteStakeInfo,
     getunverifiedDepsAllowedBool,
     getLockedObjects,
+    getConfigDaoIntentChanges,
     // ACTIONS
     authenticate,
     followDao,
