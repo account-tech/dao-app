@@ -71,6 +71,10 @@ export default function VaultsPreview() {
     router.push(`/daos/${daoId}/vaults`);
   };
 
+  const handleVaultClick = (vaultName: string) => {
+    router.push(`/daos/${daoId}/vaults/${vaultName}`);
+  };
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -84,7 +88,11 @@ export default function VaultsPreview() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {vaults.slice(0, 2).map((vault) => (
-          <div key={vault.id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+          <div 
+            key={vault.id} 
+            className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer"
+            onClick={() => handleVaultClick(vault.name)}
+          >
             {/* Vault Icon */}
             <div className="flex justify-center mb-4">
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
