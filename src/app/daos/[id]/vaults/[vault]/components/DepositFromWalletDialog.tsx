@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCurrentAccount, useSuiClient, useSignTransaction } from '@mysten/dapp-kit';
 import { Transaction } from "@mysten/sui/transactions";
 import { useDaoClient } from "@/hooks/useDaoClient";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { useParams } from 'next/navigation';
 import { useDaoStore } from '@/store/useDaoStore';
-import { getMultipleCoinDecimals } from "@/utils/GlobalHelpers";
+import { formatCoinAmount, getMultipleCoinDecimals } from "@/utils/GlobalHelpers";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +23,18 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMediaQuery } from "react-responsive";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface DepositFromWalletDialogProps {
   open: boolean;
@@ -35,9 +42,11 @@ interface DepositFromWalletDialogProps {
   vaultName: string;
 }
 
-interface CoinDeposit {
+interface WalletCoin {
   type: string;
-  amount: string;
+  balance: bigint;
+  totalBalance: string;
+  symbol: string;
 }
 
 export function DepositFromWalletDialog({ 
@@ -45,8 +54,11 @@ export function DepositFromWalletDialog({
   onOpenChange, 
   vaultName, 
 }: DepositFromWalletDialogProps) {
-  const [coins, setCoins] = useState<CoinDeposit[]>([{ type: '', amount: '' }]);
+  const [selectedCoinType, setSelectedCoinType] = useState<string>('');
+  const [amount, setAmount] = useState<string>('');
+  const [walletCoins, setWalletCoins] = useState<WalletCoin[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingCoins, setFetchingCoins] = useState(false);
   
   const currentAccount = useCurrentAccount();   
   const suiClient = useSuiClient();
@@ -58,20 +70,57 @@ export function DepositFromWalletDialog({
   
   const isMobile = useMediaQuery({ maxWidth: 640 });
 
-  const handleAddCoin = () => {
-    setCoins([...coins, { type: '', amount: '' }]);
+  useEffect(() => {
+    const fetchWalletCoins = async () => {
+      if (!currentAccount || !open) return;
+      
+      try {
+        setFetchingCoins(true);
+        const allCoins = await suiClient.getAllBalances({
+          owner: currentAccount.address
+        });
+
+        // Get coin decimals using our optimized helper
+        const coinTypes = allCoins.map(coin => coin.coinType);
+        const decimalsMap = await getMultipleCoinDecimals(coinTypes, suiClient);
+        
+        const groupedCoins = allCoins.map(coin => {
+          const decimals = decimalsMap.get(coin.coinType) ?? 9;
+          const formattedAmount = formatCoinAmount(coin.totalBalance, decimals);
+          
+          return {
+            type: coin.coinType,
+            balance: BigInt(coin.totalBalance),
+            totalBalance: formattedAmount,
+            symbol: coin.coinType.split('::').pop() || 'Unknown'
+          };
+        });
+
+        setWalletCoins(groupedCoins);
+      } catch (error) {
+        console.error('Error fetching wallet coins:', error);
+        toast.error("Failed to fetch wallet coins");
+      } finally {
+        setFetchingCoins(false);
+      }
+    };
+
+    fetchWalletCoins();
+  }, [currentAccount, suiClient, open]);
+
+  const getMaxAmount = () => {
+    const coin = walletCoins.find(c => c.type === selectedCoinType);
+    return coin?.totalBalance || '0';
   };
 
-  const handleRemoveCoin = (index: number) => {
-    if (coins.length > 1) {
-      setCoins(coins.filter((_, i) => i !== index));
-    }
+  const getCoinBalance = () => {
+    const coin = walletCoins.find(c => c.type === selectedCoinType);
+    if (!coin) return null;
+    return `Balance: ${coin.totalBalance}`;
   };
 
-  const handleCoinChange = (index: number, field: keyof CoinDeposit, value: string) => {
-    const updatedCoins = [...coins];
-    updatedCoins[index][field] = value;
-    setCoins(updatedCoins);
+  const handleMaxClick = () => {
+    setAmount(getMaxAmount());
   };
 
   const handleDeposit = async () => {
@@ -81,9 +130,8 @@ export function DepositFromWalletDialog({
     }
 
     // Validate inputs
-    const validCoins = coins.filter(coin => coin.type && coin.amount && parseFloat(coin.amount) > 0);
-    if (validCoins.length === 0) {
-      toast.error("Please add at least one valid coin deposit");
+    if (!selectedCoinType || !amount || parseFloat(amount) <= 0) {
+      toast.error("Please select a coin and enter a valid amount");
       return;
     }
 
@@ -91,154 +139,149 @@ export function DepositFromWalletDialog({
     setLoading(true);
 
     try {
-      // Get coin decimals for all coins at once
-      const coinTypes = validCoins.map(coin => coin.type);
-      const decimalsMap = await getMultipleCoinDecimals(coinTypes, suiClient);
+      console.log('Processing deposit request:', {
+        coinType: selectedCoinType,
+        requestedAmount: amount
+      });
 
-      // Process each coin deposit
-      for (const coin of validCoins) {
-        console.log('Processing deposit request:', {
-          coinType: coin.type,
-          requestedAmount: coin.amount,
-          vaultName
-        });
+      // Get all coins of the specified type from the wallet first
+      const walletCoins = await suiClient.getCoins({
+        owner: currentAccount.address,
+        coinType: selectedCoinType
+      });
 
-        // Get all coins of the specified type from the wallet
-        const walletCoins = await suiClient.getCoins({
+      console.log('Available coins:', walletCoins.data);
+      
+      const decimalsMap = await getMultipleCoinDecimals([selectedCoinType], suiClient);
+      const decimals = decimalsMap.get(selectedCoinType) ?? 9;
+      const amountInBaseUnits = BigInt(Math.floor(parseFloat(amount) * Math.pow(10, decimals)));
+      
+      // Calculate total available balance
+      const totalBalance = walletCoins.data.reduce((acc, coin) => acc + BigInt(coin.balance), BigInt(0));
+      
+      console.log('Deposit details:', {
+        requestedAmount: amountInBaseUnits.toString(),
+        totalAvailable: totalBalance.toString(),
+        numberOfCoins: walletCoins.data.length
+      });
+
+      // Check if we have enough balance
+      if (totalBalance < amountInBaseUnits) {
+        throw new Error(`Insufficient balance. Required: ${amountInBaseUnits}, Available: ${totalBalance}`);
+      }
+
+      // Sort coins by balance in descending order
+      const sortedCoins = [...walletCoins.data].sort((a, b) => 
+        Number(BigInt(b.balance) - BigInt(a.balance))
+      );
+
+      // Create transaction
+      const tx = new Transaction();
+      tx.setGasBudget(50000000);
+      tx.setSender(currentAccount.address);
+
+      // Handle gas payment differently for non-SUI coins
+      const isSuiCoin = selectedCoinType === SUI_TYPE;
+      if (!isSuiCoin) {
+        // Get SUI coins for gas payment
+        const suiCoins = await suiClient.getCoins({
           owner: currentAccount.address,
-          coinType: coin.type
+          coinType: SUI_TYPE
         });
 
-        console.log('Available coins:', walletCoins.data);
-        
-        const decimals = decimalsMap.get(coin.type) ?? 9;
-        const amountInBaseUnits = BigInt(Math.floor(parseFloat(coin.amount) * Math.pow(10, decimals)));
-        
-        // Calculate total available balance
-        const totalBalance = walletCoins.data.reduce((acc, coin) => acc + BigInt(coin.balance), BigInt(0));
-        
-        console.log('Deposit details:', {
-          requestedAmount: amountInBaseUnits.toString(),
-          totalAvailable: totalBalance.toString(),
-          numberOfCoins: walletCoins.data.length
-        });
-
-        // Check if we have enough balance
-        if (totalBalance < amountInBaseUnits) {
-          throw new Error(`Insufficient balance for ${coin.type}. Required: ${amountInBaseUnits}, Available: ${totalBalance}`);
+        if (suiCoins.data.length === 0) {
+          throw new Error("No SUI available for gas payment");
         }
 
-        // Sort coins by balance in descending order
-        const sortedCoins = [...walletCoins.data].sort((a, b) => 
+        // Sort SUI coins by balance to find the most suitable one for gas
+        const sortedSuiCoins = [...suiCoins.data].sort((a, b) => 
           Number(BigInt(b.balance) - BigInt(a.balance))
         );
 
-        // Create transaction
-        const tx = new Transaction();
-        tx.setGasBudget(5000000);
-        tx.setSender(currentAccount.address);
+        // Find a SUI coin that has enough balance for gas (minimum 5000000 MIST = 0.005 SUI)
+        const gasAmount = BigInt(5000000);
+        const gasCoin = sortedSuiCoins.find(c => BigInt(c.balance) >= gasAmount);
 
-        // Handle gas payment differently for non-SUI coins
-        const isSuiCoin = coin.type === SUI_TYPE;
-        if (!isSuiCoin) {
-          // Get SUI coins for gas payment
-          const suiCoins = await suiClient.getCoins({
-            owner: currentAccount.address,
-            coinType: SUI_TYPE
-          });
-
-          if (suiCoins.data.length === 0) {
-            throw new Error("No SUI available for gas payment");
-          }
-
-          // Sort SUI coins by balance to find the most suitable one for gas
-          const sortedSuiCoins = [...suiCoins.data].sort((a, b) => 
-            Number(BigInt(b.balance) - BigInt(a.balance))
-          );
-
-          // Find a SUI coin that has enough balance for gas
-          const gasAmount = BigInt(5000000);
-          const gasCoin = sortedSuiCoins.find(c => BigInt(c.balance) >= gasAmount);
-
-          if (!gasCoin) {
-            throw new Error("No SUI coin with sufficient balance for gas payment");
-          }
-
-          // Set gas payment using the selected SUI coin
-          tx.setGasPayment([{
-            objectId: gasCoin.coinObjectId,
-            version: gasCoin.version,
-            digest: gasCoin.digest
-          }]);
-
-          // For non-SUI coins, merge if needed and split
-          if (sortedCoins.length > 1) {
-            tx.mergeCoins(
-              sortedCoins[0].coinObjectId,
-              sortedCoins.slice(1).map(c => c.coinObjectId)
-            );
-          }
-          
-          // Split the required amount
-          const [splitCoin] = tx.splitCoins(sortedCoins[0].coinObjectId, [amountInBaseUnits]);
-          
-          await depositFromWallet(
-            currentAccount.address,
-            daoId,
-            tx,
-            coin.type,
-            vaultName,
-            splitCoin
-          );
-        } else {
-          // SUI coin handling
-          const coinObjects = await Promise.all(
-            sortedCoins.map(coin => 
-              suiClient.getObject({
-                id: coin.coinObjectId,
-                options: { showContent: true }
-              })
-            )
-          );
-
-          tx.setGasPayment(coinObjects.map(obj => ({
-            objectId: obj.data!.objectId,
-            version: obj.data!.version,
-            digest: obj.data!.digest
-          })));
-
-          // After gas smashing, all coins will be merged into the first coin
-          const [splitCoin] = tx.splitCoins(tx.gas, [amountInBaseUnits]);
-
-          await depositFromWallet(
-            currentAccount.address,
-            daoId,
-            tx,
-            coin.type,
-            vaultName,
-            splitCoin
-          );
+        if (!gasCoin) {
+          throw new Error("No SUI coin with sufficient balance for gas payment");
         }
 
-        console.log('Executing transaction...');
-        const result = await signAndExecute({
-          suiClient,
-          currentAccount,
-          tx,
-          signTransaction,
-          options: { showEffects: true },
-          toast,
-        });
+        // Set gas payment using the selected SUI coin
+        tx.setGasPayment([{
+          objectId: gasCoin.coinObjectId,
+          version: gasCoin.version,
+          digest: gasCoin.digest
+        }]);
 
-        handleTxResult(result, toast);
+        // For non-SUI coins, merge if needed and split
+        if (sortedCoins.length > 1) {
+          tx.mergeCoins(
+            sortedCoins[0].coinObjectId,
+            sortedCoins.slice(1).map(c => c.coinObjectId)
+          );
+        }
+        
+        // Split the required amount
+        const [splitCoin] = tx.splitCoins(sortedCoins[0].coinObjectId, [amountInBaseUnits]);
+        
+        await depositFromWallet(
+          currentAccount.address,
+          daoId,
+          tx,
+          selectedCoinType,
+          vaultName,
+          splitCoin
+        );
+      } else {
+        // SUI coin handling
+        const coinObjects = await Promise.all(
+          sortedCoins.map(coin => 
+            suiClient.getObject({
+              id: coin.coinObjectId,
+              options: { showContent: true }
+            })
+          )
+        );
+
+        tx.setGasPayment(coinObjects.map(obj => ({
+          objectId: obj.data!.objectId,
+          version: obj.data!.version,
+          digest: obj.data!.digest
+        })));
+
+        // After gas smashing, all coins will be merged into the first coin
+        // We can use tx.gas to reference the merged coin
+        const [splitCoin] = tx.splitCoins(tx.gas, [amountInBaseUnits]);
+
+        await depositFromWallet(
+          currentAccount.address,
+          daoId,
+          tx,
+          selectedCoinType,
+          vaultName,
+          splitCoin
+        );
       }
+
+      console.log('Executing transaction...');
+      const result = await signAndExecute({
+        suiClient,
+        currentAccount,
+        tx,
+        signTransaction,
+        options: { showEffects: true },
+        toast,
+      });
+
+      handleTxResult(result, toast);
       
-      // If we got here, all transactions were successful
+      // If we got here, transaction was successful
       refreshClient();
       onOpenChange(false);
       
       // Reset form
-      setCoins([{ type: '', amount: '' }]);
+      setSelectedCoinType('');
+      setAmount('');
       
     } catch (error) {
       console.error('Deposit error:', error);
@@ -250,66 +293,63 @@ export function DepositFromWalletDialog({
 
   const DialogContent_Component = (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="text-sm text-gray-600">
-          Deposit coins from your wallet to the <span className="font-medium">{vaultName}</span> vault
+      <div className="text-sm text-gray-600">
+        Deposit coins from your wallet to the <span className="font-medium">{vaultName}</span> vault
+      </div>
+      
+      {fetchingCoins ? (
+        <div className="space-y-4">
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
         </div>
-        
-        {coins.map((coin, index) => (
-          <div key={index} className="space-y-3 p-4 border rounded-lg">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Coin {index + 1}</Label>
-              {coins.length > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveCoin(index)}
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor={`coin-type-${index}`} className="text-sm">Coin Type</Label>
-                <Input
-                  id={`coin-type-${index}`}
-                  placeholder="e.g., 0x2::sui::SUI"
-                  value={coin.type}
-                  onChange={(e) => handleCoinChange(index, 'type', e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor={`coin-amount-${index}`} className="text-sm">Amount</Label>
-                <Input
-                  id={`coin-amount-${index}`}
-                  type="number"
-                  step="0.000001"
-                  placeholder="0.0"
-                  value={coin.amount}
-                  onChange={(e) => handleCoinChange(index, 'amount', e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Amount</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="0"
+                type="number"
+                step="0.000001"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="flex-1 text-lg"
+              />
+              <Select
+                value={selectedCoinType}
+                onValueChange={setSelectedCoinType}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Select">
+                    {selectedCoinType ? walletCoins.find(c => c.type === selectedCoinType)?.symbol : 'Select'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {walletCoins.map((coin) => (
+                    <SelectItem key={coin.type} value={coin.type}>
+                      {coin.symbol}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        ))}
-        
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleAddCoin}
-          className="w-full"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Another Coin
-        </Button>
-      </div>
+          
+          {selectedCoinType && (
+            <div className="flex justify-between items-center text-sm text-gray-500">
+              <span>{getCoinBalance()}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMaxClick}
+                className="h-auto p-0 text-teal-600 hover:text-teal-700"
+              >
+                Max
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="flex gap-3">
         <Button
@@ -323,7 +363,7 @@ export function DepositFromWalletDialog({
         <Button
           onClick={handleDeposit}
           className="flex-1 bg-teal-600 hover:bg-teal-700"
-          disabled={loading}
+          disabled={loading || fetchingCoins || !selectedCoinType || !amount}
         >
           {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Deposit
