@@ -189,21 +189,20 @@ export default function WalletPreview() {
 
         <TabsContent value="nfts" className="mt-4">
           <div className="grid grid-cols-2 gap-3">
-            {ownedData.nfts?.map((nft, index) => (
-              <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                {nft.image && (
-                  <div className="relative w-full aspect-square mb-2 rounded-md overflow-hidden">
-                    <Image
-                      src={nft.image.replace('ipfs://', 'https://ipfs.io/ipfs/')}
-                      alt={nft.name || 'NFT'}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <div className="font-medium truncate">{nft.name}</div>
-                <div className="text-xs text-gray-400 truncate">
-                  {nft.type.split("::").pop()}
+            {ownedData.nfts?.slice(0, 2).map((nft, index) => (
+              <div
+                key={index}
+                className="relative rounded-lg overflow-hidden border border-gray-200 hover:border-teal-300 transition-all hover:shadow-md"
+              >
+                <img
+                  src={nft.image}
+                  alt={nft.name || "NFT"}
+                  className="w-full aspect-square object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2">
+                  <p className="text-white text-xs truncate">
+                    {nft.name || nft.type.split('::').pop() || "Unknown NFT"}
+                  </p>
                 </div>
               </div>
             ))}
