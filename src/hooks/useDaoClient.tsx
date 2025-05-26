@@ -515,7 +515,7 @@ export function useDaoClient() {
   const getVaults = async (userAddr: string, daoId: string) => {
     try {
       const client = await initClient(userAddr, daoId);
-      return client.getVaults();
+      return client.getVaults().assets;
     } catch (error) {
       console.error("Error getting vault:", error);
       throw error;

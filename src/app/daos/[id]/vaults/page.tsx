@@ -6,20 +6,16 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useMediaQuery } from "react-responsive";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { VaultCard } from "./components/VaultCard";
+import { VaultCreationDialog } from "./components/VaultCreationDialog";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, Vault } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDaoStore } from "@/store/useDaoStore";
 
-// Temporary interface - replace with actual vault type from the SDK
 interface VaultData {
   id: string;
   name: string;
-  description?: string;
   totalValue?: string;
-  assetCount?: number;
-  createdAt?: string;
-  status?: 'active' | 'inactive';
 }
 
 function VaultCardSkeleton() {
@@ -92,6 +88,7 @@ export default function VaultsPage() {
   const [vaults, setVaults] = useState<VaultData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
   const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -117,29 +114,20 @@ export default function VaultsPage() {
         const vaultsData = await getVaults(currentAccount.address, daoId);
         
         if (mounted) {
-          // Only set vaults if we actually have data
-          if (vaultsData && Array.isArray(vaultsData) && vaultsData.length > 0) {
-            const transformedVaults: VaultData[] = vaultsData.map((vault: any, index: number) => ({
-              id: vault.id,
-              name: vault.name,
-              description: vault.description,
-              totalValue: vault.totalValue,
-              assetCount: vault.assetCount,
-              createdAt: vault.createdAt,
-              status: vault.status
+          if (vaultsData && typeof vaultsData === 'object' && Object.keys(vaultsData).length > 0) {
+            const transformedVaults: VaultData[] = Object.entries(vaultsData).map(([vaultName]) => ({
+              id: vaultName,
+              name: vaultName,
+              totalValue: "0.00",
             }));
             setVaults(transformedVaults);
           } else {
-            // No vaults data - set empty array
             setVaults([]);
           }
         }
       } catch (error) {
         console.error("Error fetching vaults:", error);
-        if (mounted) {
-          // Set empty array on error
-          setVaults([]);
-        }
+        if (mounted) setVaults([]);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -147,14 +135,12 @@ export default function VaultsPage() {
 
     fetchVaults();
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [currentAccount?.address, daoId, refreshCounter]);
 
   if (!currentAccount?.address) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen pt-12">
+      <div className="flex flex-col items-center justify-start min-h-screen pt-44">
         <Vault className="w-16 h-16 text-gray-400 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Access Restricted</h1>
         <p className="text-gray-600">Connect your wallet to view vaults</p>
@@ -164,21 +150,17 @@ export default function VaultsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 pt-32">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
         <LoadingSkeleton />
       </div>
     );
   }
 
   const filteredVaults = vaults.filter(vault =>
-    vault.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vault.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    vault.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateVault = () => {
-    // TODO: Implement vault creation
-    console.log("Create new vault");
-  };
+  const handleCreateVault = () => setShowCreateDialog(true);
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
@@ -187,14 +169,9 @@ export default function VaultsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Treasury Vaults</h1>
-            <p className="text-gray-600">
-              Manage and monitor your DAO's asset vaults
-            </p>
+            <p className="text-gray-600">Manage and monitor your DAO's vaults</p>
           </div>
-          <Button 
-            onClick={handleCreateVault}
-            className="bg-teal-600 hover:bg-teal-700 text-white"
-          >
+          <Button onClick={handleCreateVault} className="bg-teal-600 hover:bg-teal-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
             Create Vault
           </Button>
@@ -227,12 +204,7 @@ export default function VaultsPage() {
         {/* Vaults Grid */}
         <div className="flex flex-wrap gap-4">
           {filteredVaults.map((vault) => (
-            <VaultCard 
-              key={vault.id} 
-              vault={vault} 
-              daoId={daoId}
-              width={getCardWidth()}
-            />
+            <VaultCard key={vault.id} vault={vault} daoId={daoId} width={getCardWidth()} />
           ))}
         </div>
 
@@ -262,6 +234,9 @@ export default function VaultsPage() {
           </div>
         )}
       </div>
+
+      {/* Vault Creation Dialog */}
+      <VaultCreationDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
     </div>
   );
 }
