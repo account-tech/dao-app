@@ -5,6 +5,7 @@ import { Transaction, TransactionObjectInput, TransactionResult } from "@mysten/
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
 import { getCoinDecimals, getSimplifiedAssetType, getMultipleCoinDecimals } from "@/utils/GlobalHelpers";
+import { getTokenPrices } from "@/utils/Aftermath";
 import { SuiClient } from "@mysten/sui/client";
 
 interface VotingPowerInfo {
@@ -589,6 +590,62 @@ export function useDaoClient() {
     }
   };
 
+  const getVaultTotalValue = async (userAddr: string, daoId: string, vaultName: string, suiClient: SuiClient): Promise<string> => {
+    try {
+      // Get vault data with formatted coins
+      const vaultData = await getVault(userAddr, daoId, vaultName, suiClient);
+      
+      // Check if we have formatted coins (which means suiClient was provided)
+      if (!vaultData || !('formattedCoins' in vaultData) || !vaultData.formattedCoins) {
+        return "0.00";
+      }
+
+      // Get all coin types for price lookup
+      const coinTypes = Object.keys(vaultData.formattedCoins);
+      
+      if (coinTypes.length === 0) {
+        return "0.00";
+      }
+
+      // Normalize coin types for price API (ensure 0x prefix)
+      const normalizedCoinTypes = coinTypes.map(coinType => {
+        if (coinType.startsWith('0x')) {
+          return coinType;
+        }
+        return `0x${coinType}`;
+      });
+
+      // Fetch token prices from Aftermath
+      const tokenPrices = await getTokenPrices(normalizedCoinTypes);
+      
+      if (!tokenPrices) {
+        console.warn("Failed to fetch token prices for vault total value calculation");
+        return "0.00";
+      }
+
+      // Calculate total value
+      let totalValue = 0;
+      
+      for (const [originalCoinType, coinData] of Object.entries(vaultData.formattedCoins)) {
+        // Find the normalized type for price lookup
+        const normalizedType = originalCoinType.startsWith('0x') 
+          ? originalCoinType 
+          : `0x${originalCoinType}`;
+        
+        const price = tokenPrices[normalizedType]?.price;
+        const displayPrice = price === -1 ? 0 : price || 0;
+        const numericAmount = parseFloat(coinData.formattedBalance);
+        
+        totalValue += numericAmount * displayPrice;
+      }
+
+      return totalValue.toFixed(2);
+    } catch (error) {
+      console.error("Error calculating vault total value:", error);
+      return "0.00";
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -931,6 +988,7 @@ export function useDaoClient() {
     getAmountsFromWithdrawIntent,
     getVaults,
     getVault,
+    getVaultTotalValue,
     // ACTIONS
     authenticate,
     followDao,

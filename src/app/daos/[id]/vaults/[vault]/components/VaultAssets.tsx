@@ -10,6 +10,12 @@ interface VaultData {
 
 interface VaultAssetsProps {
   vaultData: VaultData | null;
+  tokenPrices?: {
+    [key: string]: {
+      price: number;
+      priceChange24HoursPercentage: number;
+    };
+  } | null;
 }
 
 const CoinPlaceholder = () => (
@@ -25,7 +31,7 @@ const CoinPlaceholder = () => (
   </div>
 );
 
-export function VaultAssets({ vaultData }: VaultAssetsProps) {
+export function VaultAssets({ vaultData, tokenPrices }: VaultAssetsProps) {
   if (!vaultData || !vaultData.coins) {
     return (
       <div className="space-y-4">
@@ -63,6 +69,15 @@ export function VaultAssets({ vaultData }: VaultAssetsProps) {
             ? (coinData as any).formattedBalance 
             : (coinData as bigint).toString();
           
+          // Calculate price and total value
+          const normalizedType = coinType.startsWith('0x') ? coinType : `0x${coinType}`;
+          const price = tokenPrices?.[normalizedType]?.price;
+          const displayPrice = price === -1 ? 0 : price || 0;
+          const numericAmount = isFormatted 
+            ? parseFloat((coinData as any).formattedBalance) 
+            : parseFloat((coinData as bigint).toString());
+          const totalValue = numericAmount * displayPrice;
+          
           return (
             <div 
               key={index} 
@@ -73,8 +88,8 @@ export function VaultAssets({ vaultData }: VaultAssetsProps) {
                 <div className="text-sm text-gray-500">{displayAmount}</div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-500">$ 0.00</div>
-                <div className="font-medium text-teal-700">$ 0.00</div>
+                <div className="text-sm text-gray-500">$ {displayPrice.toFixed(4)}</div>
+                <div className="font-medium text-teal-700">$ {totalValue.toFixed(2)}</div>
               </div>
             </div>
           );

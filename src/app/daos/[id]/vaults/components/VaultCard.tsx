@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
+import { useDaoClient } from "@/hooks/useDaoClient";
 import { Vault, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +25,26 @@ interface VaultCardProps {
 
 export function VaultCard({ vault, daoId, width = "265px" }: VaultCardProps) {
   const router = useRouter();
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const { getVaultTotalValue } = useDaoClient();
   const [isHovering, setIsHovering] = useState(false);
+  const [totalValue, setTotalValue] = useState<string>(vault.totalValue || "0.00");
+
+  useEffect(() => {
+    const fetchTotalValue = async () => {
+      if (!currentAccount?.address) return;
+      
+      try {
+        const calculatedValue = await getVaultTotalValue(currentAccount.address, daoId, vault.id, suiClient);
+        setTotalValue(calculatedValue);
+      } catch (error) {
+        console.error("Error fetching vault total value:", error);
+      }
+    };
+
+    fetchTotalValue();
+  }, [currentAccount?.address, daoId, vault.id]);
 
   const truncateText = (text: string | undefined, maxLength: number) => {
     if (!text) return '';
@@ -96,7 +117,7 @@ export function VaultCard({ vault, daoId, width = "265px" }: VaultCardProps) {
         <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center">
           <div className="text-sm text-gray-500 mb-1">Total Value</div>
           <div className="text-lg font-semibold text-gray-900">
-            ${vault.totalValue || '0.00'}
+            ${totalValue}
           </div>
         </div>
       </div>

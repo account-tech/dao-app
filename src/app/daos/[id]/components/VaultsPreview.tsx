@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { useParams, useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,8 @@ export default function VaultsPreview() {
   const router = useRouter();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const { getVaults } = useDaoClient();
+  const suiClient = useSuiClient();
+  const { getVaults, getVaultTotalValue } = useDaoClient();
   const [vaults, setVaults] = useState<VaultData[]>([]);
   const [loading, setLoading] = useState(true);
   const refreshCounter = useDaoStore(state => state.refreshCounter);
@@ -47,11 +48,28 @@ export default function VaultsPreview() {
         const vaultsData = await getVaults(currentAccount.address, daoId);
         
         if (vaultsData && typeof vaultsData === 'object' && Object.keys(vaultsData).length > 0) {
-          const transformedVaults: VaultData[] = Object.entries(vaultsData).map(([vaultName]) => ({
-            id: vaultName,
-            name: vaultName,
-            totalValue: "0.00",
-          }));
+          const vaultNames = Object.keys(vaultsData);
+          
+          // Fetch total values for all vaults in parallel
+          const vaultPromises = vaultNames.map(async (vaultName) => {
+            try {
+              const totalValue = await getVaultTotalValue(currentAccount.address, daoId, vaultName, suiClient);
+              return {
+                id: vaultName,
+                name: vaultName,
+                totalValue,
+              };
+            } catch (error) {
+              console.error(`Error fetching total value for vault ${vaultName}:`, error);
+              return {
+                id: vaultName,
+                name: vaultName,
+                totalValue: "0.00",
+              };
+            }
+          });
+          
+          const transformedVaults = await Promise.all(vaultPromises);
           setVaults(transformedVaults);
         } else {
           setVaults([]);
@@ -107,7 +125,7 @@ export default function VaultsPreview() {
               </div>
               <div className="text-xs text-gray-500 mb-1">Total Value</div>
               <div className="text-sm font-semibold text-gray-900">
-                ${vault.totalValue || '0.00'}
+                ${vault.totalValue}
               </div>
             </div>
           </div>

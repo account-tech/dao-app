@@ -7,6 +7,7 @@ import { useDaoClient } from "@/hooks/useDaoClient";
 import { VaultActions } from "./components/VaultActions";
 import { VaultAssets } from "./components/VaultAssets";
 import { DepositFromWalletDialog } from "./components/DepositFromWalletDialog";
+import { getTokenPrices } from "@/utils/Aftermath";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Vault } from "lucide-react";
 import { useDaoStore } from "@/store/useDaoStore";
@@ -27,8 +28,10 @@ export default function VaultPage() {
   const vaultName = params.vault as string;
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
-  const { getVault } = useDaoClient();
+  const { getVault, getVaultTotalValue } = useDaoClient();
   const [vaultData, setVaultData] = useState<VaultData | null>(null);
+  const [totalValue, setTotalValue] = useState<string>("0.00");
+  const [tokenPrices, setTokenPrices] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
   const refreshCounter = useDaoStore(state => state.refreshCounter);
@@ -39,11 +42,31 @@ export default function VaultPage() {
 
       try {
         setLoading(true);
-        const data = await getVault(currentAccount.address, daoId, vaultName, suiClient);
+        
+        // Fetch vault data and total value in parallel
+        const [data, calculatedTotalValue] = await Promise.all([
+          getVault(currentAccount.address, daoId, vaultName, suiClient),
+          getVaultTotalValue(currentAccount.address, daoId, vaultName, suiClient)
+        ]);
+        
         setVaultData(data);
+        setTotalValue(calculatedTotalValue);
+
+        // Fetch token prices for VaultAssets component
+        if (data && 'formattedCoins' in data && data.formattedCoins) {
+          const coinTypes = Object.keys(data.formattedCoins).map(coinType => {
+            return coinType.startsWith('0x') ? coinType : `0x${coinType}`;
+          });
+          
+          if (coinTypes.length > 0) {
+            const prices = await getTokenPrices(coinTypes);
+            setTokenPrices(prices);
+          }
+        }
       } catch (error) {
         console.error("Error fetching vault data:", error);
         setVaultData(null);
+        setTotalValue("0.00");
       } finally {
         setLoading(false);
       }
@@ -96,16 +119,13 @@ export default function VaultPage() {
     );
   }
 
-  // Calculate total value (simplified for now)
-  const totalValue = "0.00"; // TODO: Calculate from coins when price data is available
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Main Content Layout */}
       <div className="flex flex-col gap-8 lg:flex-row lg:gap-6 xl:gap-8">
         {/* Left Column (Assets) */}
         <div className="flex-1 order-2 lg:order-1">
-          <VaultAssets vaultData={vaultData} />
+          <VaultAssets vaultData={vaultData} tokenPrices={tokenPrices} />
         </div>
 
         {/* Right Column (VaultActions) */}
