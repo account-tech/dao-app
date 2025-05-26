@@ -91,19 +91,47 @@ export default function VaultPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-        <div className="space-y-8">
-          {/* Header Skeleton */}
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
+      <div className="container mx-auto px-4 py-8">
+        {/* Main Content Layout Skeleton */}
+        <div className="flex flex-col gap-8 lg:flex-row lg:gap-6 xl:gap-8">
+          {/* Left Column (Assets) Skeleton */}
+          <div className="flex-1 order-2 lg:order-1">
+            <div className="space-y-4">
+              {/* Assets List Skeleton */}
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="text-right space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          
-          {/* Actions Skeleton */}
-          <Skeleton className="h-48 w-full" />
-          
-          {/* Assets Skeleton */}
-          <Skeleton className="h-96 w-full" />
+
+          {/* Right Column (Actions) Skeleton */}
+          <div className="w-full lg:w-[350px] xl:w-[400px] order-1 lg:order-2">
+            <div className="bg-white shadow-md border border-gray-100 rounded-lg">
+              <div className="p-6">
+                {/* Total Value Skeleton */}
+                <div className="mb-6 text-center">
+                  <Skeleton className="h-4 w-24 mx-auto mb-2" />
+                  <Skeleton className="h-8 w-32 mx-auto" />
+                </div>
+
+                {/* Action Buttons Grid Skeleton */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-20 rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
