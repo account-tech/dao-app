@@ -522,6 +522,23 @@ export function useDaoClient() {
     }
   };
 
+  const getVault = async (userAddr: string, daoId: string, vaultName: string) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      const vaults = client.getVaults().assets;
+      
+      // Search for the specific vault by name
+      if (vaults && typeof vaults === 'object' && vaults[vaultName]) {
+        return vaults[vaultName];
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error getting vault:", error);
+      throw error;
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -827,6 +844,7 @@ export function useDaoClient() {
     getConfigDaoIntentChanges,
     getAmountsFromWithdrawIntent,
     getVaults,
+    getVault,
     // ACTIONS
     authenticate,
     followDao,

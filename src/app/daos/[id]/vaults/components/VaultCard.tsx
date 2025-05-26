@@ -12,11 +12,7 @@ import {
 interface VaultData {
   id: string;
   name: string;
-  description?: string;
   totalValue?: string;
-  assetCount?: number;
-  createdAt?: string;
-  status?: 'active' | 'inactive';
 }
 
 interface VaultCardProps {
@@ -83,8 +79,7 @@ export function VaultCard({ vault, daoId, width = "265px" }: VaultCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>View Details</DropdownMenuItem>
-                <DropdownMenuItem>Manage Assets</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuItem>Delete Vault</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
