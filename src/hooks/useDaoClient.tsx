@@ -4,7 +4,7 @@ import { OwnedData, Dep } from "@account.tech/core";
 import { Transaction, TransactionObjectInput, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
-import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { getCoinDecimals, getSimplifiedAssetType, getMultipleCoinDecimals } from "@/utils/GlobalHelpers";
 import { SuiClient } from "@mysten/sui/client";
 
 interface VotingPowerInfo {
@@ -522,14 +522,64 @@ export function useDaoClient() {
     }
   };
 
-  const getVault = async (userAddr: string, daoId: string, vaultName: string) => {
+  const getVault = async (userAddr: string, daoId: string, vaultName: string, suiClient?: SuiClient) => {
     try {
       const client = await initClient(userAddr, daoId);
       const vaults = client.getVaults().assets;
       
       // Search for the specific vault by name
       if (vaults && typeof vaults === 'object' && vaults[vaultName]) {
-        return vaults[vaultName];
+        const vault = vaults[vaultName];
+        
+        // If suiClient is provided, format coin amounts with proper decimals
+        if (suiClient && vault.coins) {
+          const coinTypes = Object.keys(vault.coins);
+          
+          if (coinTypes.length > 0) {
+            // Normalize coin types to full format for decimal lookup
+            const normalizedCoinTypes = coinTypes.map(coinType => {
+              // If it's already in full format (starts with 0x), use as is
+              if (coinType.startsWith('0x')) {
+                return coinType;
+              }
+              // Otherwise, assume it needs 0x prefix
+              return `0x${coinType}`;
+            });
+                
+            // Get decimals for all normalized coin types
+            const decimalsMap = await getMultipleCoinDecimals(normalizedCoinTypes, suiClient);
+            
+            // Format each coin amount with proper decimals
+            const formattedCoins: Record<string, { balance: bigint; formattedBalance: string; symbol: string; decimals: number }> = {};
+            
+            for (const [originalCoinType, balance] of Object.entries(vault.coins)) {
+              // Find the normalized type for this coin
+              const normalizedType = originalCoinType.startsWith('0x') 
+                ? originalCoinType 
+                : `0x${originalCoinType}`;
+              
+              const decimals = decimalsMap.get(normalizedType) ?? 9;
+              const divisor = BigInt(10) ** BigInt(decimals);
+              const formattedBalance = (Number(balance as bigint) / Number(divisor)).toFixed(6);
+              const symbol = originalCoinType.split('::').pop() || 'Unknown';
+              
+              formattedCoins[originalCoinType] = {
+                balance: balance as bigint,
+                formattedBalance,
+                symbol,
+                decimals
+              };
+            }
+            
+            return {
+              ...vault,
+              coins: vault.coins, // Keep original for compatibility
+              formattedCoins // Add formatted version
+            };
+          }
+        }
+        
+        return vault;
       }
       
       return null;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { VaultActions } from "./components/VaultActions";
 import { VaultAssets } from "./components/VaultAssets";
@@ -13,6 +13,12 @@ import { useDaoStore } from "@/store/useDaoStore";
 
 interface VaultData {
   coins: Record<string, bigint>;
+  formattedCoins?: Record<string, { 
+    balance: bigint; 
+    formattedBalance: string; 
+    symbol: string; 
+    decimals: number 
+  }>;
 }
 
 export default function VaultPage() {
@@ -20,6 +26,7 @@ export default function VaultPage() {
   const daoId = params.id as string;
   const vaultName = params.vault as string;
   const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
   const { getVault } = useDaoClient();
   const [vaultData, setVaultData] = useState<VaultData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +39,7 @@ export default function VaultPage() {
 
       try {
         setLoading(true);
-        const data = await getVault(currentAccount.address, daoId, vaultName);
+        const data = await getVault(currentAccount.address, daoId, vaultName, suiClient);
         setVaultData(data);
       } catch (error) {
         console.error("Error fetching vault data:", error);

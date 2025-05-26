@@ -1,5 +1,11 @@
 interface VaultData {
   coins: Record<string, bigint>;
+  formattedCoins?: Record<string, { 
+    balance: bigint; 
+    formattedBalance: string; 
+    symbol: string; 
+    decimals: number 
+  }>;
 }
 
 interface VaultAssetsProps {
@@ -40,15 +46,22 @@ export function VaultAssets({ vaultData }: VaultAssetsProps) {
     );
   }
 
-  const coinEntries = Object.entries(vaultData.coins);
+  // Use formatted coins if available, otherwise fall back to raw coins
+  const coinsToDisplay = vaultData.formattedCoins || vaultData.coins;
+  const coinEntries = Object.entries(coinsToDisplay);
 
   return (
     <div className="space-y-4">
       {coinEntries.length > 0 ? (
-        coinEntries.map(([coinType, amount], index) => {
-          const symbol = coinType.split("::").pop() || "Unknown";
-          // For now, display raw amount - TODO: format with decimals and price
-          const displayAmount = amount.toString();
+        coinEntries.map(([coinType, coinData], index) => {
+          // Handle both formatted and raw coin data
+          const isFormatted = vaultData.formattedCoins && coinType in vaultData.formattedCoins;
+          const symbol = isFormatted 
+            ? (coinData as any).symbol 
+            : coinType.split("::").pop() || "Unknown";
+          const displayAmount = isFormatted 
+            ? (coinData as any).formattedBalance 
+            : (coinData as bigint).toString();
           
           return (
             <div 
