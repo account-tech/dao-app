@@ -512,6 +512,16 @@ export function useDaoClient() {
     }
   };
 
+  const getVaults = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.getVaults();
+    } catch (error) {
+      console.error("Error getting vault:", error);
+      throw error;
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -706,6 +716,21 @@ export function useDaoClient() {
     }
   };
 
+  const openVault = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    treasuryName: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.openVault(tx, treasuryName) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error opening vault:", error);
+      throw error;
+    }
+  };
+
   //====================DAO INTENTS====================
 
   const requestConfigDao = async (
@@ -801,6 +826,7 @@ export function useDaoClient() {
     getLockedObjects,
     getConfigDaoIntentChanges,
     getAmountsFromWithdrawIntent,
+    getVaults,
     // ACTIONS
     authenticate,
     followDao,
@@ -815,6 +841,7 @@ export function useDaoClient() {
     changeVote,
     modifyMetadata,
     updateVerifiedDeps,
+    openVault,
     // DAO INTENTS
     requestWithdrawAndTransfer,
     requestConfigDao,
