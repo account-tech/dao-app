@@ -6,6 +6,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { VaultActions } from "./components/VaultActions";
 import { VaultAssets } from "./components/VaultAssets";
+import { DepositFromWalletDialog } from "./components/DepositFromWalletDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Vault } from "lucide-react";
 import { useDaoStore } from "@/store/useDaoStore";
@@ -22,6 +23,7 @@ export default function VaultPage() {
   const { getVault } = useDaoClient();
   const [vaultData, setVaultData] = useState<VaultData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [depositDialogOpen, setDepositDialogOpen] = useState(false);
   const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   useEffect(() => {
@@ -42,6 +44,10 @@ export default function VaultPage() {
 
     fetchVaultData();
   }, [currentAccount?.address, daoId, vaultName, refreshCounter]);
+
+  const handleDepositFromWallet = () => {
+    setDepositDialogOpen(true);
+  };
 
   if (!currentAccount?.address) {
     return (
@@ -97,9 +103,21 @@ export default function VaultPage() {
 
         {/* Right Column (VaultActions) */}
         <div className="w-full lg:w-[350px] xl:w-[400px] order-1 lg:order-2">
-          <VaultActions totalValue={totalValue} vaultName={vaultName} />
+          <VaultActions 
+            totalValue={totalValue} 
+            vaultName={vaultName}
+            onDepositFromWallet={handleDepositFromWallet}
+            onDepositFromDao={() => console.log("Deposit from DAO clicked")}
+          />
         </div>
       </div>
+
+      {/* Deposit Dialog */}
+      <DepositFromWalletDialog
+        open={depositDialogOpen}
+        onOpenChange={setDepositDialogOpen}
+        vaultName={vaultName}
+      />
     </div>
   );
 }

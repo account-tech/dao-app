@@ -1,12 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowUpFromLine, ArrowDownToLine, Settings, TrendingUp } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, Settings, TrendingUp, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VaultActionsProps {
   totalValue: string;
   vaultName: string;
   onWithdraw?: () => void;
-  onDeposit?: () => void;
+  onDepositFromWallet?: () => void;
+  onDepositFromDao?: () => void;
   onManage?: () => void;
   onAnalytics?: () => void;
 }
@@ -15,7 +22,8 @@ export function VaultActions({
   totalValue,
   vaultName,
   onWithdraw,
-  onDeposit,
+  onDepositFromWallet,
+  onDepositFromDao,
   onManage,
   onAnalytics
 }: VaultActionsProps) {
@@ -25,14 +33,6 @@ export function VaultActions({
       icon: ArrowUpFromLine,
       onClick: onWithdraw,
       className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200",
-      disabled: true,
-      comingSoon: true
-    },
-    {
-      label: "Deposit",
-      icon: ArrowDownToLine,
-      onClick: onDeposit,
-      className: "bg-teal-100 hover:bg-teal-200 text-teal-700",
       disabled: true,
       comingSoon: true
     },
@@ -67,7 +67,46 @@ export function VaultActions({
 
         {/* Action Buttons Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {actions.map((action) => {
+          {/* Withdraw Button */}
+          <Button
+            onClick={actions[0].onClick}
+            disabled={actions[0].disabled}
+            className={`h-20 relative group ${actions[0].className} shadow-sm transition-all duration-200 ${!actions[0].disabled && 'hover:scale-[1.02]'} ${actions[0].disabled && 'cursor-not-allowed opacity-60'}`}
+          >
+            <div className="flex flex-col items-center gap-1.5">
+              <ArrowUpFromLine className="w-12 h-12" />
+              <span className="text-sm font-medium">Withdraw</span>
+              {actions[0].comingSoon && (
+                <span className="text-[10px] text-gray-500 absolute bottom-2">coming soon</span>
+              )}
+            </div>
+          </Button>
+
+          {/* Deposit Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="h-20 relative group bg-teal-100 hover:bg-teal-200 text-teal-700 shadow-sm transition-all duration-200 hover:scale-[1.02]">
+                <div className="flex flex-col items-center gap-1.5">
+                  <ArrowDownToLine className="w-12 h-12" />
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium">Deposit</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </div>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48">
+              <DropdownMenuItem onClick={onDepositFromWallet} className="cursor-pointer">
+                From your wallet
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDepositFromDao} className="cursor-pointer">
+                From the DAO
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Other Action Buttons */}
+          {actions.slice(1).map((action) => {
             const Icon = action.icon;
             return (
               <Button
