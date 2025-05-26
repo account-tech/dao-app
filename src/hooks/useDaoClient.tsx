@@ -818,6 +818,25 @@ export function useDaoClient() {
     }
   };
 
+  const requestWithdrawAndTransferToVault = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coinType: string,
+    coinAmount: bigint,
+    vaultName: string
+  ) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      client.requestWithdrawAndTransferToVault(tx, intentArgs, coinType, coinAmount, vaultName);
+      return tx;
+    } catch (error) {
+      console.error("Error requesting withdraw and transfer to vault:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
@@ -862,6 +881,7 @@ export function useDaoClient() {
     openVault,
     // DAO INTENTS
     requestWithdrawAndTransfer,
+    requestWithdrawAndTransferToVault,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
   };
