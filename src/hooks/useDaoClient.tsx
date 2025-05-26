@@ -1,7 +1,7 @@
 'use client';
 import { DaoClient, DepStatus, VoteIntentArgs, IntentStatus } from "@account.tech/dao";
 import { OwnedData, Dep } from "@account.tech/core";
-import { Transaction, TransactionResult } from "@mysten/sui/transactions";
+import { Transaction, TransactionObjectInput, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
 import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
@@ -748,6 +748,23 @@ export function useDaoClient() {
     }
   };
 
+  const depositFromWallet = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    coinType: string,
+    treasuryName: string,
+    coin: TransactionObjectInput
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.depositFromWallet(tx, coinType, treasuryName, coin) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error depositing from wallet:", error);
+      throw error;
+    }
+  };
+
   //====================DAO INTENTS====================
 
   const requestConfigDao = async (
@@ -879,6 +896,7 @@ export function useDaoClient() {
     modifyMetadata,
     updateVerifiedDeps,
     openVault,
+    depositFromWallet,
     // DAO INTENTS
     requestWithdrawAndTransfer,
     requestWithdrawAndTransferToVault,
