@@ -8,7 +8,7 @@ import { OwnedData } from "@account.tech/core";
 import { getMultipleCoinDecimals, formatCoinAmount } from "@/utils/GlobalHelpers";
 import { getTokenPrices } from "@/utils/Aftermath";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WalletOverview } from "./components/WalletOverview";
+import { WalletOverview } from "./components/WalletActions";
 import { WalletAssets } from "./components/WalletAssets";
 import { QrCode } from "./components/QrCode";
 
