@@ -13,19 +13,6 @@ interface WalletAssetsProps {
   };
 }
 
-const BasePlaceholder = () => (
-  <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
-    <div className="space-y-2">
-      <div className="h-5 w-20 bg-gray-200 rounded"></div>
-      <div className="h-4 w-24 bg-gray-200 rounded"></div>
-    </div>
-    <div className="text-right space-y-2">
-      <div className="h-4 w-16 bg-gray-200 rounded"></div>
-      <div className="h-5 w-20 bg-gray-200 rounded"></div>
-    </div>
-  </div>
-);
-
 const CoinPlaceholder = () => (
   <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
     <div className="space-y-2">
