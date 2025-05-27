@@ -77,9 +77,46 @@ export default function WalletPage() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-64 w-full" />
+        {/* Loading state that matches the actual layout */}
+        <div className="flex flex-col gap-8 lg:flex-row lg:gap-6 xl:gap-8">
+          {/* Left Column (Assets) Skeleton */}
+          <div className="flex-1 order-2 lg:order-1">
+            <div className="w-full">
+              {/* Tabs skeleton */}
+              <div className="grid w-full grid-cols-3 mb-6">
+                <Skeleton className="h-10 rounded-md" />
+                <Skeleton className="h-10 rounded-md mx-1" />
+                <Skeleton className="h-10 rounded-md" />
+              </div>
+              
+              {/* Assets content skeleton */}
+              <div className="space-y-4">
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-16 w-full rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column (WalletOverview) Skeleton */}
+          <div className="w-full lg:w-[350px] xl:w-[400px] order-1 lg:order-2">
+            <div className="bg-white rounded-lg border p-6 space-y-6">
+              {/* Total value skeleton */}
+              <div className="text-center space-y-2">
+                <Skeleton className="h-6 w-24 mx-auto" />
+                <Skeleton className="h-8 w-32 mx-auto" />
+              </div>
+              
+              {/* Action buttons skeleton */}
+              <div className="grid grid-cols-2 gap-3">
+                <Skeleton className="h-10 rounded-md" />
+                <Skeleton className="h-10 rounded-md" />
+                <Skeleton className="h-10 rounded-md" />
+                <Skeleton className="h-10 rounded-md" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

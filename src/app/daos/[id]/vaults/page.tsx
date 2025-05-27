@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { useMediaQuery } from "react-responsive";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { VaultCard } from "./components/VaultCard";
@@ -11,6 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Search, Plus, Vault } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDaoStore } from "@/store/useDaoStore";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface VaultData {
   id: string;
@@ -84,11 +90,15 @@ export default function VaultsPage() {
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const { getVaults } = useDaoClient();
+  const suiClient = useSuiClient();
+  const { getVaults, getDaoVotingPowerInfo } = useDaoClient();
   const [vaults, setVaults] = useState<VaultData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [hasAuthPower, setHasAuthPower] = useState(false);
+  const [authVotingPower, setAuthVotingPower] = useState("0");
+  const [votingPower, setVotingPower] = useState("0");
   const refreshCounter = useDaoStore(state => state.refreshCounter);
   
   const isMobile = useMediaQuery({ maxWidth: 640 });
@@ -103,7 +113,7 @@ export default function VaultsPage() {
   useEffect(() => {
     let mounted = true;
 
-    const fetchVaults = async () => {
+    const fetchData = async () => {
       if (!currentAccount?.address || !daoId) {
         if (mounted) setLoading(false);
         return;
@@ -111,9 +121,20 @@ export default function VaultsPage() {
 
       try {
         if (mounted) setLoading(true);
-        const vaultsData = await getVaults(currentAccount.address, daoId);
+        
+        // Fetch both vaults and voting power info
+        const [vaultsData, votingInfo] = await Promise.all([
+          getVaults(currentAccount.address, daoId),
+          getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient)
+        ]);
         
         if (mounted) {
+          // Set voting power info
+          setHasAuthPower(votingInfo.hasAuthPower);
+          setAuthVotingPower(votingInfo.authVotingPower);
+          setVotingPower(votingInfo.votingPower);
+          
+          // Set vaults data
           if (vaultsData && typeof vaultsData === 'object' && Object.keys(vaultsData).length > 0) {
             const transformedVaults: VaultData[] = Object.entries(vaultsData).map(([vaultName]) => ({
               id: vaultName,
@@ -126,14 +147,19 @@ export default function VaultsPage() {
           }
         }
       } catch (error) {
-        console.error("Error fetching vaults:", error);
-        if (mounted) setVaults([]);
+        console.error("Error fetching data:", error);
+        if (mounted) {
+          setVaults([]);
+          setHasAuthPower(false);
+          setAuthVotingPower("0");
+          setVotingPower("0");
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
-    fetchVaults();
+    fetchData();
 
     return () => { mounted = false; };
   }, [currentAccount?.address, daoId, refreshCounter]);
@@ -171,10 +197,27 @@ export default function VaultsPage() {
             <h1 className="text-3xl font-bold mb-2">Treasury Vaults</h1>
             <p className="text-gray-600">Manage and monitor your DAO's vaults</p>
           </div>
-          <Button onClick={handleCreateVault} className="bg-teal-600 hover:bg-teal-700 text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Vault
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button 
+                    onClick={handleCreateVault} 
+                    disabled={!hasAuthPower}
+                    className={`${!hasAuthPower ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 text-white'}`}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Vault
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!hasAuthPower && (
+                <TooltipContent className="bg-gray-900 text-white">
+                  <p>You need at least {authVotingPower} voting power to create vaults. Current: {votingPower}. Stake more tokens to create vaults.</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Search Bar */}
