@@ -24,11 +24,14 @@ export default function WalletPage() {
   const params = useParams();
   const daoId = params.id as string;
   const currentAccount = useCurrentAccount();
-  const { getOwnedObjects } = useDaoClient();
+  const { getOwnedObjects, getDaoVotingPowerInfo } = useDaoClient();
   const [ownedData, setOwnedData] = useState<OwnedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [coinDecimals, setCoinDecimals] = useState<Map<string, number>>(new Map());
   const [tokenPrices, setTokenPrices] = useState<TokenPrices>({});
+  const [hasAuthPower, setHasAuthPower] = useState(false);
+  const [authVotingPower, setAuthVotingPower] = useState("0");
+  const [votingPower, setVotingPower] = useState("0");
   const suiClient = useSuiClient();
   const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
@@ -38,8 +41,17 @@ export default function WalletPage() {
 
       try {
         setLoading(true);
-        const data = await getOwnedObjects(currentAccount.address, daoId);
+        
+        // Fetch both owned objects and voting power info
+        const [data, votingInfo] = await Promise.all([
+          getOwnedObjects(currentAccount.address, daoId),
+          getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient)
+        ]);
+        
         setOwnedData(data);
+        setHasAuthPower(votingInfo.hasAuthPower);
+        setAuthVotingPower(votingInfo.authVotingPower);
+        setVotingPower(votingInfo.votingPower);
 
         if (data.coins && data.coins.length > 0) {
           const [decimals, prices] = await Promise.all([
@@ -56,7 +68,10 @@ export default function WalletPage() {
           }
         }
       } catch (error) {
-        console.error("Error fetching owned objects:", error);
+        console.error("Error fetching data:", error);
+        setHasAuthPower(false);
+        setAuthVotingPower("0");
+        setVotingPower("0");
       } finally {
         setLoading(false);
       }
@@ -154,6 +169,9 @@ export default function WalletPage() {
             onDeposit={() => setQrCodeOpen(true)}
             onAirdrop={() => console.log("Airdrop clicked")}
             onVest={() => console.log("Vest clicked")}
+            hasAuthPower={hasAuthPower}
+            authVotingPower={authVotingPower}
+            votingPower={votingPower}
           />
         </div>
       </div>

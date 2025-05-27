@@ -28,12 +28,15 @@ export default function VaultPage() {
   const vaultName = params.vault as string;
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
-  const { getVault, getVaultTotalValue } = useDaoClient();
+  const { getVault, getVaultTotalValue, getDaoVotingPowerInfo } = useDaoClient();
   const [vaultData, setVaultData] = useState<VaultData | null>(null);
   const [totalValue, setTotalValue] = useState<string>("0.00");
   const [tokenPrices, setTokenPrices] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+  const [hasAuthPower, setHasAuthPower] = useState(false);
+  const [authVotingPower, setAuthVotingPower] = useState("0");
+  const [votingPower, setVotingPower] = useState("0");
   const refreshCounter = useDaoStore(state => state.refreshCounter);
 
   useEffect(() => {
@@ -43,14 +46,18 @@ export default function VaultPage() {
       try {
         setLoading(true);
         
-        // Fetch vault data and total value in parallel
-        const [data, calculatedTotalValue] = await Promise.all([
+        // Fetch vault data, total value, and voting power info in parallel
+        const [data, calculatedTotalValue, votingInfo] = await Promise.all([
           getVault(currentAccount.address, daoId, vaultName, suiClient),
-          getVaultTotalValue(currentAccount.address, daoId, vaultName, suiClient)
+          getVaultTotalValue(currentAccount.address, daoId, vaultName, suiClient),
+          getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient)
         ]);
         
         setVaultData(data);
         setTotalValue(calculatedTotalValue);
+        setHasAuthPower(votingInfo.hasAuthPower);
+        setAuthVotingPower(votingInfo.authVotingPower);
+        setVotingPower(votingInfo.votingPower);
 
         // Fetch token prices for VaultAssets component
         if (data && 'formattedCoins' in data && data.formattedCoins) {
@@ -67,6 +74,9 @@ export default function VaultPage() {
         console.error("Error fetching vault data:", error);
         setVaultData(null);
         setTotalValue("0.00");
+        setHasAuthPower(false);
+        setAuthVotingPower("0");
+        setVotingPower("0");
       } finally {
         setLoading(false);
       }
@@ -163,6 +173,9 @@ export default function VaultPage() {
             vaultName={vaultName}
             onDepositFromWallet={handleDepositFromWallet}
             onDepositFromDao={() => console.log("Deposit from DAO clicked")}
+            hasAuthPower={hasAuthPower}
+            authVotingPower={authVotingPower}
+            votingPower={votingPower}
           />
         </div>
       </div>

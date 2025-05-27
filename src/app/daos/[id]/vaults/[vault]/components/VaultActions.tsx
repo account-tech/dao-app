@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowUpFromLine, ArrowDownToLine, Settings, TrendingUp, ChevronDown } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowUpFromLine, ArrowDownToLine, Settings, TrendingUp, ChevronDown, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,9 @@ interface VaultActionsProps {
   onDepositFromDao?: () => void;
   onManage?: () => void;
   onAnalytics?: () => void;
+  hasAuthPower?: boolean;
+  authVotingPower?: string;
+  votingPower?: string;
 }
 
 export function VaultActions({
@@ -25,15 +29,20 @@ export function VaultActions({
   onDepositFromWallet,
   onDepositFromDao,
   onManage,
-  onAnalytics
+  onAnalytics,
+  hasAuthPower = true,
+  authVotingPower = "0",
+  votingPower = "0"
 }: VaultActionsProps) {
   const actions = [
     {
       label: "Withdraw",
       icon: ArrowUpFromLine,
       onClick: onWithdraw,
-      className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200",
-      disabled: true,
+      className: hasAuthPower 
+        ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+      disabled: !hasAuthPower || true, // Keep coming soon disabled for now
       comingSoon: true
     },
     {
@@ -65,6 +74,18 @@ export function VaultActions({
           </div>
         </div>
 
+        {/* Voting Power Alert */}
+        {!hasAuthPower && (
+          <div className="mb-4">
+            <Alert className="bg-yellow-50/50 border-yellow-100">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 text-sm">
+                You need at least {authVotingPower} voting power to manage vault assets. Current: {votingPower}. Stake more tokens to manage vaults.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* Action Buttons Grid */}
         <div className="grid grid-cols-2 gap-3">
           {/* Withdraw Button */}
@@ -85,7 +106,14 @@ export function VaultActions({
           {/* Deposit Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="h-20 relative group bg-teal-100 hover:bg-teal-200 text-teal-700 shadow-sm transition-all duration-200 hover:scale-[1.02]">
+              <Button 
+                disabled={!hasAuthPower}
+                className={`h-20 relative group shadow-sm transition-all duration-200 ${
+                  hasAuthPower 
+                    ? 'bg-teal-100 hover:bg-teal-200 text-teal-700 hover:scale-[1.02]' 
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className="flex flex-col items-center gap-1.5">
                   <ArrowDownToLine className="w-12 h-12" />
                   <div className="flex items-center gap-1">
@@ -95,14 +123,16 @@ export function VaultActions({
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-48">
-              <DropdownMenuItem onClick={onDepositFromWallet} className="cursor-pointer">
-                From your wallet
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDepositFromDao} className="cursor-pointer">
-                From the DAO
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+            {hasAuthPower && (
+              <DropdownMenuContent align="center" className="w-48">
+                <DropdownMenuItem onClick={onDepositFromWallet} className="cursor-pointer">
+                  From your wallet
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDepositFromDao} className="cursor-pointer">
+                  From the DAO
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            )}
           </DropdownMenu>
 
           {/* Other Action Buttons */}
