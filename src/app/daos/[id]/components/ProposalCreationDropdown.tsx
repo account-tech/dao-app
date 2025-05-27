@@ -75,6 +75,8 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
   const { getDaoVotingPowerInfo } = useDaoClient();
   const [hasAuthPower, setHasAuthPower] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [authVotingPower, setAuthVotingPower] = useState("0");
+  const [votingPower, setVotingPower] = useState("0");
 
   useEffect(() => {
     const checkVotingPower = async () => {
@@ -84,9 +86,13 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
         setIsLoading(true);
         const votingInfo = await getDaoVotingPowerInfo(currentAccount.address, daoId, suiClient);
         setHasAuthPower(votingInfo.hasAuthPower);
+        setAuthVotingPower(votingInfo.authVotingPower);
+        setVotingPower(votingInfo.votingPower);
       } catch (error) {
         console.error("Error checking voting power:", error);
         setHasAuthPower(false);
+        setAuthVotingPower("0");
+        setVotingPower("0");
       } finally {
         setIsLoading(false);
       }
@@ -113,20 +119,28 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
     },
   ];
 
-  const buttonTooltip = !hasAuthPower 
-    ? "You don't have enough voting power to create proposals"
-    : "Create a new proposal";
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
-          disabled={!hasAuthPower || isLoading}
-          title={buttonTooltip}
-        >
-          + New Proposal
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
+                  disabled={!hasAuthPower || isLoading}
+                >
+                  + New Proposal
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {!hasAuthPower && !isLoading && (
+              <TooltipContent className="bg-gray-900 text-white">
+                <p>You need at least {authVotingPower} voting power to create proposals. Current: {votingPower}. Stake more tokens to create proposals.</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72 p-1">
         {proposalOptions.map((option) => {
