@@ -119,28 +119,34 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
     },
   ];
 
+    if (!hasAuthPower && !isLoading) {
+    // Show disabled button with tooltip when user doesn't have enough voting power
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gray-300 text-gray-500 cursor-not-allowed">
+              + New Proposal
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="bg-gray-900 text-white">
+            <p>You need at least {authVotingPower} voting power to create proposals. Current: {votingPower}. Stake more tokens to create proposals.</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // Show working dropdown when user has enough voting power
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
-                  disabled={!hasAuthPower || isLoading}
-                >
-                  + New Proposal
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!hasAuthPower && !isLoading && (
-              <TooltipContent className="bg-gray-900 text-white">
-                <p>You need at least {authVotingPower} voting power to create proposals. Current: {votingPower}. Stake more tokens to create proposals.</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
+          disabled={isLoading}
+        >
+          + New Proposal
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72 p-1">
         {proposalOptions.map((option) => {
