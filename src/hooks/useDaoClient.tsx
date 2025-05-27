@@ -46,10 +46,17 @@ interface ConfigDaoChanges {
   };
 }
 
-interface WithdrawAmount {
-  amount: string;
-  coinType: string;
+interface WithdrawAsset {
+  type: 'coin' | 'nft' | 'object';
   recipient: string;
+  // For coins
+  amount?: string;
+  coinType?: string;
+  // For NFTs and objects
+  objectId?: string;
+  objectType?: string;
+  name?: string;
+  image?: string;
 }
 
 export function useDaoClient() {
@@ -459,11 +466,13 @@ export function useDaoClient() {
     }
   };
 
-  const getAmountsFromWithdrawIntent = async (
+
+
+  const getAssetsFromWithdrawIntent = async (
     userAddr: string,
     daoId: string,
     intentKey: string
-  ): Promise<WithdrawAmount[]> => {
+  ): Promise<WithdrawAsset[]> => {
     try {
       // Get both the intent and owned objects in parallel
       const [intent, ownedData] = await Promise.all([
@@ -476,7 +485,7 @@ export function useDaoClient() {
       }
 
       const transfers = (intent as any).args?.transfers || [];
-      const amounts: WithdrawAmount[] = [];
+      const assets: WithdrawAsset[] = [];
 
       // Process each transfer
       for (const transfer of transfers) {
@@ -496,19 +505,53 @@ export function useDaoClient() {
               const rawAmount = BigInt(instance.amount);
               const formattedAmount = (Number(rawAmount) / Number(divisor)).toString();
 
-              amounts.push({
+              assets.push({
+                type: 'coin',
                 amount: formattedAmount,
                 coinType: coin.type,
                 recipient
               });
+              break;
+            }
+          }
+        }
+
+        // Look through NFTs to find matching object ID
+        if (ownedData.nfts) {
+          for (const nft of ownedData.nfts) {
+            if (nft.ref.objectId === objectId) {
+              assets.push({
+                type: 'nft',
+                objectId: nft.ref.objectId,
+                objectType: nft.type,
+                name: nft.name,
+                image: nft.image,
+                recipient
+              });
+              break;
+            }
+          }
+        }
+
+        // Look through objects to find matching object ID
+        if (ownedData.objects) {
+          for (const obj of ownedData.objects) {
+            if (obj.ref.objectId === objectId) {
+              assets.push({
+                type: 'object',
+                objectId: obj.ref.objectId,
+                objectType: obj.type,
+                recipient
+              });
+              break;
             }
           }
         }
       }
 
-      return amounts;
+      return assets;
     } catch (error) {
-      console.error("Error getting withdraw amounts:", error);
+      console.error("Error getting withdraw assets:", error);
       return [];
     }
   };
@@ -985,7 +1028,7 @@ export function useDaoClient() {
     getunverifiedDepsAllowedBool,
     getLockedObjects,
     getConfigDaoIntentChanges,
-    getAmountsFromWithdrawIntent,
+    getAssetsFromWithdrawIntent,
     getVaults,
     getVault,
     getVaultTotalValue,
