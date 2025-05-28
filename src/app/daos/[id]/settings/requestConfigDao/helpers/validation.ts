@@ -12,16 +12,19 @@ export const validateStep = (
   switch (step) {
     case 0: // AssetTypeStep
       return true;
-    case 1: // AssetTypeStep
+    case 1: // AuthVotingPowerStep
       return true;
-    case 2: // AuthVotingPowerStep
+    case 2: // UnstakingCooldownStep
       return true;
-    case 3: // UnstakingCooldownStep
+    case 3: // VotingRuleStep
       return true;
-    case 4: // VotingRuleStep
+    case 4: // VotingQuorumStep
       return true;
-    case 5: // VotingQuorumStep
-      return true;
+    case 5: // VotingLimitsStep
+      // Ensure maxVotingPower is greater than 0, not less than authVotingPower, and minimumVotes is less than or equal to maxVotingPower
+      return formData.maxVotingPower > BigInt(0) && 
+             formData.maxVotingPower >= formData.authVotingPower &&
+             formData.minimumVotes <= formData.maxVotingPower;
     case 6: // ConfigProposalStep
       // Basic validation
       if (!formData.proposalName) {
