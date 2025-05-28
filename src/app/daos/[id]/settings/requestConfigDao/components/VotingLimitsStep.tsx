@@ -10,6 +10,15 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
   const originalConfig = useOriginalDaoConfig();
   const decimals = formData.coinDecimals || 9;
 
+  // Validation checks
+  const isMaxVotingPowerTooLow = formData.maxVotingPower < formData.authVotingPower;
+  const isMinimumVotesTooHigh = formData.minimumVotes > formData.maxVotingPower;
+  
+  // Helper function to format display values
+  const getDisplayValue = (value: bigint) => {
+    return (Number(value) / Math.pow(10, decimals)).toString();
+  };
+
   const handleMaxVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Convert user input to raw value with decimals
@@ -36,10 +45,10 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
   const minimumVotesChange = calculatePercentageChange(formData.minimumVotes, originalConfig.minimumVotes);
 
   // Format display values
-  const displayOriginalMaxPower = (Number(originalConfig.maxVotingPower) / Math.pow(10, decimals)).toString();
-  const displayCurrentMaxPower = (Number(formData.maxVotingPower) / Math.pow(10, decimals)).toString();
-  const displayOriginalMinVotes = (Number(originalConfig.minimumVotes) / Math.pow(10, decimals)).toString();
-  const displayCurrentMinVotes = (Number(formData.minimumVotes) / Math.pow(10, decimals)).toString();
+  const displayOriginalMaxPower = getDisplayValue(originalConfig.maxVotingPower);
+  const displayCurrentMaxPower = getDisplayValue(formData.maxVotingPower);
+  const displayOriginalMinVotes = getDisplayValue(originalConfig.minimumVotes);
+  const displayCurrentMinVotes = getDisplayValue(formData.minimumVotes);
 
   return (
     <div className="space-y-8">
@@ -65,8 +74,22 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
             placeholder="Enter new maximum voting power..."
             value={displayCurrentMaxPower}
             onChange={handleMaxVotingPowerChange}
-            className="font-mono"
+            className={cn(
+              "font-mono",
+              isMaxVotingPowerTooLow && "border-red-500 focus:border-red-500 focus:ring-red-500"
+            )}
           />
+          
+          {/* Validation Error Alert for Max Voting Power */}
+          {isMaxVotingPowerTooLow && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertTitle className="text-red-800">Invalid Maximum Voting Power</AlertTitle>
+              <AlertDescription className="text-red-700">
+                Maximum voting power ({getDisplayValue(formData.maxVotingPower)}) cannot be lower than the minimum voting power required to create proposals ({getDisplayValue(formData.authVotingPower)}).
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         {/* Warning if max voting power is changed */}
@@ -120,8 +143,22 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
             placeholder="Enter new minimum votes required..."
             value={displayCurrentMinVotes}
             onChange={handleMinimumVotesChange}
-            className="font-mono"
+            className={cn(
+              "font-mono",
+              isMinimumVotesTooHigh && "border-red-500 focus:border-red-500 focus:ring-red-500"
+            )}
           />
+          
+          {/* Validation Error Alert for Minimum Votes */}
+          {isMinimumVotesTooHigh && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertTitle className="text-red-800">Invalid Minimum Votes</AlertTitle>
+              <AlertDescription className="text-red-700">
+                Minimum votes required ({getDisplayValue(formData.minimumVotes)}) cannot be higher than the maximum voting power ({getDisplayValue(formData.maxVotingPower)}).
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         {/* Warning if minimum votes is changed */}
@@ -163,6 +200,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
                 <li>Caps individual voting power to prevent dominance</li>
                 <li>Helps maintain decentralized decision-making</li>
                 <li>Consider your token distribution when setting this limit</li>
+                <li>Must be at least {getDisplayValue(formData.authVotingPower)} (minimum power to create proposals)</li>
               </ul>
             </div>
             <div className="mt-4">
@@ -171,6 +209,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
                 <li>Ensures sufficient participation in proposals</li>
                 <li>Prevents decisions with low engagement</li>
                 <li>Should reflect your active voter base size</li>
+                <li>Cannot exceed the maximum voting power ({getDisplayValue(formData.maxVotingPower)})</li>
               </ul>
             </div>
           </AlertDescription>

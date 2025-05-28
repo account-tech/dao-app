@@ -13,6 +13,7 @@ export interface ObjectSelection {
     image?: string;
     name?: string;
     fields?: Record<string, any>;
+    isLocked?: boolean;
 }
 
 export interface WithdrawFormData {

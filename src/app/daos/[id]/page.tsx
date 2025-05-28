@@ -10,6 +10,7 @@ import UserData from "./components/UserData";
 import DaoHeader from "./components/DaoHeader";
 import Image from "next/image";
 import WalletPreview from "@/app/daos/[id]/components/WalletPreview";
+import VaultsPreview from "@/app/daos/[id]/components/VaultsPreview";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -293,12 +294,10 @@ export default function DaoPage() {
                 <WalletPreview />
               </div>
 
-              {/* Vaults Square */}
+              {/* Vaults Preview */}
               <div className="bg-white rounded-lg shadow p-4 border border-gray-100">
                 <h3 className="font-medium mb-2">Vaults</h3>
-                <div className="h-32 bg-gray-50 rounded-md flex items-center justify-center text-gray-400">
-                  Coming soon
-                </div>
+                <VaultsPreview />
               </div>
 
               {/* Kiosks Square */}

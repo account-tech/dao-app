@@ -162,7 +162,8 @@ export function AssetSelectionStep({
             type: nft.type,
             display: nft.name || nft.type.split('::').pop(),
             image: nft.image,
-            name: nft.name
+            name: nft.name,
+            isLocked: lockedObjectIds.includes(nft.ref.objectId) // Add locked status
           }));
           setAvailableNFTs(nfts);
         }
@@ -172,7 +173,8 @@ export function AssetSelectionStep({
             objectId: obj.ref.objectId,
             type: obj.type,
             display: obj.type.split('::').pop(),
-            fields: obj.fields
+            fields: obj.fields,
+            isLocked: lockedObjectIds.includes(obj.ref.objectId) // Add locked status
           }));
           setAvailableObjects(objects);
         }
@@ -241,6 +243,14 @@ export function AssetSelectionStep({
   };
 
   const toggleObjectSelection = (object: ObjectSelection) => {
+    // Check if the object is locked
+    if (object.isLocked) {
+      toast.error("Cannot select locked asset", {
+        description: "This asset is locked in another proposal",
+      });
+      return;
+    }
+
     const isSelected = selectedObjects.some(obj => obj.objectId === object.objectId);
     if (isSelected) {
       onObjectsSelected(selectedObjects.filter(obj => obj.objectId !== object.objectId));
@@ -454,13 +464,13 @@ export function AssetSelectionStep({
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {availableNFTs.map((nft) => {
                   const isSelected = selectedObjects.some(obj => obj.objectId === nft.objectId);
-                  const isLocked = isObjectLocked(nft.objectId);
+                  const isLocked = nft.isLocked;
                   return (
                     <div
                       key={nft.objectId}
-                      className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`relative rounded-lg overflow-hidden border-2 transition-all ${
                         isLocked ? 'opacity-50 cursor-not-allowed border-yellow-500' :
-                        isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'
+                        isSelected ? 'border-primary cursor-pointer' : 'border-transparent hover:border-primary/50 cursor-pointer'
                       }`}
                       onClick={() => !isLocked && toggleObjectSelection(nft)}
                     >
@@ -476,7 +486,7 @@ export function AssetSelectionStep({
                       </div>
                       {isLocked && (
                         <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs px-2 py-1 rounded">
-                          In Proposal
+                          Locked in another proposal
                         </div>
                       )}
                     </div>
@@ -493,7 +503,7 @@ export function AssetSelectionStep({
               <div className="space-y-3">
                 {availableObjects.map((object) => {
                   const isSelected = selectedObjects.some(obj => obj.objectId === object.objectId);
-                  const isLocked = isObjectLocked(object.objectId);
+                  const isLocked = object.isLocked;
                   return (
                     <div
                       key={object.objectId}
@@ -552,7 +562,7 @@ export function AssetSelectionStep({
                         <div className="flex items-center gap-2">
                           {isLocked ? (
                             <span className="text-sm text-yellow-600 font-medium px-2 py-1 bg-yellow-100 rounded">
-                              In Proposal
+                              Locked in another proposal
                             </span>
                           ) : (
                             <Button

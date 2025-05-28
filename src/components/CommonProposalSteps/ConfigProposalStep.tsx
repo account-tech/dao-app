@@ -69,7 +69,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
 
     // Check start date/time
     if (startDate && startDate.getTime() <= now.getTime()) {
-      warnings.push("Warning: Voting start time should be in the future");
+      warnings.push("Warning: Voting start time should be in the future. If you intend to start voting immediately, please set the voting start time to a few minutes from now to have time to sign the transaction.");
     }
 
     // Check end date/time

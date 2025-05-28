@@ -1,10 +1,11 @@
 'use client';
 import { DaoClient, DepStatus, VoteIntentArgs, IntentStatus } from "@account.tech/dao";
 import { OwnedData, Dep } from "@account.tech/core";
-import { Transaction, TransactionResult } from "@mysten/sui/transactions";
+import { Transaction, TransactionObjectInput, TransactionResult } from "@mysten/sui/transactions";
 import { useDaoStore } from "@/store/useDaoStore";
 import { CreateDaoParams, RequestConfigDaoParams } from "@/types/dao";
-import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { getCoinDecimals, getSimplifiedAssetType, getMultipleCoinDecimals } from "@/utils/GlobalHelpers";
+import { getTokenPrices } from "@/utils/Aftermath";
 import { SuiClient } from "@mysten/sui/client";
 
 interface VotingPowerInfo {
@@ -45,10 +46,17 @@ interface ConfigDaoChanges {
   };
 }
 
-interface WithdrawAmount {
-  amount: string;
-  coinType: string;
+interface WithdrawAsset {
+  type: 'coin' | 'nft' | 'object';
   recipient: string;
+  // For coins
+  amount?: string;
+  coinType?: string;
+  // For NFTs and objects
+  objectId?: string;
+  objectType?: string;
+  name?: string;
+  image?: string;
 }
 
 export function useDaoClient() {
@@ -458,11 +466,13 @@ export function useDaoClient() {
     }
   };
 
-  const getAmountsFromWithdrawIntent = async (
+
+
+  const getAssetsFromWithdrawIntent = async (
     userAddr: string,
     daoId: string,
     intentKey: string
-  ): Promise<WithdrawAmount[]> => {
+  ): Promise<WithdrawAsset[]> => {
     try {
       // Get both the intent and owned objects in parallel
       const [intent, ownedData] = await Promise.all([
@@ -475,7 +485,7 @@ export function useDaoClient() {
       }
 
       const transfers = (intent as any).args?.transfers || [];
-      const amounts: WithdrawAmount[] = [];
+      const assets: WithdrawAsset[] = [];
 
       // Process each transfer
       for (const transfer of transfers) {
@@ -495,20 +505,187 @@ export function useDaoClient() {
               const rawAmount = BigInt(instance.amount);
               const formattedAmount = (Number(rawAmount) / Number(divisor)).toString();
 
-              amounts.push({
+              assets.push({
+                type: 'coin',
                 amount: formattedAmount,
                 coinType: coin.type,
                 recipient
               });
+              break;
+            }
+          }
+        }
+
+        // Look through NFTs to find matching object ID
+        if (ownedData.nfts) {
+          for (const nft of ownedData.nfts) {
+            if (nft.ref.objectId === objectId) {
+              assets.push({
+                type: 'nft',
+                objectId: nft.ref.objectId,
+                objectType: nft.type,
+                name: nft.name,
+                image: nft.image,
+                recipient
+              });
+              break;
+            }
+          }
+        }
+
+        // Look through objects to find matching object ID
+        if (ownedData.objects) {
+          for (const obj of ownedData.objects) {
+            if (obj.ref.objectId === objectId) {
+              assets.push({
+                type: 'object',
+                objectId: obj.ref.objectId,
+                objectType: obj.type,
+                recipient
+              });
+              break;
             }
           }
         }
       }
 
-      return amounts;
+      return assets;
     } catch (error) {
-      console.error("Error getting withdraw amounts:", error);
+      console.error("Error getting withdraw assets:", error);
       return [];
+    }
+  };
+
+  const getVaults = async (userAddr: string, daoId: string) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.getVaults().assets;
+    } catch (error) {
+      console.error("Error getting vault:", error);
+      throw error;
+    }
+  };
+
+  const getVault = async (userAddr: string, daoId: string, vaultName: string, suiClient?: SuiClient) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      const vaults = client.getVaults().assets;
+      
+      // Search for the specific vault by name
+      if (vaults && typeof vaults === 'object' && vaults[vaultName]) {
+        const vault = vaults[vaultName];
+        
+        // If suiClient is provided, format coin amounts with proper decimals
+        if (suiClient && vault.coins) {
+          const coinTypes = Object.keys(vault.coins);
+          
+          if (coinTypes.length > 0) {
+            // Normalize coin types to full format for decimal lookup
+            const normalizedCoinTypes = coinTypes.map(coinType => {
+              // If it's already in full format (starts with 0x), use as is
+              if (coinType.startsWith('0x')) {
+                return coinType;
+              }
+              // Otherwise, assume it needs 0x prefix
+              return `0x${coinType}`;
+            });
+                
+            // Get decimals for all normalized coin types
+            const decimalsMap = await getMultipleCoinDecimals(normalizedCoinTypes, suiClient);
+            
+            // Format each coin amount with proper decimals
+            const formattedCoins: Record<string, { balance: bigint; formattedBalance: string; symbol: string; decimals: number }> = {};
+            
+            for (const [originalCoinType, balance] of Object.entries(vault.coins)) {
+              // Find the normalized type for this coin
+              const normalizedType = originalCoinType.startsWith('0x') 
+                ? originalCoinType 
+                : `0x${originalCoinType}`;
+              
+              const decimals = decimalsMap.get(normalizedType) ?? 9;
+              const divisor = BigInt(10) ** BigInt(decimals);
+              const formattedBalance = (Number(balance as bigint) / Number(divisor)).toFixed(6);
+              const symbol = originalCoinType.split('::').pop() || 'Unknown';
+              
+              formattedCoins[originalCoinType] = {
+                balance: balance as bigint,
+                formattedBalance,
+                symbol,
+                decimals
+              };
+            }
+            
+            return {
+              ...vault,
+              coins: vault.coins, // Keep original for compatibility
+              formattedCoins // Add formatted version
+            };
+          }
+        }
+        
+        return vault;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error getting vault:", error);
+      throw error;
+    }
+  };
+
+  const getVaultTotalValue = async (userAddr: string, daoId: string, vaultName: string, suiClient: SuiClient): Promise<string> => {
+    try {
+      // Get vault data with formatted coins
+      const vaultData = await getVault(userAddr, daoId, vaultName, suiClient);
+      
+      // Check if we have formatted coins (which means suiClient was provided)
+      if (!vaultData || !('formattedCoins' in vaultData) || !vaultData.formattedCoins) {
+        return "0.00";
+      }
+
+      // Get all coin types for price lookup
+      const coinTypes = Object.keys(vaultData.formattedCoins);
+      
+      if (coinTypes.length === 0) {
+        return "0.00";
+      }
+
+      // Normalize coin types for price API (ensure 0x prefix)
+      const normalizedCoinTypes = coinTypes.map(coinType => {
+        if (coinType.startsWith('0x')) {
+          return coinType;
+        }
+        return `0x${coinType}`;
+      });
+
+      // Fetch token prices from Aftermath
+      const tokenPrices = await getTokenPrices(normalizedCoinTypes);
+      
+      if (!tokenPrices) {
+        console.warn("Failed to fetch token prices for vault total value calculation");
+        return "0.00";
+      }
+
+      // Calculate total value
+      let totalValue = 0;
+      
+      for (const [originalCoinType, coinData] of Object.entries(vaultData.formattedCoins)) {
+        // Find the normalized type for price lookup
+        const normalizedType = originalCoinType.startsWith('0x') 
+          ? originalCoinType 
+          : `0x${originalCoinType}`;
+        
+        const price = tokenPrices[normalizedType]?.price;
+        const displayPrice = price === -1 ? 0 : price || 0;
+        const numericAmount = parseFloat(coinData.formattedBalance);
+        
+        totalValue += numericAmount * displayPrice;
+      }
+
+      return totalValue.toFixed(2);
+    } catch (error) {
+      console.error("Error calculating vault total value:", error);
+      return "0.00";
     }
   };
 
@@ -706,6 +883,38 @@ export function useDaoClient() {
     }
   };
 
+  const openVault = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    treasuryName: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.openVault(tx, treasuryName) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error opening vault:", error);
+      throw error;
+    }
+  };
+
+  const depositFromWallet = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    coinType: string,
+    treasuryName: string,
+    coin: TransactionObjectInput
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.depositFromWallet(tx, coinType, treasuryName, coin) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error depositing from wallet:", error);
+      throw error;
+    }
+  };
+
   //====================DAO INTENTS====================
 
   const requestConfigDao = async (
@@ -776,6 +985,25 @@ export function useDaoClient() {
     }
   };
 
+  const requestWithdrawAndTransferToVault = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coinType: string,
+    coinAmount: bigint,
+    vaultName: string
+  ) => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      client.requestWithdrawAndTransferToVault(tx, intentArgs, coinType, coinAmount, vaultName);
+      return tx;
+    } catch (error) {
+      console.error("Error requesting withdraw and transfer to vault:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
@@ -800,7 +1028,10 @@ export function useDaoClient() {
     getunverifiedDepsAllowedBool,
     getLockedObjects,
     getConfigDaoIntentChanges,
-    getAmountsFromWithdrawIntent,
+    getAssetsFromWithdrawIntent,
+    getVaults,
+    getVault,
+    getVaultTotalValue,
     // ACTIONS
     authenticate,
     followDao,
@@ -815,8 +1046,11 @@ export function useDaoClient() {
     changeVote,
     modifyMetadata,
     updateVerifiedDeps,
+    openVault,
+    depositFromWallet,
     // DAO INTENTS
     requestWithdrawAndTransfer,
+    requestWithdrawAndTransferToVault,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
   };

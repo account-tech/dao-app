@@ -42,6 +42,24 @@ const truncateAddress = (address: string) => {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 };
 
+const truncateObjectId = (objectId: string) => {
+  if (!objectId) return "Not set";
+  return `${objectId.slice(0, 8)}...${objectId.slice(-8)}`;
+};
+
+const groupObjectsByType = (objects: ObjectSelection[]) => {
+  const grouped = objects.reduce((acc, obj) => {
+    const type = obj.type;
+    if (!acc[type]) {
+      acc[type] = [];
+    }
+    acc[type].push(obj);
+    return acc;
+  }, {} as Record<string, ObjectSelection[]>);
+  
+  return grouped;
+};
+
 const InfoRow = ({ label, value, isDescription = false }: { 
   label: string, 
   value: any,
@@ -126,24 +144,53 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
           {formData.selectedObjects.length > 0 && (
             <>
               <h4 className="font-medium text-gray-700 mb-2 mt-4">Selected Objects/NFTs</h4>
-              {formData.selectedObjects.map((obj: ObjectSelection, index: number) => (
-                <div key={index} className="pl-4 py-2 border-l-2 border-teal-100">
-                  <InfoRow 
-                    label="Object ID"
-                    value={obj.objectId}
-                  />
-                  <InfoRow 
-                    label="Type"
-                    value={obj.type}
-                  />
-                  {obj.name && (
-                    <InfoRow 
-                      label="Name"
-                      value={obj.name}
-                    />
-                  )}
-                </div>
-              ))}
+              {Object.entries(groupObjectsByType(formData.selectedObjects)).map(([type, objects]) => {
+                const quantity = objects.length;
+                const firstObject = objects[0];
+                const typeName = type.split('::').pop() || type;
+                
+                return (
+                  <div key={type} className="pl-4 pr-4 py-3 border-l-2 border-teal-100 bg-gray-50 rounded-r-md">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-800">{typeName}</span>
+                      <span className="text-sm bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                        Quantity: x{quantity}
+                      </span>
+                    </div>
+                    
+                    {firstObject.name && (
+                      <div className="text-sm text-gray-600 mb-1">
+                        <span className="font-medium">Name:</span> {firstObject.name}
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-gray-500">
+                      <span className="font-medium">Type:</span> {truncateAddress(type)}
+                    </div>
+                    
+                    {quantity === 1 ? (
+                      <div className="text-xs text-gray-500 mt-1">
+                        <span className="font-medium">Object ID:</span> {truncateObjectId(firstObject.objectId)}
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-teal-600 hover:text-teal-700 font-medium">
+                            View all {quantity} object IDs
+                          </summary>
+                          <div className="mt-2 space-y-1 pl-2 border-l border-gray-300">
+                            {objects.map((obj, idx) => (
+                              <div key={obj.objectId} className="text-gray-500">
+                                {idx + 1}. {truncateObjectId(obj.objectId)}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </>
           )}
         </Section>

@@ -19,14 +19,14 @@ interface Changes {
 
 export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const currentAccount = useCurrentAccount();
-  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAmountsFromWithdrawIntent } = useDaoClient();
+  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent } = useDaoClient();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [changes, setChanges] = useState<Changes | null>(null);
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState<boolean | undefined>(undefined);
   const [configChanges, setConfigChanges] = useState<any>(null);
-  const [withdrawAmounts, setWithdrawAmounts] = useState<any>(null);
+  const [withdrawAssets, setWithdrawAssets] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,9 +59,9 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
           additionalData = { configChanges: configChangesData };
           setConfigChanges(configChangesData);
         } else if (intentType === 'WithdrawAndTransfer') {
-          const amounts = await getAmountsFromWithdrawIntent(currentAccount.address, daoId, intentKey);
-          additionalData = { withdrawAmounts: amounts };
-          setWithdrawAmounts(amounts);
+          const assets = await getAssetsFromWithdrawIntent(currentAccount.address, daoId, intentKey);
+          additionalData = { withdrawAssets: assets };
+          setWithdrawAssets(assets);
         }
 
         // Find and call the appropriate handler with all data

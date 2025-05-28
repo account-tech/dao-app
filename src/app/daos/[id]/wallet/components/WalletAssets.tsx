@@ -13,19 +13,6 @@ interface WalletAssetsProps {
   };
 }
 
-const BasePlaceholder = () => (
-  <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
-    <div className="space-y-2">
-      <div className="h-5 w-20 bg-gray-200 rounded"></div>
-      <div className="h-4 w-24 bg-gray-200 rounded"></div>
-    </div>
-    <div className="text-right space-y-2">
-      <div className="h-4 w-16 bg-gray-200 rounded"></div>
-      <div className="h-5 w-20 bg-gray-200 rounded"></div>
-    </div>
-  </div>
-);
-
 const CoinPlaceholder = () => (
   <div className="bg-gray-50 rounded-lg p-4 flex justify-between items-center">
     <div className="space-y-2">
@@ -127,15 +114,25 @@ export function WalletAssets({ ownedData, coinDecimals, tokenPrices }: WalletAss
       {/* NFTs Tab */}
       <TabsContent value="nfts" className="mt-6 space-y-4">
         {ownedData?.nfts?.length ? (
-          ownedData.nfts.map((nft, index) => (
-            <div 
-              key={index} 
-              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
-            >
-              <div className="font-medium truncate">{nft.name}</div>
-              <div className="text-sm text-gray-500 truncate">{nft.type.split("::").pop()}</div>
-            </div>
-          ))
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {ownedData.nfts.map((nft, index) => (
+              <div
+                key={index}
+                className="relative rounded-lg overflow-hidden border border-gray-200 hover:border-teal-300 transition-all hover:shadow-md"
+              >
+                <img
+                  src={nft.image}
+                  alt={nft.name || "NFT"}
+                  className="w-full aspect-square object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 p-2">
+                  <p className="text-white text-sm truncate">
+                    {nft.name || nft.type.split('::').pop() || "Unknown NFT"}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="relative">
             <div className="opacity-30 space-y-4">

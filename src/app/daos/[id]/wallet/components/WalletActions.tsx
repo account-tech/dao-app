@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowUpFromLine, QrCode, Gift, Clock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowUpFromLine, QrCode, Gift, Clock, AlertCircle } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 interface WalletOverviewProps {
@@ -9,6 +10,9 @@ interface WalletOverviewProps {
   onDeposit?: () => void;
   onAirdrop?: () => void;
   onVest?: () => void;
+  hasAuthPower?: boolean;
+  authVotingPower?: string;
+  votingPower?: string;
 }
 
 export function WalletOverview({
@@ -16,7 +20,10 @@ export function WalletOverview({
   onWithdraw,
   onDeposit,
   onAirdrop,
-  onVest
+  onVest,
+  hasAuthPower = true,
+  authVotingPower = "0",
+  votingPower = "0"
 }: WalletOverviewProps) {
   const router = useRouter();
   const params = useParams();
@@ -27,8 +34,10 @@ export function WalletOverview({
       label: "Withdraw",
       icon: ArrowUpFromLine,
       onClick: () => router.push(`/daos/${daoId}/wallet/requestWithdrawAndTransfer`),
-      className: "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200",
-      disabled: false
+      className: hasAuthPower 
+        ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+      disabled: !hasAuthPower
     },
     {
       label: "Deposit",
@@ -65,6 +74,18 @@ export function WalletOverview({
             ${totalValue}
           </div>
         </div>
+
+        {/* Voting Power Alert */}
+        {!hasAuthPower && (
+          <div className="mb-4">
+            <Alert className="bg-yellow-50/50 border-yellow-100">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 text-sm">
+                You need at least {authVotingPower} voting power to withdraw assets. Current: {votingPower}. Stake more tokens to withdraw.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         {/* Action Buttons Grid */}
         <div className="grid grid-cols-2 gap-3">

@@ -25,10 +25,17 @@ interface IntentHandlerProps {
       votingRule: number;
     };
   };
-  withdrawAmounts?: Array<{
-    amount: string;
-    coinType: string;
+  withdrawAssets?: Array<{
+    type: 'coin' | 'nft' | 'object';
     recipient: string;
+    // For coins
+    amount?: string;
+    coinType?: string;
+    // For NFTs and objects
+    objectId?: string;
+    objectType?: string;
+    name?: string;
+    image?: string;
   }>;
 }
 
@@ -77,8 +84,8 @@ export function handleToggleUnverifiedAllowed({ unverifiedDepsAllowed }: IntentH
   };
 }
 
-export function handleWithdrawAndTransfer({ withdrawAmounts }: IntentHandlerProps): HandlerResult {
-  if (!withdrawAmounts) {
+export function handleWithdrawAndTransfer({ withdrawAssets }: IntentHandlerProps): HandlerResult {
+  if (!withdrawAssets) {
     return {
       title: "Withdraw and Transfer Assets",
       description: <span>Loading withdrawal details...</span>
@@ -95,55 +102,263 @@ export function handleWithdrawAndTransfer({ withdrawAmounts }: IntentHandlerProp
     navigator.clipboard.writeText(text);
   };
 
+  // Helper function to truncate object ID
+  const truncateObjectId = (objectId: string) => {
+    if (!objectId) return "Not set";
+    return `${objectId.slice(0, 8)}...${objectId.slice(-8)}`;
+  };
+
+  // Group assets by type and then by object type for NFTs/objects
+  const groupAssetsByType = (assets: any[]) => {
+    const grouped = {
+      coins: [] as any[],
+      nfts: {} as Record<string, any[]>,
+      objects: {} as Record<string, any[]>
+    };
+
+    assets.forEach(asset => {
+      if (asset.type === 'coin') {
+        grouped.coins.push(asset);
+      } else if (asset.type === 'nft') {
+        const type = asset.objectType;
+        if (!grouped.nfts[type]) {
+          grouped.nfts[type] = [];
+        }
+        grouped.nfts[type].push(asset);
+      } else if (asset.type === 'object') {
+        const type = asset.objectType;
+        if (!grouped.objects[type]) {
+          grouped.objects[type] = [];
+        }
+        grouped.objects[type].push(asset);
+      }
+    });
+
+    return grouped;
+  };
+
+  // Use the assets data
+  const assetsToDisplay = withdrawAssets;
+
+  const groupedAssets = groupAssetsByType(assetsToDisplay);
+
   return {
     title: "Withdraw and Transfer Assets",
     description: (
       <div className="space-y-4">
-        {withdrawAmounts.map((withdrawal, index) => (
-          <div 
-            key={index} 
-            className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors"
-          >
-            <div className="flex flex-col space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Amount</span>
-                <span className="text-teal-600 font-medium">
-                  {withdrawal.amount} {formatCoinType(withdrawal.coinType)}
-                </span>
-              </div>
-              
-              <div className="border-t border-gray-200 my-1" />
-              
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Recipient</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-gray-700">
-                    {truncateAddress(withdrawal.recipient)}
-                  </span>
-                  <button
-                    onClick={() => handleCopyClick(withdrawal.recipient)}
-                    className="text-gray-400 hover:text-teal-600 transition-colors"
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    >
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                  </button>
+        {/* Coins Section */}
+        {groupedAssets.coins.length > 0 && (
+          <div>
+            <h4 className="font-medium text-gray-700 mb-3">Coins</h4>
+            {groupedAssets.coins.map((coin, index) => (
+              <div 
+                key={index} 
+                className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors mb-3"
+              >
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="text-teal-600 font-medium">
+                      {coin.amount} {formatCoinType(coin.coinType)}
+                    </span>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 my-1" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Recipient</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm text-gray-700">
+                        {truncateAddress(coin.recipient)}
+                      </span>
+                      <button
+                        onClick={() => handleCopyClick(coin.recipient)}
+                        className="text-gray-400 hover:text-teal-600 transition-colors"
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
+        )}
+
+        {/* NFTs Section */}
+        {Object.keys(groupedAssets.nfts).length > 0 && (
+          <div>
+            <h4 className="font-medium text-gray-700 mb-3">NFTs</h4>
+            {Object.entries(groupedAssets.nfts).map(([type, nfts]) => {
+              const quantity = nfts.length;
+              const firstNft = nfts[0];
+              const typeName = type.split('::').pop() || type;
+              
+              return (
+                <div key={type} className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-800">{typeName}</span>
+                    <span className="text-sm bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                      Quantity: x{quantity}
+                    </span>
+                  </div>
+                  
+                  {firstNft.name && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className="font-medium">Name:</span> {firstNft.name}
+                    </div>
+                  )}
+                  
+                  <div className="text-xs text-gray-500 mb-2">
+                    <span className="font-medium">Type:</span> {truncateAddress(type)}
+                  </div>
+                  
+                  {quantity === 1 ? (
+                    <div className="text-xs text-gray-500 mb-2">
+                      <span className="font-medium">Object ID:</span> {truncateObjectId(firstNft.objectId)}
+                    </div>
+                  ) : (
+                    <div className="mb-2">
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-teal-600 hover:text-teal-700 font-medium">
+                          View all {quantity} object IDs
+                        </summary>
+                        <div className="mt-2 space-y-1 pl-2 border-l border-gray-300">
+                          {nfts.map((nft, idx) => (
+                            <div key={nft.objectId} className="text-gray-500">
+                              {idx + 1}. {truncateObjectId(nft.objectId)}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-200 my-2" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Recipient</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm text-gray-700">
+                        {truncateAddress(firstNft.recipient)}
+                      </span>
+                      <button
+                        onClick={() => handleCopyClick(firstNft.recipient)}
+                        className="text-gray-400 hover:text-teal-600 transition-colors"
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Objects Section */}
+        {Object.keys(groupedAssets.objects).length > 0 && (
+          <div>
+            <h4 className="font-medium text-gray-700 mb-3">Objects</h4>
+            {Object.entries(groupedAssets.objects).map(([type, objects]) => {
+              const quantity = objects.length;
+              const firstObject = objects[0];
+              const typeName = type.split('::').pop() || type;
+              
+              return (
+                <div key={type} className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-800">{typeName}</span>
+                    <span className="text-sm bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                      Quantity: x{quantity}
+                    </span>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 mb-2">
+                    <span className="font-medium">Type:</span> {truncateAddress(type)}
+                  </div>
+                  
+                  {quantity === 1 ? (
+                    <div className="text-xs text-gray-500 mb-2">
+                      <span className="font-medium">Object ID:</span> {truncateObjectId(firstObject.objectId)}
+                    </div>
+                  ) : (
+                    <div className="mb-2">
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-teal-600 hover:text-teal-700 font-medium">
+                          View all {quantity} object IDs
+                        </summary>
+                        <div className="mt-2 space-y-1 pl-2 border-l border-gray-300">
+                          {objects.map((obj, idx) => (
+                            <div key={obj.objectId} className="text-gray-500">
+                              {idx + 1}. {truncateObjectId(obj.objectId)}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-200 my-2" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Recipient</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm text-gray-700">
+                        {truncateAddress(firstObject.recipient)}
+                      </span>
+                      <button
+                        onClick={() => handleCopyClick(firstObject.recipient)}
+                        className="text-gray-400 hover:text-teal-600 transition-colors"
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     ),
   };

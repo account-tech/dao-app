@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StepProps } from "../helpers/types";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData }) => {
@@ -19,6 +19,19 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
       setDisplayMinimumVotes(minVotesDisplay.toString());
     }
   }, [formData.maxVotingPower, formData.minimumVotes, formData.coinDecimals]);
+
+  // Validation checks
+  const isMaxVotingPowerTooLow = formData.maxVotingPower < formData.authVotingPower;
+  const isMinimumVotesTooHigh = formData.minimumVotes > formData.maxVotingPower;
+  
+  // Calculate display values for validation messages
+  const getDisplayValue = (value: bigint) => {
+    if (formData.coinDecimals !== undefined) {
+      const divisor = BigInt(10) ** BigInt(formData.coinDecimals);
+      return (value / divisor).toString();
+    }
+    return value.toString();
+  };
 
   const handleMaxVotingPowerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -57,7 +70,20 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           placeholder="Enter maximum voting power..."
           value={displayMaxVotingPower}
           onChange={handleMaxVotingPowerChange}
+          className={isMaxVotingPowerTooLow ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
         />
+        
+        {/* Validation Error Alert */}
+        {isMaxVotingPowerTooLow && (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800">Invalid Maximum Voting Power</AlertTitle>
+            <AlertDescription className="text-red-700">
+              Maximum voting power ({getDisplayValue(formData.maxVotingPower)}) cannot be lower than the minimum voting power required to create proposals ({getDisplayValue(formData.authVotingPower)}).
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Alert>
           <InfoIcon />
           <AlertTitle>Maximum Voting Power Limit</AlertTitle>
@@ -66,6 +92,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
             <ul className="list-disc pl-4 mt-2 space-y-1">
               <li>Helps maintain decentralization</li>
               <li>Prevents whale dominance in voting</li>
+              <li>Must be at least {getDisplayValue(formData.authVotingPower)} (minimum power to create proposals)</li>
             </ul>
           </AlertDescription>
         </Alert>
@@ -80,7 +107,20 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
           placeholder="Enter minimum votes required..."
           value={displayMinimumVotes}
           onChange={handleMinimumVotesChange}
+          className={isMinimumVotesTooHigh ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
         />
+        
+        {/* Validation Error Alert */}
+        {isMinimumVotesTooHigh && (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800">Invalid Minimum Votes</AlertTitle>
+            <AlertDescription className="text-red-700">
+              Minimum votes required ({getDisplayValue(formData.minimumVotes)}) cannot be higher than the maximum voting power ({getDisplayValue(formData.maxVotingPower)}).
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Alert>
           <InfoIcon />
           <AlertTitle>Minimum Votes Threshold</AlertTitle>
@@ -90,6 +130,7 @@ export const VotingLimitsStep: React.FC<StepProps> = ({ formData, updateFormData
               <li>Prevents proposals from passing with too little participation</li>
               <li>Ensures community engagement in decision-making</li>
               <li>Should be set based on your expected active voter base</li>
+              <li>Cannot exceed the maximum voting power ({getDisplayValue(formData.maxVotingPower)})</li>
             </ul>
           </AlertDescription>
         </Alert>
