@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@account.tech/core": "0.1.21",
-    "@account.tech/dao": "0.1.15",
+    "@account.tech/dao": "0.1.16",
     "@mysten/dapp-kit": "^0.16.4",
     "@mysten/sui": "^1.3.0",
     "@polymedia/suitcase-core": "^0.0.54",
