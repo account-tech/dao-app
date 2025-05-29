@@ -128,7 +128,7 @@ export function VaultActions({
                 <DropdownMenuItem onClick={onDepositFromWallet} className="cursor-pointer">
                   From your wallet
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onDepositFromDao} className="cursor-pointer" disabled={true}>
+                <DropdownMenuItem onClick={onDepositFromDao} className="cursor-pointer">
                   From the DAO 
                 </DropdownMenuItem>
               </DropdownMenuContent>
