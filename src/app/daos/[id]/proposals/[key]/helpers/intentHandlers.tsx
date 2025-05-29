@@ -1,5 +1,6 @@
 import { Intent } from "@account.tech/core";
 import { ReactNode } from "react";
+import { getCoinDecimals, formatCoinAmount, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 
 interface IntentHandlerProps {
   intent: Intent;
@@ -458,10 +459,69 @@ export function handleConfigDao({ configChanges }: IntentHandlerProps): HandlerR
   };
 }
 
+export function handleWithdrawAndTransferToVault({ intent }: IntentHandlerProps): HandlerResult {
+  const args = (intent as any).args;
+  
+  if (!args) {
+    return {
+      title: "Transfer to Vault",
+      description: <span>Loading transfer details...</span>
+    };
+  }
+
+  const { coinAmount, coinType, vaultName } = args;
+
+  // Helper function to format coin type for display
+  const formatCoinType = (coinType: string) => {
+    const match = coinType.match(/::([^:]+)$/);
+    return match ? match[1] : coinType;
+  };
+  // Since we can't use async in the return, we'll format using default decimals
+  // and let the component handle proper formatting if needed
+  const defaultDecimals = 9; // SUI default
+  const formattedAmount = formatCoinAmount(coinAmount, defaultDecimals, 6);
+
+  return {
+    title: "Transfer to Vault",
+    description: (
+      <div className="space-y-4">
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Amount</span>
+              <span className="text-teal-600 font-medium">
+                {formattedAmount} {formatCoinType(coinType)}
+              </span>
+            </div>
+            
+            <div className="border-t border-gray-200 my-1" />
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Source</span>
+              <span className="text-gray-700">DAO Wallet</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Destination</span>
+              <span className="text-gray-700 font-medium">Vault : {vaultName}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Transfer Type</span>
+              <span className="text-gray-700">Internal DAO Transfer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  };
+}
+
 // Add more handlers here as needed
 export const intentHandlers: Record<string, (props: IntentHandlerProps) => HandlerResult> = {
   ToggleUnverifiedAllowed: handleToggleUnverifiedAllowed,
   ConfigDao: handleConfigDao,
   WithdrawAndTransfer: handleWithdrawAndTransfer,
+  WithdrawAndTransferToVault: handleWithdrawAndTransferToVault,
   // Add more mappings as we add more handlers
 }; 

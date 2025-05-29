@@ -62,6 +62,9 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
           const assets = await getAssetsFromWithdrawIntent(currentAccount.address, daoId, intentKey);
           additionalData = { withdrawAssets: assets };
           setWithdrawAssets(assets);
+        } else if (intentType === 'WithdrawAndTransferToVault') {
+          // For vault transfers, all data is in the intent args, no additional fetch needed
+          additionalData = {};
         }
 
         // Find and call the appropriate handler with all data

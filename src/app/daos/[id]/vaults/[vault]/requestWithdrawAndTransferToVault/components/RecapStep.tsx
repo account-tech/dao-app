@@ -204,7 +204,7 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
                 Vault Transfer Notice
               </p>
               <p className="text-sm text-blue-700">
-                This request will transfer {formData.selectedCoins[0]?.amount || "0"} {formatCoinType(formData.selectedCoins[0]?.type || "")} 
+                This request will transfer {formData.selectedCoins[0]?.amount || "0"} {formatCoinType(formData.selectedCoins[0]?.type || "")} {' '}
                 from the DAO wallet to the <strong>{vaultName}</strong> vault through the governance process.
               </p>
               <p className="text-sm text-gray-600 mt-2">
