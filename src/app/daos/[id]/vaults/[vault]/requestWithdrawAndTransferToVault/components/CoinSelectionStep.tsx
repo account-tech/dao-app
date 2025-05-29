@@ -217,6 +217,19 @@ export function CoinSelectionStep({
     );
   }
 
+  // Show alert if no coins are available
+  if (!isLoading && multisigCoins.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Alert className="border-amber-200 bg-amber-50">
+          <AlertDescription className="text-amber-800">
+            This DAO currently has no coins available to transfer to the vault. The DAO wallet appears to be empty or all coins are locked in other proposals.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   const selectedCoin = selectedCoins[0] || { type: '', amount: '' };
 
   return (

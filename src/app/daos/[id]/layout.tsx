@@ -69,12 +69,17 @@ export default function DaoLayout({
     };
   }, [pathname]);
 
-  // Check if we're in the requestConfigDao route
-  const isConfigPage = pathname.includes('/settings/requestConfigDao');
-  const isToggleUnverifiedDepsPage = pathname.includes('/settings/requestToggleUnverifiedDeps');
-  const isWithdrawAndTransferPage = pathname.includes('/wallet/requestWithdrawAndTransfer');
+  // Special pages that should use simple layout instead of gradient background
+  const specialPages = [
+    '/settings/requestConfigDao',
+    '/settings/requestToggleUnverifiedDeps',
+    '/wallet/requestWithdrawAndTransfer',
+    '/requestWithdrawAndTransferToVault'
+  ];
+  
+  const isSpecialPage = specialPages.some(page => pathname.includes(page));
 
-  if (isConfigPage || isToggleUnverifiedDepsPage || isWithdrawAndTransferPage) {
+  if (isSpecialPage) {
     return (
       <div className="min-h-screen">
         {children}
