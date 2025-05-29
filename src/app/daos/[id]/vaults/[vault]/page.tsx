@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { VaultActions } from "./components/VaultActions";
@@ -24,6 +24,7 @@ interface VaultData {
 
 export default function VaultPage() {
   const params = useParams();
+  const router = useRouter();
   const daoId = params.id as string;
   const vaultName = params.vault as string;
   const currentAccount = useCurrentAccount();
@@ -87,6 +88,10 @@ export default function VaultPage() {
 
   const handleDepositFromWallet = () => {
     setDepositDialogOpen(true);
+  };
+
+  const handleDepositFromDao = () => {
+    router.push(`/daos/${daoId}/vaults/${vaultName}/requestWithdrawAndTransferToVault`);
   };
 
   if (!currentAccount?.address) {
@@ -172,7 +177,7 @@ export default function VaultPage() {
             totalValue={totalValue} 
             vaultName={vaultName}
             onDepositFromWallet={handleDepositFromWallet}
-            onDepositFromDao={() => console.log("Deposit from DAO clicked")}
+            onDepositFromDao={handleDepositFromDao}
             hasAuthPower={hasAuthPower}
             authVotingPower={authVotingPower}
             votingPower={votingPower}
