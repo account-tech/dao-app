@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, ReactNode } from "react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { Intent } from "@account.tech/core";
 import { intentHandlers } from "../helpers/intentHandlers";
 import { Loader2 } from "lucide-react";
+import { getCoinDecimals, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
 
 interface ProposalChangesProps {
   daoId: string;
@@ -27,6 +28,7 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState<boolean | undefined>(undefined);
   const [configChanges, setConfigChanges] = useState<any>(null);
   const [withdrawAssets, setWithdrawAssets] = useState<any>(null);
+  const suiClient = useSuiClient();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,8 +65,13 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
           additionalData = { withdrawAssets: assets };
           setWithdrawAssets(assets);
         } else if (intentType === 'WithdrawAndTransferToVault') {
-          // For vault transfers, all data is in the intent args, no additional fetch needed
-          additionalData = {};
+          // For vault transfers, we need to fetch the correct decimals for proper amount formatting
+          const args = (fetchedIntent as any).args;
+          if (args?.coinType) {
+            const simplifiedAssetType = getSimplifiedAssetType(args.coinType);
+            const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+            additionalData = { coinDecimals: decimals };
+          }
         }
 
         // Find and call the appropriate handler with all data

@@ -1,11 +1,12 @@
 import { Intent } from "@account.tech/core";
 import { ReactNode } from "react";
-import { getCoinDecimals, formatCoinAmount, getSimplifiedAssetType } from "@/utils/GlobalHelpers";
+import { formatCoinAmount } from "@/utils/GlobalHelpers";
 
 interface IntentHandlerProps {
   intent: Intent;
   daoId: string;
   unverifiedDepsAllowed?: boolean;
+  coinDecimals?: number;
   configChanges?: {
     requested: {
       assetType: string;
@@ -459,7 +460,7 @@ export function handleConfigDao({ configChanges }: IntentHandlerProps): HandlerR
   };
 }
 
-export function handleWithdrawAndTransferToVault({ intent }: IntentHandlerProps): HandlerResult {
+export function handleWithdrawAndTransferToVault({ intent, coinDecimals }: IntentHandlerProps): HandlerResult {
   const args = (intent as any).args;
   
   if (!args) {
@@ -476,10 +477,10 @@ export function handleWithdrawAndTransferToVault({ intent }: IntentHandlerProps)
     const match = coinType.match(/::([^:]+)$/);
     return match ? match[1] : coinType;
   };
-  // Since we can't use async in the return, we'll format using default decimals
-  // and let the component handle proper formatting if needed
-  const defaultDecimals = 9; // SUI default
-  const formattedAmount = formatCoinAmount(coinAmount, defaultDecimals, 6);
+  
+  // Use the correct decimals passed from the component, fallback to 9 if not provided
+  const decimals = coinDecimals ?? 9;
+  const formattedAmount = formatCoinAmount(coinAmount, decimals, 6);
 
   return {
     title: "Transfer to Vault",

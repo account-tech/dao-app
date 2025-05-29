@@ -153,9 +153,11 @@ export function CoinSelectionStep({
       const formattedAvailable = Number(formatCoinAmount(availableAmount, coin.decimals || 9, 10));
       
       newCoin.type = value;
-      newCoin.amount = '0';
+      newCoin.amount = '';
       newCoin.availableBalance = formattedAvailable;
     } else {
+      // When updating amount, store the human-readable value
+      // The conversion to base units will happen when submitting
       newCoin[field] = value;
     }
     onCoinsSelected([newCoin]);
@@ -168,6 +170,7 @@ export function CoinSelectionStep({
     if (coin.lockedAmount && coin.lockedAmount >= coin.baseAmount) {
       return '0';
     }
+    // Return the human-readable available amount
     return formatCoinAmount(coin.availableAmount || BigInt(0), coin.decimals, 10);
   };
 
@@ -192,6 +195,21 @@ export function CoinSelectionStep({
       return `Available: ${availableFormatted} ${coin.symbol} (Total: ${totalFormatted} ${coin.symbol})`;
     }
     return `Balance: ${totalFormatted} ${coin.symbol}`;
+  };
+
+  // Helper function to validate amount input based on coin decimals
+  const validateAmount = (amount: string, coinType: string) => {
+    const coin = multisigCoins.find(c => c.type === coinType);
+    if (!coin || !amount) return true;
+
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) return false;
+
+    // Check if amount exceeds available balance
+    const availableAmount = Number(formatCoinAmount(coin.availableAmount || BigInt(0), coin.decimals || 9, 10));
+    if (numericAmount > availableAmount) return false;
+
+    return true;
   };
 
   useEffect(() => {
@@ -268,7 +286,12 @@ export function CoinSelectionStep({
                   value={selectedCoin.amount}
                   onChange={(e) => updateCoin('amount', e.target.value)}
                   placeholder="0.00"
-                  className="flex-1"
+                  className={`flex-1 ${
+                    selectedCoin.amount && !validateAmount(selectedCoin.amount, selectedCoin.type)
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
+                      : ''
+                  }`}
+                  step="any"
                 />
                 <Button
                   variant="outline"
@@ -280,6 +303,11 @@ export function CoinSelectionStep({
               <p className="text-sm text-muted-foreground">
                 {getCoinBalance(selectedCoin.type)}
               </p>
+              {selectedCoin.amount && !validateAmount(selectedCoin.amount, selectedCoin.type) && (
+                <p className="text-sm text-red-600">
+                  Invalid amount. Please enter a value between 0 and {getMaxAmount(selectedCoin.type)} {multisigCoins.find(c => c.type === selectedCoin.type)?.symbol}
+                </p>
+              )}
               {getLockedAmount(selectedCoin.type) && (
                 <Alert className="bg-yellow-50 text-yellow-900 border-yellow-200">
                   <AlertDescription>
