@@ -134,7 +134,7 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
               <div key={index} className="pl-4 py-2 border-l-2 border-teal-100">
                 <InfoRow 
                   label="Coin Type"
-                  value={coin.type}
+                  value={formatCoinType(coin.type)}
                 />
                 <InfoRow 
                   label="Amount"

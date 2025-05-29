@@ -9,7 +9,7 @@ export const validateStep = (step: number, formData: WithdrawFormData): boolean 
                coin.type && 
                coin.amount && 
                parseFloat(coin.amount) > 0 &&
-               // Ensure amount doesn't exceed available balance
+               // The availableBalance check is now done in human-readable terms
                parseFloat(coin.amount) <= (coin.availableBalance ?? 0)
              );
     

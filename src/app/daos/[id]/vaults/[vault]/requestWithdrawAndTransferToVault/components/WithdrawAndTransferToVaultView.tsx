@@ -90,6 +90,8 @@ const WithdrawAndTransferToVaultView = () => {
       const selectedCoin = formData.selectedCoins[0];
       const simplifiedAssetType = getSimplifiedAssetType(selectedCoin.type);
       const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+      
+      // Convert human-readable amount to base units using the coin's specific decimals
       const baseUnitAmount = BigInt(Math.round(Number(selectedCoin.amount) * Math.pow(10, decimals)));
 
       await requestWithdrawAndTransferToVault(
