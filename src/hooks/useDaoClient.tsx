@@ -1031,6 +1031,22 @@ export function useDaoClient() {
     }
   };
 
+  const requestConfigDeps = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    deps: Dep[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestConfigDeps(tx, intentArgs, deps) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting config deps:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
