@@ -1004,6 +1004,33 @@ export function useDaoClient() {
     }
   };
 
+  const requestSpendAndTransfer = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    treasuryName: string,
+    coinType: string,
+    transfers: {
+      amount: bigint;
+      recipient: string;
+    }[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestSpendAndTransfer(
+        tx,
+        intentArgs,
+        treasuryName,
+        coinType,
+        transfers
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting spend and transfer:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
@@ -1053,5 +1080,6 @@ export function useDaoClient() {
     requestWithdrawAndTransferToVault,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
+    requestSpendAndTransfer,
   };
 }
