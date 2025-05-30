@@ -1,5 +1,5 @@
 import { IntentStatus } from "@account.tech/dao";
-import { LucideIcon, Bolt, HelpCircle, ToggleLeft, ArrowUpRight, Vault } from "lucide-react";
+import { LucideIcon, Bolt, HelpCircle, ToggleLeft, ArrowUpRight, Vault, DollarSign } from "lucide-react";
 
 export interface IntentDisplay {
   title: string;
@@ -31,6 +31,10 @@ export const getIntentDisplay = (intentType: string): IntentDisplay => {
     'WithdrawAndTransferToVault': {
       title: 'Withdraw and Transfer to Vault',
       icon: Vault
+    },
+    'SpendAndTransfer': {
+      title: 'Spend and Transfer',
+      icon: DollarSign
     }
   };
 

@@ -72,6 +72,14 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
             const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
             additionalData = { coinDecimals: decimals };
           }
+        } else if (intentType === 'SpendAndTransfer') {
+          // For spend and transfer, we need to fetch the correct decimals for proper amount formatting
+          const args = (fetchedIntent as any).args;
+          if (args?.coinType) {
+            const simplifiedAssetType = getSimplifiedAssetType(args.coinType);
+            const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+            additionalData = { coinDecimals: decimals };
+          }
         }
 
         // Find and call the appropriate handler with all data

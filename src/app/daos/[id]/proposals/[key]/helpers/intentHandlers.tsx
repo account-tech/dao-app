@@ -518,11 +518,140 @@ export function handleWithdrawAndTransferToVault({ intent, coinDecimals }: Inten
   };
 }
 
+export function handleSpendAndTransfer({ intent, coinDecimals }: IntentHandlerProps): HandlerResult {
+  const args = (intent as any).args;
+  
+  if (!args) {
+    return {
+      title: "Spend and Transfer",
+      description: <span>Loading transfer details...</span>
+    };
+  }
+
+  const { coinType, treasuryName, transfers } = args;
+
+  // Helper function to format coin type for display
+  const formatCoinType = (coinType: string) => {
+    const match = coinType.match(/::([^:]+)$/);
+    return match ? match[1] : coinType;
+  };
+
+  const handleCopyClick = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+  
+  // Use the correct decimals passed from the component, fallback to 9 if not provided
+  const decimals = coinDecimals ?? 9;
+
+  // Calculate total amount being transferred
+  const totalAmount = transfers.reduce((sum: bigint, transfer: any) => {
+    return sum + BigInt(transfer.amount);
+  }, BigInt(0));
+
+  const formattedTotalAmount = formatCoinAmount(totalAmount.toString(), decimals, 6);
+
+  return {
+    title: "Spend and Transfer",
+    description: (
+      <div className="space-y-4">
+        {/* Summary Section */}
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Source</span>
+              <span className="text-gray-700 font-medium">Vault: {treasuryName}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Coin Type</span>
+              <span className="text-gray-700 font-medium">{formatCoinType(coinType)}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Total Amount</span>
+              <span className="text-teal-600 font-medium">
+                {formattedTotalAmount} {formatCoinType(coinType)}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Recipients</span>
+              <span className="text-gray-700">{transfers.length} address{transfers.length > 1 ? 'es' : ''}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Transfers Section */}
+        <div>
+          <h4 className="font-medium text-gray-700 mb-3">Transfer Details</h4>
+          {transfers.map((transfer: any, index: number) => {
+            const formattedAmount = formatCoinAmount(transfer.amount, decimals, 6);
+            
+            return (
+              <div 
+                key={index} 
+                className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors mb-3"
+              >
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Transfer #{index + 1}</span>
+                    <span className="text-sm bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                      External Transfer
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Amount</span>
+                    <span className="text-teal-600 font-medium">
+                      {formattedAmount} {formatCoinType(coinType)}
+                    </span>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 my-1" />
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Recipient</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm text-gray-700">
+                        {truncateAddress(transfer.recipient)}
+                      </span>
+                      <button
+                        onClick={() => handleCopyClick(transfer.recipient)}
+                        className="text-gray-400 hover:text-teal-600 transition-colors"
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ),
+  };
+}
+
 // Add more handlers here as needed
 export const intentHandlers: Record<string, (props: IntentHandlerProps) => HandlerResult> = {
   ToggleUnverifiedAllowed: handleToggleUnverifiedAllowed,
   ConfigDao: handleConfigDao,
   WithdrawAndTransfer: handleWithdrawAndTransfer,
   WithdrawAndTransferToVault: handleWithdrawAndTransferToVault,
+  SpendAndTransfer: handleSpendAndTransfer,
   // Add more mappings as we add more handlers
 }; 
