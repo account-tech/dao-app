@@ -646,6 +646,165 @@ export function handleSpendAndTransfer({ intent, coinDecimals }: IntentHandlerPr
   };
 }
 
+export function handleConfigDeps({ intent, currentDeps }: IntentHandlerProps & { currentDeps?: any[] }): HandlerResult {
+  const args = (intent as any).args;
+  
+  if (!args || !args.deps) {
+    return {
+      title: "Configure Dependencies",
+      description: <span>Loading dependency changes...</span>
+    };
+  }
+
+  const proposedDeps = args.deps;
+  const daoDeps = currentDeps || [];
+
+  // Helper function to create dependency string for comparison
+  const createDepString = (dep: any) => `${dep.name}:${dep.addr}:${dep.version}`;
+
+  // Convert to sets for easy comparison
+  const proposedDepStrings = new Set(proposedDeps.map(createDepString));
+  const currentDepStrings = new Set(daoDeps.map(createDepString));
+
+  // Find changes
+  const addedDeps = proposedDeps.filter((dep: any) => !currentDepStrings.has(createDepString(dep)));
+  const removedDeps = daoDeps.filter((dep: any) => !proposedDepStrings.has(createDepString(dep)));
+  const unchangedDeps = proposedDeps.filter((dep: any) => currentDepStrings.has(createDepString(dep)));
+
+  const totalChanges = addedDeps.length + removedDeps.length;
+
+  return {
+    title: "Configure Dependencies",
+    description: (
+      <div className="space-y-4">
+        {/* Summary Section */}
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Total Dependencies</span>
+              <span className="text-gray-700 font-medium">{proposedDeps.length}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Changes</span>
+              <span className="text-gray-700">
+                {totalChanges === 0 ? 'No changes' : `${totalChanges} change${totalChanges > 1 ? 's' : ''}`}
+              </span>
+            </div>
+            
+            {addedDeps.length > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Added</span>
+                <span className="text-green-600 font-medium">{addedDeps.length} package{addedDeps.length > 1 ? 's' : ''}</span>
+              </div>
+            )}
+            
+            {removedDeps.length > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Removed</span>
+                <span className="text-red-600 font-medium">{removedDeps.length} package{removedDeps.length > 1 ? 's' : ''}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Changes Section */}
+        {totalChanges > 0 && (
+          <div className="space-y-4">
+            {/* Added Dependencies */}
+            {addedDeps.length > 0 && (
+              <div>
+                <h4 className="font-medium text-green-700 mb-3">📦 Added Dependencies ({addedDeps.length})</h4>
+                {addedDeps.map((dep: any, index: number) => (
+                  <div 
+                    key={index} 
+                    className="bg-green-50 rounded-lg p-4 border border-green-100 mb-3"
+                  >
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-green-800">{dep.name}</span>
+                        <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          New Package
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-600">
+                        <div>Version: {dep.version}</div>
+                        <div className="break-all">Address: {truncateAddress(dep.addr)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Removed Dependencies */}
+            {removedDeps.length > 0 && (
+              <div>
+                <h4 className="font-medium text-red-700 mb-3">🗑️ Removed Dependencies ({removedDeps.length})</h4>
+                {removedDeps.map((dep: any, index: number) => (
+                  <div 
+                    key={index} 
+                    className="bg-red-50 rounded-lg p-4 border border-red-100 mb-3"
+                  >
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-red-800">{dep.name}</span>
+                        <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                          Removed
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-600">
+                        <div>Version: {dep.version}</div>
+                        <div className="break-all">Address: {truncateAddress(dep.addr)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Unchanged Dependencies (collapsible) */}
+        {unchangedDeps.length > 0 && (
+          <div>
+            <details className="group">
+              <summary className="cursor-pointer text-gray-600 hover:text-gray-800 font-medium flex items-center gap-2">
+                <span className="transform group-open:rotate-90 transition-transform">▶</span>
+                View unchanged dependencies ({unchangedDeps.length})
+              </summary>
+              <div className="mt-3 space-y-2">
+                {unchangedDeps.map((dep: any, index: number) => (
+                  <div 
+                    key={index} 
+                    className="bg-gray-50 rounded-lg p-3 border border-gray-100"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-700">{dep.name}</span>
+                      <span className="text-xs text-gray-500">v{dep.version}</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {truncateAddress(dep.addr)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )}
+
+        {totalChanges === 0 && (
+          <div className="text-center py-4 text-gray-500">
+            No dependency changes proposed
+          </div>
+        )}
+      </div>
+    ),
+  };
+}
+
 // Add more handlers here as needed
 export const intentHandlers: Record<string, (props: IntentHandlerProps) => HandlerResult> = {
   ToggleUnverifiedAllowed: handleToggleUnverifiedAllowed,
@@ -653,5 +812,6 @@ export const intentHandlers: Record<string, (props: IntentHandlerProps) => Handl
   WithdrawAndTransfer: handleWithdrawAndTransfer,
   WithdrawAndTransferToVault: handleWithdrawAndTransferToVault,
   SpendAndTransfer: handleSpendAndTransfer,
+  ConfigDeps: handleConfigDeps,
   // Add more mappings as we add more handlers
 }; 

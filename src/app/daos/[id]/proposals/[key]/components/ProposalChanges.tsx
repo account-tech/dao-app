@@ -20,7 +20,7 @@ interface Changes {
 
 export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const currentAccount = useCurrentAccount();
-  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent } = useDaoClient();
+  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent, getDaoDeps } = useDaoClient();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +28,7 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState<boolean | undefined>(undefined);
   const [configChanges, setConfigChanges] = useState<any>(null);
   const [withdrawAssets, setWithdrawAssets] = useState<any>(null);
+  const [currentDeps, setCurrentDeps] = useState<any[]>([]);
   const suiClient = useSuiClient();
 
   useEffect(() => {
@@ -80,6 +81,11 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
             const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
             additionalData = { coinDecimals: decimals };
           }
+        } else if (intentType === 'ConfigDeps') {
+          // For dependency configuration, we need to fetch current DAO dependencies
+          const deps = await getDaoDeps(currentAccount.address, daoId);
+          additionalData = { currentDeps: deps };
+          setCurrentDeps(deps);
         }
 
         // Find and call the appropriate handler with all data
