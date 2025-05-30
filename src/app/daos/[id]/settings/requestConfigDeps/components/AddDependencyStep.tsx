@@ -35,6 +35,8 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
   const daoId = params.id as string;
   const [searchQuery, setSearchQuery] = useState("");
   const [unverifiedDeps, setUnverifiedDeps] = useState<Dep[]>([]);
+  const [verifiedDeps, setVerifiedDeps] = useState<Dep[]>([]);
+  const [daoDeps, setDaoDeps] = useState<Dep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState(false);
   const [externalPackage, setExternalPackage] = useState({
@@ -44,7 +46,7 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
   });
 
   const currentAccount = useCurrentAccount();
-  const { getUnverifiedDeps, getunverifiedDepsAllowedBool } = useDaoClient();
+  const { getUnverifiedDeps, getVerifiedDeps, getDaoDeps, getunverifiedDepsAllowedBool } = useDaoClient();
 
   useEffect(() => {
     const fetchDependencies = async () => {
@@ -54,20 +56,28 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
       }
 
       try {
-        const [unverified, depsAllowed] = await Promise.all([
+        const [unverified, verified, dao, depsAllowed] = await Promise.all([
           getUnverifiedDeps(currentAccount.address, daoId),
+          getVerifiedDeps(currentAccount.address, daoId),
+          getDaoDeps(currentAccount.address, daoId),
           getunverifiedDepsAllowedBool(currentAccount.address, daoId)
         ]);
 
         setUnverifiedDeps(unverified);
+        setVerifiedDeps(verified);
+        setDaoDeps(dao);
         setUnverifiedDepsAllowed(depsAllowed);
 
         // Initialize currentDeps if not already set
+        // The order is crucial: verified deps first (maintaining DAO order), then unverified deps
         if (!formData.currentDeps.length) {
-          const currentDepStrings = unverified.map(dep => `${dep.name}:${dep.addr}:${dep.version}`);
+          const verifiedDepStrings = verified.map(dep => `${dep.name}:${dep.addr}:${dep.version}`);
+          const unverifiedDepStrings = unverified.map(dep => `${dep.name}:${dep.addr}:${dep.version}`);
+          const allCurrentDeps = [...verifiedDepStrings, ...unverifiedDepStrings];
+          
           updateFormData({
-            currentDeps: currentDepStrings,
-            selectedDeps: currentDepStrings,
+            currentDeps: allCurrentDeps,
+            selectedDeps: allCurrentDeps, // Start with all current deps selected
             removedDeps: []
           });
         }
@@ -84,8 +94,21 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
     fetchDependencies();
   }, [currentAccount?.address, daoId]);
 
-  const handleDependencyToggle = (dep: Dep) => {
+  const handleDependencyToggle = (dep: Dep | { name: string; addr: string; version: string }) => {
     const depString = `${dep.name}:${dep.addr}:${dep.version}`;
+    
+    // Check if this is a verified dependency - if so, don't allow changes
+    const isVerifiedDep = verifiedDeps.some(vDep => 
+      `${vDep.name}:${vDep.addr}:${vDep.version}` === depString
+    );
+    
+    if (isVerifiedDep) {
+      toast.error("Cannot modify verified dependency", {
+        description: "Verified dependencies are immutable and cannot be changed."
+      });
+      return;
+    }
+    
     const isCurrentDep = formData.currentDeps.includes(depString);
     const isSelected = formData.selectedDeps.includes(depString);
     
@@ -127,6 +150,14 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
 
   const getDependencyStatus = (dep: { name: string; addr: string; version: string | number }) => {
     const depString = `${dep.name}:${dep.addr}:${dep.version}`;
+    
+    // Check if this is a verified dependency
+    const isVerifiedDep = verifiedDeps.some(vDep => 
+      `${vDep.name}:${vDep.addr}:${vDep.version}` === depString
+    );
+    
+    if (isVerifiedDep) return 'verified';
+    
     const isInstalled = formData.currentDeps.includes(depString);
     const isSelected = formData.selectedDeps.includes(depString);
     const isRemoved = formData.removedDeps.includes(depString);
@@ -167,12 +198,24 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
   };
 
   const allExternalPackages = [...new Set([
-    ...formData.currentDeps.filter(dep => !unverifiedDeps.some(v => 
-      `${v.name}:${v.addr}:${v.version}` === dep
-    )),
-    ...formData.selectedDeps.filter(dep => !unverifiedDeps.some(v => 
-      `${v.name}:${v.addr}:${v.version}` === dep
-    ))
+    ...formData.currentDeps.filter(dep => {
+      const isUnverified = !unverifiedDeps.some(v => 
+        `${v.name}:${v.addr}:${v.version}` === dep
+      );
+      const isVerified = !verifiedDeps.some(v => 
+        `${v.name}:${v.addr}:${v.version}` === dep
+      );
+      return isUnverified && isVerified; // Only include if it's neither unverified nor verified (i.e., external)
+    }),
+    ...formData.selectedDeps.filter(dep => {
+      const isUnverified = !unverifiedDeps.some(v => 
+        `${v.name}:${v.addr}:${v.version}` === dep
+      );
+      const isVerified = !verifiedDeps.some(v => 
+        `${v.name}:${v.addr}:${v.version}` === dep
+      );
+      return isUnverified && isVerified; // Only include if it's neither unverified nor verified (i.e., external)
+    })
   ])];
 
   if (!unverifiedDepsAllowed) {
@@ -203,6 +246,44 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
         />
       </div>
 
+      {/* Verified Dependencies (Read-only) */}
+      <div className="space-y-4">
+        <h3 className="font-medium">Core DAO Dependencies (Verified)</h3>
+        <p className="text-sm text-gray-600">These dependencies are verified and cannot be modified. They maintain the core functionality of your DAO.</p>
+        {isLoading ? (
+          <div className="py-4 text-center text-gray-500">Loading verified dependencies...</div>
+        ) : verifiedDeps.length === 0 ? (
+          <div className="py-4 text-center text-gray-500">No verified dependencies found</div>
+        ) : (
+          <div className="space-y-4">
+            {verifiedDeps.map((dep) => (
+              <div
+                key={dep.addr}
+                className="p-4 rounded-lg border border-blue-200 bg-blue-50"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-5 h-5 mt-0.5 flex items-center justify-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">
+                      {dep.name}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      <div>Version {dep.version}</div>
+                      <div className="break-all">{dep.addr}</div>
+                    </div>
+                    <div className="mt-2 text-xs text-blue-600">
+                      Verified • Cannot be modified
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Existing Unverified Dependencies */}
       <div className="space-y-4">
         <h3 className="font-medium">Available Unverified Dependencies</h3>
@@ -216,11 +297,13 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
               const status = getDependencyStatus(dep);
               const depString = `${dep.name}:${dep.addr}:${dep.version}`;
               const isSelected = formData.selectedDeps.includes(depString);
+              const isVerified = status === 'verified';
 
               return (
                 <div
                   key={dep.addr}
                   className={`p-4 rounded-lg border ${
+                    status === 'verified' ? 'border-blue-200 bg-blue-50' :
                     status === 'marked-for-removal' ? 'border-red-200 bg-red-50' :
                     status === 'installed' ? 'border-gray-200 bg-gray-50' :
                     status === 'new' ? 'border-green-200 bg-green-50' :
@@ -232,11 +315,12 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
                       id={dep.addr}
                       checked={isSelected}
                       onCheckedChange={() => handleDependencyToggle(dep)}
+                      disabled={isVerified}
                     />
                     <div className="flex-1">
                       <Label
                         htmlFor={dep.addr}
-                        className="text-sm font-medium cursor-pointer"
+                        className={`text-sm font-medium ${isVerified ? 'cursor-default' : 'cursor-pointer'}`}
                       >
                         {dep.name}
                       </Label>
@@ -244,7 +328,12 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
                         <div>Version {dep.version}</div>
                         <div className="break-all">{dep.addr}</div>
                       </div>
-                      {status === 'installed' && (
+                      {status === 'verified' && (
+                        <div className="mt-2 text-xs text-blue-600">
+                          Verified • Cannot be modified
+                        </div>
+                      )}
+                      {status === 'installed' && !isVerified && (
                         <div className="mt-2 text-xs text-gray-500">
                           Currently installed
                         </div>
@@ -319,12 +408,14 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
                 const [name, addr, version] = dep.split(':');
                 const status = getDependencyStatus({ name, addr, version });
                 const isSelected = formData.selectedDeps.includes(dep);
+                const isVerified = status === 'verified';
                 
                 return (
                   <div key={dep} className={`p-4 rounded-lg border ${
                     status === 'marked-for-removal' ? 'border-red-200 bg-red-50' :
                     status === 'installed' ? 'border-gray-200 bg-gray-50' :
                     status === 'new' ? 'border-green-200 bg-green-50' :
+                    status === 'verified' ? 'border-blue-200 bg-blue-50' :
                     'border-gray-200'
                   }`}>
                     <div className="flex items-start gap-3">
@@ -334,13 +425,14 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
                         onCheckedChange={() => handleDependencyToggle({ 
                           name, 
                           addr, 
-                          version: Number(version)
+                          version: version
                         })}
+                        disabled={status === 'verified'}
                       />
                       <div className="flex-1">
                         <Label
                           htmlFor={addr}
-                          className="text-sm font-medium cursor-pointer"
+                          className={`text-sm font-medium ${status === 'verified' ? 'cursor-default' : 'cursor-pointer'}`}
                         >
                           {name}
                         </Label>
@@ -348,7 +440,12 @@ export const AddDependencyStep: React.FC<AddDependencyStepProps> = ({
                           <div>Version {version}</div>
                           <div className="break-all">{addr}</div>
                         </div>
-                        {status === 'installed' && (
+                        {status === 'verified' && (
+                          <div className="mt-2 text-xs text-blue-600">
+                            Verified • Cannot be modified
+                          </div>
+                        )}
+                        {status === 'installed' && !isVerified && (
                           <div className="mt-2 text-xs text-gray-500">
                             Currently installed
                           </div>
