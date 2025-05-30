@@ -42,8 +42,8 @@ export function VaultActions({
       className: hasAuthPower 
         ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
         : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
-      disabled: !hasAuthPower || true, // Keep coming soon disabled for now
-      comingSoon: true
+      disabled: !hasAuthPower,
+      comingSoon: false
     },
     {
       label: "Manage",
