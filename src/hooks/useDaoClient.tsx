@@ -1097,5 +1097,6 @@ export function useDaoClient() {
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
     requestSpendAndTransfer,
+    requestConfigDeps,
   };
 }
