@@ -23,7 +23,8 @@ const Navbar = () => {
     '/settings/requestToggleUnverifiedDeps',
     '/wallet/requestWithdrawAndTransfer',
     '/requestWithdrawAndTransferToVault',
-    '/requestSpendAndTransfer'
+    '/requestSpendAndTransfer',
+    '/settings/requestConfigDeps'
   ];
   
   const isSpecialPage = specialPages.some(page => pathname.includes(page));

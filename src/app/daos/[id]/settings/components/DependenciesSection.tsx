@@ -259,16 +259,22 @@ export function DependenciesSection({ daoId, hasAuthPower, authVotingPower, voti
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1 border-gray-200 text-gray-400 hover:bg-gray-50 cursor-not-allowed"
-                          disabled={true}
+                          className={`gap-1 border-gray-200 ${!hasAuthPower || !unverifiedDepsAllowed ? 'text-gray-400 hover:bg-gray-50 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-50'}`}
+                          disabled={!hasAuthPower || !unverifiedDepsAllowed}
+                          onClick={() => router.push(`/daos/${daoId}/settings/requestConfigDeps`)}
                         >
                           <span className="text-lg leading-none">+</span> Add
-                          <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-500 text-[10px] px-1 py-0">Coming Soon</Badge>
                         </Button>
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="bg-gray-900 text-white">
-                      <p>Adding external dependencies will be available soon</p>
+                      {!hasAuthPower ? (
+                        <p>You need at least {authVotingPower.toString()} voting power to manage dependencies. Current: {votingPower}</p>
+                      ) : !unverifiedDepsAllowed ? (
+                        <p>Enable unverified dependencies to add external packages</p>
+                      ) : (
+                        <p>Add external dependencies to your DAO</p>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

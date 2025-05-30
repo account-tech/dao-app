@@ -73,6 +73,7 @@ export default function DaoLayout({
   const specialPages = [
     '/settings/requestConfigDao',
     '/settings/requestToggleUnverifiedDeps',
+    '/settings/requestConfigDeps',
     '/wallet/requestWithdrawAndTransfer',
     '/requestWithdrawAndTransferToVault',
     '/requestSpendAndTransfer'
