@@ -74,7 +74,8 @@ export default function DaoLayout({
     '/settings/requestConfigDao',
     '/settings/requestToggleUnverifiedDeps',
     '/wallet/requestWithdrawAndTransfer',
-    '/requestWithdrawAndTransferToVault'
+    '/requestWithdrawAndTransferToVault',
+    '/requestSpendAndTransfer'
   ];
   
   const isSpecialPage = specialPages.some(page => pathname.includes(page));
