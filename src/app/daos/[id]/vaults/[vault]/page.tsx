@@ -98,6 +98,10 @@ export default function VaultPage() {
     router.push(`/daos/${daoId}/vaults/${vaultName}/requestSpendAndTransfer`);
   };
 
+  const handleVest = () => {
+    router.push(`/daos/${daoId}/vaults/${vaultName}/requestSpendAndVest`);
+  };
+
   if (!currentAccount?.address) {
     return (
       <div className="flex flex-col items-center justify-start min-h-screen pt-44">
@@ -183,6 +187,7 @@ export default function VaultPage() {
             onDepositFromWallet={handleDepositFromWallet}
             onDepositFromDao={handleDepositFromDao}
             onWithdraw={handleWithdraw}
+            onVest={handleVest}
             hasAuthPower={hasAuthPower}
             authVotingPower={authVotingPower}
             votingPower={votingPower}

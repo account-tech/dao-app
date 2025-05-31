@@ -24,7 +24,8 @@ const Navbar = () => {
     '/wallet/requestWithdrawAndTransfer',
     '/requestWithdrawAndTransferToVault',
     '/requestSpendAndTransfer',
-    '/settings/requestConfigDeps'
+    '/settings/requestConfigDeps',
+    '/requestSpendAndVest'
   ];
   
   const isSpecialPage = specialPages.some(page => pathname.includes(page));

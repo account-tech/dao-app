@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowUpFromLine, ArrowDownToLine, Settings, TrendingUp, ChevronDown, AlertCircle } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, Clock, TrendingUp, ChevronDown, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,7 @@ interface VaultActionsProps {
   onWithdraw?: () => void;
   onDepositFromWallet?: () => void;
   onDepositFromDao?: () => void;
-  onManage?: () => void;
+  onVest?: () => void;
   onAnalytics?: () => void;
   hasAuthPower?: boolean;
   authVotingPower?: string;
@@ -28,7 +28,7 @@ export function VaultActions({
   onWithdraw,
   onDepositFromWallet,
   onDepositFromDao,
-  onManage,
+  onVest,
   onAnalytics,
   hasAuthPower = true,
   authVotingPower = "0",
@@ -46,12 +46,14 @@ export function VaultActions({
       comingSoon: false
     },
     {
-      label: "Manage",
-      icon: Settings,
-      onClick: onManage,
-      className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
-      disabled: true,
-      comingSoon: true
+      label: "Vest",
+      icon: Clock,
+      onClick: onVest,
+      className: hasAuthPower 
+        ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+      disabled: !hasAuthPower,
+      comingSoon: false
     },
     {
       label: "Analytics",
