@@ -1,7 +1,8 @@
 import React from 'react';
-import { Check, AlertCircle, CalendarIcon, Wallet, User, Clock } from "lucide-react";
+import { Check, AlertCircle, CalendarIcon, Wallet, User, Clock, Copy } from "lucide-react";
 import { useParams } from 'next/navigation';
 import { VestingFormData } from '../helpers/types';
+import { toast } from 'sonner';
 
 const formatDate = (date: Date): string => {
   return new Date(date).toLocaleString('en-US', {
@@ -23,6 +24,15 @@ const formatCoinType = (coinType: string) => {
 const formatAddress = (address: string) => {
   if (!address) return "Not set";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+const copyToClipboard = async (text: string, label: string = "Address") => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  } catch (err) {
+    toast.error(`Failed to copy ${label.toLowerCase()}`);
+  }
 };
 
 const calculateVestingDuration = (startDate: Date, endDate: Date): string => {
@@ -93,6 +103,22 @@ const InfoRow = ({ label, value, isDescription = false }: {
         {label === "Type" ? formatCoinType(value) : value}
       </span>
     )}
+  </div>
+);
+
+const AddressRow = ({ label, fullAddress }: { label: string, fullAddress: string }) => (
+  <div className="grid grid-cols-2 gap-4 py-2 border-b last:border-b-0 border-teal-50">
+    <span className="text-gray-600 font-medium">{label}</span>
+    <div className="flex items-center gap-2">
+      <span className="text-gray-900">{formatAddress(fullAddress)}</span>
+      <button
+        onClick={() => copyToClipboard(fullAddress, "Address")}
+        className="p-1 hover:bg-gray-100 rounded transition-colors"
+        title="Copy full address"
+      >
+        <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
+      </button>
+    </div>
   </div>
 );
 
@@ -203,13 +229,9 @@ export const RecapStep: React.FC<RecapStepProps> = ({ formData }) => {
         >
           {hasRecipient ? (
             <div className="pl-4 py-2 border-l-2 border-blue-100">
-              <InfoRow 
+              <AddressRow 
                 label="Address"
-                value={formatAddress(formData.recipientAddress)}
-              />
-              <InfoRow 
-                label="Full Address"
-                value={formData.recipientAddress}
+                fullAddress={formData.recipientAddress}
               />
             </div>
           ) : (
