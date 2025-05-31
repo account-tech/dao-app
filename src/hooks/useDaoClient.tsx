@@ -1047,6 +1047,36 @@ export function useDaoClient() {
     }
   };
 
+  const requestSpendAndVest = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    treasuryName: string,
+    coinType: string,
+    amount: bigint,
+    start: bigint,
+    end: bigint,
+    recipient: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestSpendAndVest(
+        tx,
+        intentArgs,
+        treasuryName,
+        coinType,
+        amount,
+        start,
+        end,
+        recipient
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting spend and vest:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
@@ -1098,5 +1128,6 @@ export function useDaoClient() {
     requestToggleUnverifiedDepsAllowed,
     requestSpendAndTransfer,
     requestConfigDeps,
+    requestSpendAndVest,
   };
 }
