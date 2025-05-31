@@ -1,5 +1,5 @@
 import { IntentStatus } from "@account.tech/dao";
-import { LucideIcon, Bolt, HelpCircle, ToggleLeft, ArrowUpRight, Vault, DollarSign, Package } from "lucide-react";
+import { LucideIcon, Bolt, HelpCircle, ToggleLeft, ArrowUpRight, Vault, DollarSign, Package, Clock } from "lucide-react";
 
 export interface IntentDisplay {
   title: string;
@@ -39,6 +39,10 @@ export const getIntentDisplay = (intentType: string): IntentDisplay => {
     'ConfigDeps': {
       title: 'Config Deps',
       icon: Package
+    },
+    'SpendAndVest': {
+      title: 'Spend and Vest',
+      icon: Clock
     }
   };
 

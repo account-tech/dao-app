@@ -805,6 +805,160 @@ export function handleConfigDeps({ intent, currentDeps }: IntentHandlerProps & {
   };
 }
 
+export function handleSpendAndVest({ intent, coinDecimals }: IntentHandlerProps): HandlerResult {
+  const args = (intent as any).args;
+  
+  if (!args) {
+    return {
+      title: "Spend and Vest",
+      description: <span>Loading vesting details...</span>
+    };
+  }
+
+  const { amount, coinType, start, end, recipient, treasuryName } = args;
+
+  // Helper function to format coin type for display
+  const formatCoinType = (coinType: string) => {
+    const match = coinType.match(/::([^:]+)$/);
+    return match ? match[1] : coinType;
+  };
+
+  const handleCopyClick = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  // Helper function to format timestamp to readable date (plain format)
+  const formatTimestamp = (timestamp: string | number | bigint): string => {
+    const timestampMs = typeof timestamp === 'bigint' ? Number(timestamp) : Number(timestamp);
+    
+    // Check if timestamp looks like it's in seconds (less than year 2010 in ms)
+    const actualTimestamp = timestampMs < 1000000000000 ? timestampMs * 1000 : timestampMs;
+    
+    return new Date(actualTimestamp).toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
+  
+  // Use the correct decimals passed from the component, fallback to 9 if not provided
+  const decimals = coinDecimals ?? 9;
+  const formattedAmount = formatCoinAmount(amount.toString(), decimals, 6);
+
+  return {
+    title: "Spend and Vest",
+    description: (
+      <div className="space-y-4">
+        {/* Summary Section */}
+        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Source</span>
+              <span className="text-gray-700 font-medium">Vault: {treasuryName}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Coin Type</span>
+              <span className="text-gray-700 font-medium">{formatCoinType(coinType)}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Total Amount</span>
+              <span className="text-purple-600 font-medium">
+                {formattedAmount} {formatCoinType(coinType)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Vesting Schedule Section */}
+        <div>
+          <h4 className="font-medium text-gray-700 mb-3">Vesting Schedule</h4>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-purple-100 transition-colors">
+            <div className="flex flex-col space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Vesting Start</span>
+                <span className="text-gray-700 font-medium">
+                  {formatTimestamp(start)}
+                </span>
+              </div>
+              
+              <div className="border-t border-gray-200 my-1" />
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Vesting End</span>
+                <span className="text-gray-700 font-medium">
+                  {formatTimestamp(end)}
+                </span>
+              </div>
+
+              <div className="border-t border-gray-200 my-1" />
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Recipient</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm text-gray-700">
+                    {truncateAddress(recipient)}
+                  </span>
+                  <button
+                    onClick={() => handleCopyClick(recipient)}
+                    className="text-gray-400 hover:text-purple-600 transition-colors"
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Vesting Details Notice */}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-100">
+          <div className="flex items-start gap-3">
+            <div className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+              </svg>
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium text-purple-800">
+                Vesting Contract Notice
+              </p>
+              <p className="text-sm text-purple-700">
+                This proposal will create a vesting contract that gradually releases{' '}
+                <strong>{formattedAmount} {formatCoinType(coinType)}</strong> tokens from the{' '}
+                <strong>{treasuryName}</strong> vault to the recipient according to the specified schedule.
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                • Tokens will be released continuously throughout the vesting period<br />
+                • The recipient can claim vested tokens at any time during the vesting period<br />
+                • Unclaimed tokens remain locked until the vesting schedule allows their release
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  };
+}
+
 // Add more handlers here as needed
 export const intentHandlers: Record<string, (props: IntentHandlerProps) => HandlerResult> = {
   ToggleUnverifiedAllowed: handleToggleUnverifiedAllowed,
@@ -812,6 +966,7 @@ export const intentHandlers: Record<string, (props: IntentHandlerProps) => Handl
   WithdrawAndTransfer: handleWithdrawAndTransfer,
   WithdrawAndTransferToVault: handleWithdrawAndTransferToVault,
   SpendAndTransfer: handleSpendAndTransfer,
+  SpendAndVest: handleSpendAndVest,
   ConfigDeps: handleConfigDeps,
   // Add more mappings as we add more handlers
 }; 

@@ -81,6 +81,14 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
             const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
             additionalData = { coinDecimals: decimals };
           }
+        } else if (intentType === 'SpendAndVest') {
+          // For spend and vest, we need to fetch the correct decimals for proper amount formatting
+          const args = (fetchedIntent as any).args;
+          if (args?.coinType) {
+            const simplifiedAssetType = getSimplifiedAssetType(args.coinType);
+            const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+            additionalData = { coinDecimals: decimals };
+          }
         } else if (intentType === 'ConfigDeps') {
           // For dependency configuration, we need to fetch current DAO dependencies
           const deps = await getDaoDeps(currentAccount.address, daoId);
