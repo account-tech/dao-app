@@ -10,6 +10,7 @@ import SteppedProgress from '@/components/CommonProposalSteps/Stepper';
 import { AirDropSelectionStep } from './AirdropSelectionStep';
 import { CsvPreviewStep } from './CsvPreviewStep';
 import { RecipientStep } from './RecipientStep';
+import { RecapStep } from './RecapStep';
 import { ConfigProposalStep } from '@/components/CommonProposalSteps/ConfigProposalStep';
 import { WithdrawFormData, CoinSelection, Recipient } from '../helpers/types';
 import { validateStep } from '../helpers/validation';
@@ -204,6 +205,13 @@ const SpendAndAirdropView = () => {
       description: "Configure the proposal details",
       component: (
         <ConfigProposalStep formData={formData} updateFormData={updateFormData} />
+      )
+    },
+    {
+      title: "Review request",
+      description: "Review all airdrop details before submitting",
+      component: (
+        <RecapStep formData={formData} updateFormData={updateFormData} />
       )
     },
   ];
