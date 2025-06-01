@@ -1077,6 +1077,82 @@ export function useDaoClient() {
     }
   };
 
+  const requestWithdrawAndAirdropObjects = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    drops: {
+      objectId: string;
+      recipient: string;
+    }[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestWithdrawAndAirdropObjects(
+        tx,
+        intentArgs,
+        drops
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and airdrop objects:", error);
+      throw error;
+    }
+  };
+
+  const requestWithdrawAndAirdropCoins = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coinType: string,
+    drops: {
+      recipient: string;
+      amount: bigint;
+    }[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestWithdrawAndAirdropCoins(
+        tx,
+        intentArgs,
+        coinType,
+        drops
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and airdrop coins:", error);
+      throw error;
+    }
+  };
+
+  const requestWithdrawAndVest = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coinType: string,
+    coinAmount: bigint,
+    start: bigint,
+    end: bigint,
+    recipient: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestWithdrawAndVest(
+        tx,
+        intentArgs,
+        coinType,
+        coinAmount,
+        start,
+        end,
+        recipient
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and vest:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
@@ -1129,5 +1205,8 @@ export function useDaoClient() {
     requestSpendAndTransfer,
     requestConfigDeps,
     requestSpendAndVest,
+    requestWithdrawAndAirdropObjects,
+    requestWithdrawAndAirdropCoins,
+    requestWithdrawAndVest
   };
 }
