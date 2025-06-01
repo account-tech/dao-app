@@ -1,6 +1,15 @@
 import { Intent } from "@account.tech/core";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { formatCoinAmount } from "@/utils/GlobalHelpers";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 
 interface IntentHandlerProps {
   intent: Intent;
@@ -550,6 +559,154 @@ export function handleSpendAndTransfer({ intent, coinDecimals }: IntentHandlerPr
 
   const formattedTotalAmount = formatCoinAmount(totalAmount.toString(), decimals, 6);
 
+  // TransfersList component for handling large numbers of transfers
+  const TransfersList = ({ transfers }: { transfers: any[] }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const transfersPerPage = 10;
+
+    const visibleTransfers = transfers.slice(0, 2);
+    const remainingTransfers = transfers.slice(2);
+    const totalPages = Math.ceil(remainingTransfers.length / transfersPerPage);
+    
+    const paginatedTransfers = remainingTransfers.slice(
+      (currentPage - 1) * transfersPerPage,
+      currentPage * transfersPerPage
+    );
+
+    const TransferItem = ({ transfer, index }: { transfer: any, index: number }) => {
+      const formattedAmount = formatCoinAmount(transfer.amount, decimals, 6);
+      
+      return (
+        <div 
+          key={index} 
+          className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors mb-3"
+        >
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Transfer #{index + 1}</span>
+              <span className="text-sm bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                External Transfer
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Amount</span>
+              <span className="text-teal-600 font-medium">
+                {formattedAmount} {formatCoinType(coinType)}
+              </span>
+            </div>
+            
+            <div className="border-t border-gray-200 my-1" />
+            
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Recipient</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm text-gray-700">
+                  {truncateAddress(transfer.recipient)}
+                </span>
+                <button
+                  onClick={() => handleCopyClick(transfer.recipient)}
+                  className="text-gray-400 hover:text-teal-600 transition-colors"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-3">
+        {/* Always show first 3 transfers */}
+        <div className="space-y-2">
+          {visibleTransfers.map((transfer, index) => (
+            <TransferItem key={index} transfer={transfer} index={index} />
+          ))}
+        </div>
+
+        {/* Show expandable section if there are more than 3 transfers */}
+        {remainingTransfers.length > 0 && (
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="additional-transfers">
+              <AccordionTrigger className="text-sm">
+                {remainingTransfers.length} more transfer{remainingTransfers.length > 1 ? 's' : ''}
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                {/* Paginated transfers */}
+                <div className="space-y-2">
+                  {paginatedTransfers.map((transfer, index) => (
+                    <TransferItem 
+                      key={3 + (currentPage - 1) * transfersPerPage + index} 
+                      transfer={transfer} 
+                      index={3 + (currentPage - 1) * transfersPerPage + index} 
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination if needed */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center pt-4">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+
+                {/* Show current page info if paginated */}
+                {totalPages > 1 && (
+                  <div className="text-center text-sm text-gray-600">
+                    Showing {((currentPage - 1) * transfersPerPage) + 1}-{Math.min(currentPage * transfersPerPage, remainingTransfers.length)} of {remainingTransfers.length} additional transfers
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
+      </div>
+    );
+  };
+
   return {
     title: "Spend and Transfer",
     description: (
@@ -584,62 +741,7 @@ export function handleSpendAndTransfer({ intent, coinDecimals }: IntentHandlerPr
         {/* Transfers Section */}
         <div>
           <h4 className="font-medium text-gray-700 mb-3">Transfer Details</h4>
-          {transfers.map((transfer: any, index: number) => {
-            const formattedAmount = formatCoinAmount(transfer.amount, decimals, 6);
-            
-            return (
-              <div 
-                key={index} 
-                className="bg-gray-50 rounded-lg p-4 border border-gray-100 hover:border-teal-100 transition-colors mb-3"
-              >
-                <div className="flex flex-col space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Transfer #{index + 1}</span>
-                    <span className="text-sm bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
-                      External Transfer
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Amount</span>
-                    <span className="text-teal-600 font-medium">
-                      {formattedAmount} {formatCoinType(coinType)}
-                    </span>
-                  </div>
-                  
-                  <div className="border-t border-gray-200 my-1" />
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Recipient</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm text-gray-700">
-                        {truncateAddress(transfer.recipient)}
-                      </span>
-                      <button
-                        onClick={() => handleCopyClick(transfer.recipient)}
-                        className="text-gray-400 hover:text-teal-600 transition-colors"
-                      >
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          width="16" 
-                          height="16" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <TransfersList transfers={transfers} />
         </div>
       </div>
     ),
