@@ -224,8 +224,13 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
                 </div>
                 <TruncatedText 
                   text={option.label}
-                  className="font-medium text-sm text-gray-700"
+                  className="font-medium text-sm text-gray-700 flex-1"
                 />
+                {option.requiresVault && (
+                  <span className="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-700 rounded-full">
+                    vault
+                  </span>
+                )}
               </DropdownMenuItem>
             );
           })}
