@@ -262,9 +262,9 @@ export function AirDropSelectionStep({
                     onValueChange={(value) => handleDistributionModeChange(value as DistributionMode)}
                     className="w-full"
                   >
-                    <TabsList className="grid w-full grid-cols-2 bg-black">
-                      <TabsTrigger value="total" className="text-white data-[state=active]:text-black">Total</TabsTrigger>
-                      <TabsTrigger value="per_address" className="text-white data-[state=active]:text-black">Per address</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 bg-teal-500">
+                      <TabsTrigger value="total" className="text-white data-[state=active]:text-teal-500 data-[state=active]:bg-white">Total</TabsTrigger>
+                      <TabsTrigger value="per_address" className="text-white data-[state=active]:text-teal-500 data-[state=active]:bg-white">Per address</TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
