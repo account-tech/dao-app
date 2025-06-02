@@ -433,7 +433,7 @@ export function CoinAndDatesSelectionStep({
 
   const coin = selectedCoins[0] || { coinType: '', amount: 0 };
   const selectedAssetCoin = coin.coinType ? assetCoins.find(c => c.type === coin.coinType) : null;
-  const hasLockedAmount = selectedAssetCoin?.lockedAmount && selectedAssetCoin.lockedAmount > BigInt(0);
+  const hasLockedAmount = selectedAssetCoin?.lockedAmount !== undefined && selectedAssetCoin.lockedAmount > BigInt(0);
 
   return (
     <div className="space-y-6">
