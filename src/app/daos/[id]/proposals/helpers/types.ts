@@ -32,6 +32,10 @@ export const getIntentDisplay = (intentType: string): IntentDisplay => {
       title: 'Withdraw and Transfer to Vault',
       icon: Vault
     },
+    'WithdrawAndVest': {
+      title: 'Withdraw and Vest',
+      icon: Clock
+    },
     'SpendAndTransfer': {
       title: 'Spend and Transfer',
       icon: DollarSign

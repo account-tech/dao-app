@@ -20,7 +20,7 @@ interface Changes {
 
 export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const currentAccount = useCurrentAccount();
-  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent, getDaoDeps } = useDaoClient();
+  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent, getCoinsFromWithdrawAndVestIntent, getDaoDeps } = useDaoClient();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +63,10 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
           setConfigChanges(configChangesData);
         } else if (intentType === 'WithdrawAndTransfer') {
           const assets = await getAssetsFromWithdrawIntent(currentAccount.address, daoId, intentKey);
+          additionalData = { withdrawAssets: assets };
+          setWithdrawAssets(assets);
+        } else if (intentType === 'WithdrawAndVest') {
+          const assets = await getCoinsFromWithdrawAndVestIntent(currentAccount.address, daoId, intentKey);
           additionalData = { withdrawAssets: assets };
           setWithdrawAssets(assets);
         } else if (intentType === 'WithdrawAndTransferToVault') {

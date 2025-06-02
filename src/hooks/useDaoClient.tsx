@@ -466,8 +466,6 @@ export function useDaoClient() {
     }
   };
 
-
-
   const getAssetsFromWithdrawIntent = async (
     userAddr: string,
     daoId: string,
@@ -552,6 +550,62 @@ export function useDaoClient() {
       return assets;
     } catch (error) {
       console.error("Error getting withdraw assets:", error);
+      return [];
+    }
+  };
+
+  const getCoinsFromWithdrawAndVestIntent = async (
+    userAddr: string,
+    daoId: string,
+    intentKey: string
+  ): Promise<WithdrawAsset[]> => {
+    try {
+      // Get both the intent and owned objects in parallel
+      const [intent, ownedData] = await Promise.all([
+        getIntent(userAddr, daoId, intentKey),
+        getOwnedObjects(userAddr, daoId)
+      ]);
+
+      if (!intent) {
+        throw new Error("Failed to fetch intent");
+      }
+
+      const args = (intent as any).args;
+      if (!args || !args.coinId || !args.recipient) {
+        throw new Error("Invalid WithdrawAndVest intent args");
+      }
+
+      const coinId = args.coinId;
+      const recipient = args.recipient;
+      const assets: WithdrawAsset[] = [];
+
+      // Look through coins to find matching object ID
+      for (const coin of ownedData.coins) {
+        for (const instance of coin.instances) {
+          if (instance.ref.objectId === coinId) {
+            // Get coin decimals for proper formatting
+            const simplifiedAssetType = getSimplifiedAssetType(coin.type);
+            const decimals = await getCoinDecimals(simplifiedAssetType, (intent as any).client?.provider);
+            const divisor = BigInt(10) ** BigInt(decimals);
+
+            // Format amount with correct decimals
+            const rawAmount = BigInt(instance.amount);
+            const formattedAmount = (Number(rawAmount) / Number(divisor)).toString();
+
+            assets.push({
+              type: 'coin',
+              amount: formattedAmount,
+              coinType: coin.type,
+              recipient
+            });
+            break;
+          }
+        }
+      }
+
+      return assets;
+    } catch (error) {
+      console.error("Error getting withdraw and vest coins:", error);
       return [];
     }
   };
@@ -1178,6 +1232,7 @@ export function useDaoClient() {
     getLockedObjects,
     getConfigDaoIntentChanges,
     getAssetsFromWithdrawIntent,
+    getCoinsFromWithdrawAndVestIntent,
     getVaults,
     getVault,
     getVaultTotalValue,
