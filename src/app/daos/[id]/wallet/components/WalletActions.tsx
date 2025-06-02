@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowUpFromLine, QrCode, Gift, Clock, AlertCircle } from "lucide-react";
+import { ArrowUpFromLine, QrCode, Send, Clock, AlertCircle } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 interface WalletOverviewProps {
@@ -47,17 +47,18 @@ export function WalletOverview({
       disabled: false
     },
     {
-      label: "Airdrop",
-      icon: Gift,
-      onClick: onAirdrop,
-      className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
-      disabled: true,
-      comingSoon: true
-    },
-    {
       label: "Vest",
       icon: Clock,
-      onClick: onVest,
+      onClick: () => router.push(`/daos/${daoId}/wallet/requestWithdrawAndVest`),
+      className: hasAuthPower 
+        ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+      disabled: !hasAuthPower
+    },
+    {
+      label: "Airdrop",
+      icon: Send,
+      onClick: onAirdrop,
       className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
       disabled: true,
       comingSoon: true

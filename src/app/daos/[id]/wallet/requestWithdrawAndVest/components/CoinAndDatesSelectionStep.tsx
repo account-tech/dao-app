@@ -10,10 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Clock } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { CoinSelection } from '../helpers/types';
 import { format } from 'date-fns';
+import { cn } from "@/lib/utils";
 import { formatCoinAmount, getMultipleCoinDecimals } from "@/utils/GlobalHelpers";
 
 interface AssetCoin {
@@ -60,6 +65,9 @@ export function CoinAndDatesSelectionStep({
   const [isLoading, setIsLoading] = useState(true);
   const [lockedObjects, setLockedObjects] = useState<string[]>([]);
   const [initialSelectionDone, setInitialSelectionDone] = useState(false);
+  const [vestingStartOpen, setVestingStartOpen] = useState(false);
+  const [vestingEndOpen, setVestingEndOpen] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   const currentAccount = useCurrentAccount();
@@ -244,15 +252,165 @@ export function CoinAndDatesSelectionStep({
     return `Balance: ${totalFormatted} ${coin.symbol}`;
   };
 
-  const handleDateTimeChange = (field: keyof VestingParams, value: string) => {
-    const newParams = { ...vestingParams };
-    
-    if (field === 'startDate' || field === 'endDate') {
-      const date = new Date(value);
-      newParams[field] = date;
+  const validateVestingDates = (startDate: Date, endDate: Date): string[] => {
+    const now = new Date();
+    const warnings: string[] = [];
+
+    if (startDate.getTime() <= now.getTime()) {
+      warnings.push("Warning: Vesting start time should be in the future for optimal vesting setup.");
     }
+
+    if (endDate.getTime() <= startDate.getTime()) {
+      warnings.push("Warning: Vesting end time must be after start time.");
+    }
+
+    const duration = endDate.getTime() - startDate.getTime();
+    const minDuration = 60 * 60 * 1000; // 1 hour
+    if (duration < minDuration) {
+      warnings.push("Warning: Vesting period should be at least 1 hour for meaningful distribution.");
+    }
+
+    return warnings;
+  };
+
+  const handleVestingStartDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    const newDate = new Date(date);
+    newDate.setHours(vestingParams.startDate.getHours());
+    newDate.setMinutes(vestingParams.startDate.getMinutes());
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+
+    const warnings = validateVestingDates(newDate, vestingParams.endDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
+
+    onVestingParamsChange({
+      ...vestingParams,
+      startDate: newDate
+    });
+  };
+
+  const handleVestingStartTimeChange = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const newDate = new Date(vestingParams.startDate);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+
+    const warnings = validateVestingDates(newDate, vestingParams.endDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
+
+    onVestingParamsChange({
+      ...vestingParams,
+      startDate: newDate
+    });
+  };
+
+  const handleVestingEndDateChange = (date: Date | undefined) => {
+    if (!date) return;
+
+    const newDate = new Date(date);
+    newDate.setHours(vestingParams.endDate.getHours());
+    newDate.setMinutes(vestingParams.endDate.getMinutes());
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+
+    const warnings = validateVestingDates(vestingParams.startDate, newDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
+
+    onVestingParamsChange({
+      ...vestingParams,
+      endDate: newDate
+    });
+  };
+
+  const handleVestingEndTimeChange = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const newDate = new Date(vestingParams.endDate);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+
+    const warnings = validateVestingDates(vestingParams.startDate, newDate);
+    setDateError(warnings.length > 0 ? warnings.join("\n") : null);
+
+    onVestingParamsChange({
+      ...vestingParams,
+      endDate: newDate
+    });
+  };
+
+  // Generate time options
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+
+  const TimeSelect = ({ 
+    date, 
+    onTimeChange 
+  }: { 
+    date: Date, 
+    onTimeChange: (time: string) => void 
+  }) => {
+    const currentHour = date.getHours().toString().padStart(2, '0');
+    const currentMinute = date.getMinutes().toString().padStart(2, '0');
+
+    return (
+      <div className="flex gap-1">
+        <Select
+          value={currentHour}
+          onValueChange={(hour) => onTimeChange(`${hour}:${currentMinute}`)}
+        >
+          <SelectTrigger className="w-[70px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <ScrollArea className="h-[200px]">
+              {hours.map((hour) => (
+                <SelectItem key={hour} value={hour}>
+                  {hour}
+                </SelectItem>
+              ))}
+            </ScrollArea>
+          </SelectContent>
+        </Select>
+
+        <span className="flex items-center">:</span>
+
+        <Select
+          value={currentMinute}
+          onValueChange={(minute) => onTimeChange(`${currentHour}:${minute}`)}
+        >
+          <SelectTrigger className="w-[70px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <ScrollArea className="h-[200px]">
+              {minutes.map((minute) => (
+                <SelectItem key={minute} value={minute}>
+                  {minute}
+                </SelectItem>
+              ))}
+            </ScrollArea>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  };
+
+  const getVestingRate = () => {
+    const coin = selectedCoins[0];
+    if (!coin?.amount || !vestingParams.startDate || !vestingParams.endDate) return null;
+
+    const durationMinutes = (vestingParams.endDate.getTime() - vestingParams.startDate.getTime()) / (1000 * 60);
+    if (durationMinutes <= 0) return null;
+
+    const rate = coin.amount / durationMinutes;
+    const coinSymbol = assetCoins.find(c => c.type === coin.coinType)?.symbol || 'tokens';
     
-    onVestingParamsChange(newParams);
+    return `${rate.toFixed(6)} ${coinSymbol} / minute`;
   };
 
   if (isLoading) {
@@ -348,32 +506,90 @@ export function CoinAndDatesSelectionStep({
           <CardTitle className="text-base font-medium">Vesting Schedule</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="start-date">From</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={format(vestingParams.startDate, 'yyyy-MM-dd')}
-                onChange={(e) => handleDateTimeChange('startDate', e.target.value)}
-                min={format(new Date(), 'yyyy-MM-dd')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="end-date">To</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={format(vestingParams.endDate, 'yyyy-MM-dd')}
-                onChange={(e) => handleDateTimeChange('endDate', e.target.value)}
-                min={format(vestingParams.startDate, 'yyyy-MM-dd')}
-              />
+          {dateError && (
+            <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+              <AlertDescription className="whitespace-pre-line">{dateError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Vesting Start Date and Time */}
+          <div className="space-y-2">
+            <Label>Vesting Start Date & Time</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Popover open={vestingStartOpen} onOpenChange={setVestingStartOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12",
+                      !vestingParams.startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {vestingParams.startDate ? format(vestingParams.startDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={vestingParams.startDate}
+                    onSelect={handleVestingStartDateChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <div className="flex items-center gap-2 h-12 px-3 border rounded-md">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <TimeSelect
+                  date={vestingParams.startDate} 
+                  onTimeChange={handleVestingStartTimeChange}
+                />
+              </div>
             </div>
           </div>
-          {coin.amount > 0 && vestingParams.startDate && vestingParams.endDate && (
+
+          {/* Vesting End Date and Time */}
+          <div className="space-y-2">
+            <Label>Vesting End Date & Time</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Popover open={vestingEndOpen} onOpenChange={setVestingEndOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12",
+                      !vestingParams.endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {vestingParams.endDate ? format(vestingParams.endDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={vestingParams.endDate}
+                    onSelect={handleVestingEndDateChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <div className="flex items-center gap-2 h-12 px-3 border rounded-md">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <TimeSelect 
+                  date={vestingParams.endDate} 
+                  onTimeChange={handleVestingEndTimeChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          {getVestingRate() && (
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm text-muted-foreground">
-                = {(coin.amount / Math.max(1, ((vestingParams.endDate.getTime() - vestingParams.startDate.getTime()) / 1000 / 60))).toFixed(6)} {assetCoins.find(c => c.type === coin.coinType)?.symbol} / minute
+                Vesting Rate: {getVestingRate()}
               </p>
             </div>
           )}

@@ -1,14 +1,14 @@
 'use client';
 
 import { Suspense } from "react";
-import SpendAndTransferView from './components/SpendAndTransferView';
+import WithdrawAndVestView from './components/WithdrawAndVestView';
 import Loading from './loading';
 
-export default function SpendAndTransferPage() {
+export default function WithdrawAndVestPage() {
   return (
     <>
       <Suspense fallback={<Loading />}>
-        <SpendAndTransferView />
+        <WithdrawAndVestView />
       </Suspense>
     </>
   );

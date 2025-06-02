@@ -17,24 +17,16 @@ export const validateStep = (step: number, formData: VestingFormData): boolean =
       );
       if (!coinValid) return false;
 
-      // Validate required vesting dates and times
-      if (!formData.vestingStartDate || !formData.vestingStartTime ||
-          !formData.vestingEndDate || !formData.vestingEndTime) {
+      // Validate required vesting dates (now Date objects with time included)
+      if (!formData.vestingStartDate || !formData.vestingEndDate) {
         return false;
       }
 
       const now = new Date();
-      const vestingStart = new Date(formData.vestingStartDate);
-      const vestingEnd = new Date(formData.vestingEndDate);
+      const vestingStart = formData.vestingStartDate;
+      const vestingEnd = formData.vestingEndDate;
 
-      // Set time components for vesting dates
-      const [startHours, startMinutes] = formData.vestingStartTime.split(':').map(Number);
-      const [endHours, endMinutes] = formData.vestingEndTime.split(':').map(Number);
-      
-      vestingStart.setHours(startHours, startMinutes, 0, 0);
-      vestingEnd.setHours(endHours, endMinutes, 0, 0);
-
-      // Validate date order
+      // Validate date order and timing
       return (
         vestingStart > now &&         // Vesting start must be in the future
         vestingEnd > vestingStart     // Vesting end must be after start
@@ -45,8 +37,17 @@ export const validateStep = (step: number, formData: VestingFormData): boolean =
              isValidSuiAddress(formData.recipientAddress);
 
     case 2: // ConfigProposalStep
-      // Only validate proposal name
-      return formData.proposalName.trim().length > 0;
+      // Validate proposal name and voting dates
+      if (!formData.proposalName.trim().length) {
+        return false;
+      }
+      
+      // Validate voting dates are set
+      if (!formData.votingStartDate || !formData.votingEndDate || !formData.executionDate) {
+        return false;
+      }
+
+      return true;
 
     case 3: // ReviewStep
       // Validate all previous steps
