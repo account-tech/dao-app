@@ -743,6 +743,25 @@ export function useDaoClient() {
     }
   };
 
+  const getVestingsWithCaps = async (userAddr: string, daoId: string): Promise<{
+    capId: string;
+    vestingId: string;
+    coinType: string;
+    balance: bigint;
+    lastClaimed: bigint;
+    startTimestamp: bigint;
+    endTimestamp: bigint;
+    recipient: string;
+  }[]> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.getVestingsWithCaps();
+    } catch (error) {
+      console.error("Error getting vestings with caps:", error);
+      throw error;
+    }
+  };
+
   //====================ACTIONS====================
 
   const authenticate = async (tx: Transaction, daoId: string, userAddr: string) => {
@@ -965,6 +984,25 @@ export function useDaoClient() {
       return client.depositFromWallet(tx, coinType, treasuryName, coin) as unknown as TransactionResult;
     } catch (error) {
       console.error("Error depositing from wallet:", error);
+      throw error;
+    }
+  };
+
+  const claimVested = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    coinType: string,
+    vestingId: string,
+    capId: string,
+    endTimestamp?: bigint
+  ): Promise<void> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      client.claimVested(tx, coinType, vestingId, capId, endTimestamp);
+      return;
+    } catch (error) {
+      console.error("Error claiming vested:", error);
       throw error;
     }
   };
@@ -1236,6 +1274,7 @@ export function useDaoClient() {
     getVaults,
     getVault,
     getVaultTotalValue,
+    getVestingsWithCaps,
     // ACTIONS
     authenticate,
     followDao,
@@ -1252,6 +1291,7 @@ export function useDaoClient() {
     updateVerifiedDeps,
     openVault,
     depositFromWallet,
+    claimVested,
     // DAO INTENTS
     requestWithdrawAndTransfer,
     requestWithdrawAndTransferToVault,
