@@ -466,8 +466,6 @@ export function useDaoClient() {
     }
   };
 
-
-
   const getAssetsFromWithdrawIntent = async (
     userAddr: string,
     daoId: string,
@@ -552,6 +550,62 @@ export function useDaoClient() {
       return assets;
     } catch (error) {
       console.error("Error getting withdraw assets:", error);
+      return [];
+    }
+  };
+
+  const getCoinsFromWithdrawAndVestIntent = async (
+    userAddr: string,
+    daoId: string,
+    intentKey: string
+  ): Promise<WithdrawAsset[]> => {
+    try {
+      // Get both the intent and owned objects in parallel
+      const [intent, ownedData] = await Promise.all([
+        getIntent(userAddr, daoId, intentKey),
+        getOwnedObjects(userAddr, daoId)
+      ]);
+
+      if (!intent) {
+        throw new Error("Failed to fetch intent");
+      }
+
+      const args = (intent as any).args;
+      if (!args || !args.coinId || !args.recipient) {
+        throw new Error("Invalid WithdrawAndVest intent args");
+      }
+
+      const coinId = args.coinId;
+      const recipient = args.recipient;
+      const assets: WithdrawAsset[] = [];
+
+      // Look through coins to find matching object ID
+      for (const coin of ownedData.coins) {
+        for (const instance of coin.instances) {
+          if (instance.ref.objectId === coinId) {
+            // Get coin decimals for proper formatting
+            const simplifiedAssetType = getSimplifiedAssetType(coin.type);
+            const decimals = await getCoinDecimals(simplifiedAssetType, (intent as any).client?.provider);
+            const divisor = BigInt(10) ** BigInt(decimals);
+
+            // Format amount with correct decimals
+            const rawAmount = BigInt(instance.amount);
+            const formattedAmount = (Number(rawAmount) / Number(divisor)).toString();
+
+            assets.push({
+              type: 'coin',
+              amount: formattedAmount,
+              coinType: coin.type,
+              recipient
+            });
+            break;
+          }
+        }
+      }
+
+      return assets;
+    } catch (error) {
+      console.error("Error getting withdraw and vest coins:", error);
       return [];
     }
   };
@@ -1004,6 +1058,155 @@ export function useDaoClient() {
     }
   };
 
+  const requestSpendAndTransfer = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    treasuryName: string,
+    coinType: string,
+    transfers: {
+      amount: bigint;
+      recipient: string;
+    }[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestSpendAndTransfer(
+        tx,
+        intentArgs,
+        treasuryName,
+        coinType,
+        transfers
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting spend and transfer:", error);
+      throw error;
+    }
+  };
+
+  const requestConfigDeps = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    deps: Dep[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestConfigDeps(tx, intentArgs, deps) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting config deps:", error);
+      throw error;
+    }
+  };
+
+  const requestSpendAndVest = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    treasuryName: string,
+    coinType: string,
+    amount: bigint,
+    start: bigint,
+    end: bigint,
+    recipient: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestSpendAndVest(
+        tx,
+        intentArgs,
+        treasuryName,
+        coinType,
+        amount,
+        start,
+        end,
+        recipient
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting spend and vest:", error);
+      throw error;
+    }
+  };
+
+  const requestWithdrawAndAirdropObjects = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    drops: {
+      objectId: string;
+      recipient: string;
+    }[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestWithdrawAndAirdropObjects(
+        tx,
+        intentArgs,
+        drops
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and airdrop objects:", error);
+      throw error;
+    }
+  };
+
+  const requestWithdrawAndAirdropCoins = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coinType: string,
+    drops: {
+      recipient: string;
+      amount: bigint;
+    }[]
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestWithdrawAndAirdropCoins(
+        tx,
+        intentArgs,
+        coinType,
+        drops
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and airdrop coins:", error);
+      throw error;
+    }
+  };
+
+  const requestWithdrawAndVest = async (
+    userAddr: string,
+    daoId: string,
+    tx: Transaction,
+    intentArgs: VoteIntentArgs,
+    coinType: string,
+    coinAmount: bigint,
+    start: bigint,
+    end: bigint,
+    recipient: string
+  ): Promise<TransactionResult> => {
+    try {
+      const client = await initClient(userAddr, daoId);
+      return client.requestWithdrawAndVest(
+        tx,
+        intentArgs,
+        coinType,
+        coinAmount,
+        start,
+        end,
+        recipient
+      ) as unknown as TransactionResult;
+    } catch (error) {
+      console.error("Error requesting withdraw and vest:", error);
+      throw error;
+    }
+  };
+
   return {
     // CORE
     initDaoClient,
@@ -1029,6 +1232,7 @@ export function useDaoClient() {
     getLockedObjects,
     getConfigDaoIntentChanges,
     getAssetsFromWithdrawIntent,
+    getCoinsFromWithdrawAndVestIntent,
     getVaults,
     getVault,
     getVaultTotalValue,
@@ -1053,5 +1257,11 @@ export function useDaoClient() {
     requestWithdrawAndTransferToVault,
     requestConfigDao,
     requestToggleUnverifiedDepsAllowed,
+    requestSpendAndTransfer,
+    requestConfigDeps,
+    requestSpendAndVest,
+    requestWithdrawAndAirdropObjects,
+    requestWithdrawAndAirdropCoins,
+    requestWithdrawAndVest
   };
 }

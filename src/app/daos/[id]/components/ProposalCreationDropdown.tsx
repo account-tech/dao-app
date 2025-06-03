@@ -15,7 +15,8 @@ import { useRouter } from "next/navigation";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useEffect, useState, useRef } from "react";
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { ArrowUpRight, Bolt, ToggleLeft } from "lucide-react";
+import { ArrowUpRight, Bolt, ToggleLeft, Vault, DollarSign, Package, Clock, Send } from "lucide-react";
+import { VaultSelectionDialog } from "./VaultSelectionDialog";
 
 interface TruncatedTextProps {
   text: string;
@@ -68,6 +69,14 @@ interface ProposalCreationDropdownProps {
   daoId: string;
 }
 
+interface ProposalOption {
+  label: string;
+  path?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiresVault?: boolean;
+  vaultAction?: string;
+}
+
 export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProps) {
   const router = useRouter();
   const currentAccount = useCurrentAccount();
@@ -77,6 +86,8 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
   const [isLoading, setIsLoading] = useState(true);
   const [authVotingPower, setAuthVotingPower] = useState("0");
   const [votingPower, setVotingPower] = useState("0");
+  const [showVaultSelection, setShowVaultSelection] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<{ action: string; title: string } | null>(null);
 
   useEffect(() => {
     const checkVotingPower = async () => {
@@ -101,11 +112,16 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
     checkVotingPower();
   }, [currentAccount?.address, daoId]);
 
-  const proposalOptions = [
+  const proposalOptions: ProposalOption[] = [
     {
       label: "Configure DAO",
       path: `/daos/${daoId}/settings/requestConfigDao`,
       icon: Bolt,
+    },
+    {
+      label: "Configure Dependencies",
+      path: `/daos/${daoId}/settings/requestConfigDeps`,
+      icon: Package,
     },
     {
       label: "Toggle Unverified Dependencies",
@@ -117,9 +133,54 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
       path: `/daos/${daoId}/wallet/requestWithdrawAndTransfer`,
       icon: ArrowUpRight,
     },
+    {
+      label: "Withdraw and Vest",
+      path: `/daos/${daoId}/wallet/requestWithdrawAndVest`,
+      icon: Clock,
+    },
+    {
+      label: "Withdraw and Transfer to Vault",
+      requiresVault: true,
+      vaultAction: "requestWithdrawAndTransferToVault",
+      icon: Vault,
+    },
+    {
+      label: "Spend and Transfer",
+      requiresVault: true,
+      vaultAction: "requestSpendAndTransfer",
+      icon: DollarSign,
+    },
+    {
+      label: "Spend and Airdrop",
+      requiresVault: true,
+      vaultAction: "requestSpendAndAirdrop",
+      icon: Send,
+    },
+    {
+      label: "Spend and Vest",
+      requiresVault: true,
+      vaultAction: "requestSpendAndVest",
+      icon: Clock,
+    },
   ];
 
-    if (!hasAuthPower && !isLoading) {
+  const handleOptionClick = (option: ProposalOption) => {
+    if (option.requiresVault && option.vaultAction) {
+      setSelectedAction({ action: option.vaultAction, title: option.label });
+      setShowVaultSelection(true);
+    } else if (option.path) {
+      router.push(option.path);
+    }
+  };
+
+  const handleVaultSelected = (vaultId: string) => {
+    if (selectedAction) {
+      router.push(`/daos/${daoId}/vaults/${encodeURIComponent(vaultId)}/${selectedAction.action}`);
+    }
+    setSelectedAction(null);
+  };
+
+  if (!hasAuthPower && !isLoading) {
     // Show disabled button with tooltip when user doesn't have enough voting power
     return (
       <TooltipProvider>
@@ -139,35 +200,51 @@ export function ProposalCreationDropdown({ daoId }: ProposalCreationDropdownProp
 
   // Show working dropdown when user has enough voting power
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
-          disabled={isLoading}
-        >
-          + New Proposal
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 p-1">
-        {proposalOptions.map((option) => {
-          const Icon = option.icon;
-          return (
-            <DropdownMenuItem
-              key={option.path}
-              className="flex items-center gap-3 px-3 h-11 cursor-pointer hover:bg-gray-50 rounded-md"
-              onClick={() => router.push(option.path)}
-            >
-              <div className="flex-shrink-0 p-1.5 rounded-md bg-gray-100/80">
-                <Icon className="w-4 h-4 text-gray-600" />
-              </div>
-              <TruncatedText 
-                text={option.label}
-                className="font-medium text-sm text-gray-700"
-              />
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            className="bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-300"
+            disabled={isLoading}
+          >
+            + New Proposal
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72 p-1">
+          {proposalOptions.map((option, index) => {
+            const Icon = option.icon;
+            return (
+              <DropdownMenuItem
+                key={`${option.label}-${index}`}
+                className="flex items-center gap-3 px-3 h-11 cursor-pointer hover:bg-gray-50 rounded-md"
+                onClick={() => handleOptionClick(option)}
+              >
+                <div className="flex-shrink-0 p-1.5 rounded-md bg-gray-100/80">
+                  <Icon className="w-4 h-4 text-gray-600" />
+                </div>
+                <TruncatedText 
+                  text={option.label}
+                  className="font-medium text-sm text-gray-700 flex-1"
+                />
+                {option.requiresVault && (
+                  <span className="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-700 rounded-full">
+                    vault
+                  </span>
+                )}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <VaultSelectionDialog
+        open={showVaultSelection}
+        onOpenChange={setShowVaultSelection}
+        daoId={daoId}
+        onVaultSelected={handleVaultSelected}
+        title={selectedAction ? `Select Vault for ${selectedAction.title}` : "Select Vault"}
+        description="Choose a vault to proceed with this proposal."
+      />
+    </>
   );
 } 

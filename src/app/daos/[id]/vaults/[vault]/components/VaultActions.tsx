@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowUpFromLine, ArrowDownToLine, Settings, TrendingUp, ChevronDown, AlertCircle } from "lucide-react";
+import { ArrowUpFromLine, ArrowDownToLine, Clock, Send, ChevronDown, AlertCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +15,8 @@ interface VaultActionsProps {
   onWithdraw?: () => void;
   onDepositFromWallet?: () => void;
   onDepositFromDao?: () => void;
-  onManage?: () => void;
-  onAnalytics?: () => void;
+  onVest?: () => void;
+  onAirdrop?: () => void;
   hasAuthPower?: boolean;
   authVotingPower?: string;
   votingPower?: string;
@@ -28,8 +28,8 @@ export function VaultActions({
   onWithdraw,
   onDepositFromWallet,
   onDepositFromDao,
-  onManage,
-  onAnalytics,
+  onVest,
+  onAirdrop,
   hasAuthPower = true,
   authVotingPower = "0",
   votingPower = "0"
@@ -42,24 +42,28 @@ export function VaultActions({
       className: hasAuthPower 
         ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
         : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
-      disabled: !hasAuthPower || true, // Keep coming soon disabled for now
-      comingSoon: true
+      disabled: !hasAuthPower,
+      comingSoon: false
     },
     {
-      label: "Manage",
-      icon: Settings,
-      onClick: onManage,
-      className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
-      disabled: true,
-      comingSoon: true
+      label: "Vest",
+      icon: Clock,
+      onClick: onVest,
+      className: hasAuthPower 
+        ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+      disabled: !hasAuthPower,
+      comingSoon: false
     },
     {
-      label: "Analytics",
-      icon: TrendingUp,
-      onClick: onAnalytics,
-      className: "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200",
-      disabled: true,
-      comingSoon: true
+      label: "Airdrop",
+      icon: Send,
+      onClick: onAirdrop,
+      className: hasAuthPower 
+        ? "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+        : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed",
+      disabled: !hasAuthPower,
+      comingSoon: false
     }
   ];
 

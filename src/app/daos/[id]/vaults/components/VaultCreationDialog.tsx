@@ -21,7 +21,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Vault, Plus, Loader2 } from "lucide-react";
+import { Vault, Plus, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDaoClient } from "@/hooks/useDaoClient";
 import { useCurrentAccount, useSuiClient, useSignTransaction } from "@mysten/dapp-kit";
@@ -30,6 +30,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { signAndExecute, handleTxResult } from "@/utils/tx/Tx";
 import { toast } from "sonner";
 import { useDaoStore } from "@/store/useDaoStore";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface VaultCreationDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ function VaultCreationContent({
 }) {
   const [vaultName, setVaultName] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showInvalidAlert, setShowInvalidAlert] = React.useState(false);
   const { openVault } = useDaoClient();
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
@@ -52,6 +54,20 @@ function VaultCreationContent({
   const params = useParams();
   const daoId = params.id as string;
   const { refreshClient } = useDaoStore();
+
+  const handleVaultNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Replace spaces with hyphens and only allow letters, numbers, and hyphens
+    const sanitizedValue = value.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    
+    if (sanitizedValue !== value && value !== '') {
+      setShowInvalidAlert(true);
+    } else {
+      setShowInvalidAlert(false);
+    }
+    
+    setVaultName(sanitizedValue);
+  };
 
   const handleCreateVault = async () => {
     if (!currentAccount?.address || !vaultName.trim() || isLoading) return;
@@ -75,6 +91,7 @@ function VaultCreationContent({
 
       // Reset form and close dialog
       setVaultName("");
+      setShowInvalidAlert(false);
       onClose();
       
       // Refresh data and notify parent
@@ -111,13 +128,28 @@ function VaultCreationContent({
           <Input
             id="vault-name"
             type="text"
-            placeholder="Enter vault name..."
+            placeholder="Enter vault name (letters, numbers, and hyphens only)..."
             value={vaultName}
-            onChange={(e) => setVaultName(e.target.value)}
+            onChange={handleVaultNameChange}
             disabled={isLoading}
             className="w-full"
             maxLength={50}
           />
+          {showInvalidAlert && (
+            <Alert variant="destructive" className="mt-2">
+              <AlertDescription className="flex items-center justify-between">
+                <span>Only letters, numbers, and hyphens are allowed. Spaces will be converted to hyphens.</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4"
+                  onClick={() => setShowInvalidAlert(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
           <p className="text-xs text-gray-500">
             Choose a descriptive name for your vault (max 50 characters)
           </p>

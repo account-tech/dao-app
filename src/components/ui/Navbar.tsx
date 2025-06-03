@@ -22,7 +22,12 @@ const Navbar = () => {
     '/settings/requestConfigDao',
     '/settings/requestToggleUnverifiedDeps',
     '/wallet/requestWithdrawAndTransfer',
-    '/requestWithdrawAndTransferToVault'
+    '/requestWithdrawAndTransferToVault',
+    '/requestSpendAndTransfer',
+    '/settings/requestConfigDeps',
+    '/requestSpendAndVest',
+    '/requestSpendAndAirdrop',
+    '/wallet/requestWithdrawAndVest'
   ];
   
   const isSpecialPage = specialPages.some(page => pathname.includes(page));

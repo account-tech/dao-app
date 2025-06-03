@@ -33,7 +33,7 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           {children}
-          {/*<DebugButton />*/}
+          <DebugButton />
           <Toaster richColors />
         </Providers>
       </body>

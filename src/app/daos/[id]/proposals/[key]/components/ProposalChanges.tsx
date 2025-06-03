@@ -20,7 +20,7 @@ interface Changes {
 
 export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const currentAccount = useCurrentAccount();
-  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent } = useDaoClient();
+  const { getIntent, getunverifiedDepsAllowedBool, getConfigDaoIntentChanges, getAssetsFromWithdrawIntent, getCoinsFromWithdrawAndVestIntent, getDaoDeps } = useDaoClient();
   const [intent, setIntent] = useState<Intent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +28,7 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
   const [unverifiedDepsAllowed, setUnverifiedDepsAllowed] = useState<boolean | undefined>(undefined);
   const [configChanges, setConfigChanges] = useState<any>(null);
   const [withdrawAssets, setWithdrawAssets] = useState<any>(null);
+  const [currentDeps, setCurrentDeps] = useState<any[]>([]);
   const suiClient = useSuiClient();
 
   useEffect(() => {
@@ -64,6 +65,10 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
           const assets = await getAssetsFromWithdrawIntent(currentAccount.address, daoId, intentKey);
           additionalData = { withdrawAssets: assets };
           setWithdrawAssets(assets);
+        } else if (intentType === 'WithdrawAndVest') {
+          const assets = await getCoinsFromWithdrawAndVestIntent(currentAccount.address, daoId, intentKey);
+          additionalData = { withdrawAssets: assets };
+          setWithdrawAssets(assets);
         } else if (intentType === 'WithdrawAndTransferToVault') {
           // For vault transfers, we need to fetch the correct decimals for proper amount formatting
           const args = (fetchedIntent as any).args;
@@ -72,6 +77,27 @@ export function ProposalChanges({ daoId, intentKey }: ProposalChangesProps) {
             const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
             additionalData = { coinDecimals: decimals };
           }
+        } else if (intentType === 'SpendAndTransfer') {
+          // For spend and transfer, we need to fetch the correct decimals for proper amount formatting
+          const args = (fetchedIntent as any).args;
+          if (args?.coinType) {
+            const simplifiedAssetType = getSimplifiedAssetType(args.coinType);
+            const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+            additionalData = { coinDecimals: decimals };
+          }
+        } else if (intentType === 'SpendAndVest') {
+          // For spend and vest, we need to fetch the correct decimals for proper amount formatting
+          const args = (fetchedIntent as any).args;
+          if (args?.coinType) {
+            const simplifiedAssetType = getSimplifiedAssetType(args.coinType);
+            const decimals = await getCoinDecimals(simplifiedAssetType, suiClient);
+            additionalData = { coinDecimals: decimals };
+          }
+        } else if (intentType === 'ConfigDeps') {
+          // For dependency configuration, we need to fetch current DAO dependencies
+          const deps = await getDaoDeps(currentAccount.address, daoId);
+          additionalData = { currentDeps: deps };
+          setCurrentDeps(deps);
         }
 
         // Find and call the appropriate handler with all data
