@@ -245,17 +245,32 @@ export function ProposalDetails({ daoId, intentKey }: ProposalDetailsProps) {
               const now = new Date();
               const hasExpired = now > expirationTime;
               
-              return (
-                <div className={`flex items-center gap-2 ${hasExpired ? 'text-red-600' : 'text-gray-600'}`}>
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {hasExpired 
-                      ? `Expired on: ${formatDate(expirationTime)}`
-                      : `Will expire on: ${formatDate(expirationTime)}`
-                    }
-                  </span>
-                </div>
-              );
+              if (hasExpired) {
+                // Different messages based on proposal status
+                if (status.stage === 'success' || status.stage === 'executable') {
+                  return (
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <span>
+                        Expired on: {formatDate(expirationTime)} but is not deleteable because the voting passed. Awaiting proposal execution.
+                      </span>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="flex items-center gap-2 text-red-600">
+                      <Clock className="h-4 w-4" />
+                      <span>Expired on: {formatDate(expirationTime)}</span>
+                    </div>
+                  );
+                }
+              } else {
+                return (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>Will expire on: {formatDate(expirationTime)}</span>
+                  </div>
+                );
+              }
             })()}
           </div>
         )}

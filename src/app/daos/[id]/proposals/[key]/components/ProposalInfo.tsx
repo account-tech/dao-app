@@ -180,7 +180,6 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
       return;
     }
 
-    setIsLoading(true);
     try {
       const tx = new Transaction();
       await deleteIntent(
@@ -213,8 +212,6 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
     } catch (error) {
       console.error('Error deleting proposal:', error);
       toast.error(error instanceof Error ? error.message : "Failed to delete proposal");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -519,8 +516,8 @@ export function ProposalInfo({ daoId, intentKey }: ProposalInfoProps) {
         </div>
       )}
 
-      {/* Delete Button for Failed/Success Proposals */}
-      {(status.stage === 'failed' || status.stage === 'success') && expirationTime && (
+      {/* Delete Button for Failed Proposals */}
+      {status.stage === 'failed' && expirationTime && (
         <div className="mt-6 flex justify-end">
           <TooltipProvider>
             <Tooltip>

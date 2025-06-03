@@ -130,7 +130,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
 
     const updates: Partial<T> = {
       votingEndDate: newDate,
-      expirationDate: addDays(newDate, 7)
+      expirationDate: addDays(newDate, 1)
     } as Partial<T>;
 
     updateFormData(updates);
@@ -151,7 +151,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
 
     const updates: Partial<T> = {
       votingEndDate: newDate,
-      expirationDate: addDays(newDate, 7)
+      expirationDate: addDays(newDate, 1)
     } as Partial<T>;
 
     updateFormData(updates);
@@ -403,7 +403,7 @@ export function ConfigProposalStep<T extends BaseFormData>({
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
-              The proposal will expire {formData.votingEndDate ? format(addDays(formData.votingEndDate, 7), "PPP") : "7 days after voting ends"} if not executed.
+              The proposal will expire {formData.votingEndDate ? format(addDays(formData.votingEndDate, 1), "PPP") : "1 day after voting ends"} if not executed.
             </p>
           </div>
         </div>

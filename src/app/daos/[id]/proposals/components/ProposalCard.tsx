@@ -609,21 +609,6 @@ export function ProposalCard({ intentKey, intent }: ProposalCardProps) {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-        {status.deletable && (
-          <Button
-            onClick={handleDelete}
-            disabled={isLoading}
-            variant="ghost"
-            size="sm"
-            className="text-xs sm:text-sm"
-          >
-            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-          </Button>
-        )}
-      </div>
-
       {/* Voting Power Confirmation Dialog */}
       <Dialog open={isVotingDialogOpen} onOpenChange={setIsVotingDialogOpen}>
         <DialogContent onClick={(e) => e.stopPropagation()}>
